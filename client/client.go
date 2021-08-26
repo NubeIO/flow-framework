@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-const defaultBaseURL = "http://localhost:1660"
+
 
 // FlowClient is used to invoke Form3 Accounts API.
 type FlowClient struct {

@@ -1,270 +1,72 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) NewRouter() *mux.Router {
-	type Route struct {
-		Name        string
-		Pattern     string
-		Method      string
-		HandlerFunc http.HandlerFunc
+var routerServer *Server
+
+func (s *Server) SetRouter() {
+	routerServer = s
+}
+
+func GinToHttp(ctx *gin.Context, handler func(w http.ResponseWriter, r *http.Request)) {
+	handler(ctx.Writer.(http.ResponseWriter), ctx.Request)
+}
+
+func NewRouter(router *gin.Engine, apiRoutes *gin.RouterGroup) {
+
+	if routerServer == nil {
+		panic(errors.New("flow-eng server not created before route handler"))
 	}
 
-	routes := []Route{
-		Route{
-			"UpdateSocket",
-			"/updates",
-			"GET",
-			s.UpdateSocketHandler,
-		},
-		Route{
-			"BlockLibrary",
-			"/blocks/library",
-			"GET",
-			s.BlockLibraryHandler,
-		},
-		Route{
-			"SourceLibrary",
-			"/sources/library",
-			"GET",
-			s.SourceLibraryHandler,
-		},
-		Route{
-			"GroupIndex",
-			"/groups",
-			"GET",
-			s.GroupIndexHandler,
-		},
-		Route{
-			"Group",
-			"/groups/{id}",
-			"GET",
-			s.GroupHandler,
-		},
-		Route{
-			"GroupCreate",
-			"/groups",
-			"POST",
-			s.GroupCreateHandler,
-		},
-		Route{
-			"GroupExport",
-			"/groups/{id}/export",
-			"GET",
-			s.GroupExportHandler,
-		},
-		Route{
-			"GroupExportGist",
-			"/groups/{id}/export/gist",
-			"GET",
-			s.GroupExportGistHandler,
-		},
-		Route{
-			"GroupImport",
-			"/groups/{id}/import",
-			"POST",
-			s.GroupImportHandler,
-		},
-		Route{
-			"GroupImportGist",
-			"/groups/{id}/import/gist",
-			"GET",
-			s.GroupImportGistHandler,
-		},
-		Route{
-			"GroupModifyLabel",
-			"/groups/{id}/label",
-			"PUT",
-			s.GroupModifyLabelHandler,
-		},
-		Route{
-			"GroupModifyAllChildren",
-			"/groups/{id}/children",
-			"PUT",
-			s.GroupModifyAllChildrenHandler,
-		},
-		Route{
-			"GroupModifyChild",
-			"/groups/{id}/children/{node_id}",
-			"PUT",
-			s.GroupModifyChildHandler,
-		},
-		Route{
-			"GroupPosition",
-			"/groups/{id}/position",
-			"PUT",
-			s.GroupPositionHandler,
-		},
-		Route{
-			"GroupDelete",
-			"/groups/{id}",
-			"DELETE",
-			s.GroupDeleteHandler,
-		},
-		Route{
-			"GroupSetRouteVisibility",
-			"/groups/{id}/visibility",
-			"PUT",
-			s.GroupSetRouteVisibilityHandler,
-		},
-		Route{
-			"BlockIndex",
-			"/blocks",
-			"GET",
-			s.BlockIndexHandler,
-		},
-		Route{
-			"Block",
-			"/blocks/{id}",
-			"GET",
-			s.BlockHandler,
-		},
-		Route{
-			"BlockCreate",
-			"/blocks",
-			"POST",
-			s.BlockCreateHandler,
-		},
-		Route{
-			"BlockDelete",
-			"/blocks/{id}",
-			"DELETE",
-			s.BlockDeleteHandler,
-		},
-		Route{
-			"BlockModifyName",
-			"/blocks/{id}/label",
-			"PUT",
-			s.BlockModifyNameHandler,
-		},
-		Route{
-			"BlockModifyRoute",
-			"/blocks/{id}/routes/{index}",
-			"PUT",
-			s.BlockModifyRouteHandler,
-		},
-		Route{
-			"BlockModifyPosition",
-			"/blocks/{id}/position",
-			"PUT",
-			s.BlockModifyPositionHandler,
-		},
-		Route{
-			"ConnectionIndex",
-			"/connections",
-			"GET",
-			s.ConnectionIndexHandler,
-		},
-		Route{
-			"Connection",
-			"/connections/{id}",
-			"GET",
-			s.ConnectionHandler,
-		},
-		Route{
-			"ConnectionCreate",
-			"/connections",
-			"POST",
-			s.ConnectionCreateHandler,
-		},
-		Route{
-			"ConnectionModifyCoordinates",
-			"/connections/{id}/coordinates",
-			"PUT",
-			s.ConnectionModifyCoordinates,
-		},
-		Route{
-			"ConnectionDelete",
-			"/connections/{id}",
-			"DELETE",
-			s.ConnectionDeleteHandler,
-		},
-		Route{
-			"SourceCreate",
-			"/sources",
-			"POST",
-			s.SourceCreateHandler,
-		},
-		Route{
-			"SourceIndex",
-			"/sources",
-			"GET",
-			s.SourceIndexHandler,
-		},
-		Route{
-			"SourceModifyName",
-			"/sources/{id}/label",
-			"PUT",
-			s.SourceModifyNameHandler,
-		},
-		Route{
-			"SourceModifyPosition",
-			"/sources/{id}/position",
-			"PUT",
-			s.SourceModifyPositionHandler,
-		},
-		Route{
-			"SourceGetValue",
-			"/sources/{id}/value",
-			"GET",
-			s.SourceGetValueHandler,
-		},
-		Route{
-			"SourceSetValue",
-			"/sources/{id}/value",
-			"PUT",
-			s.SourceSetValueHandler,
-		},
-		Route{
-			"Source",
-			"/sources/{id}",
-			"GET",
-			s.SourceHandler,
-		},
-		Route{
-			"Source",
-			"/sources/{id}",
-			"DELETE",
-			s.SourceDeleteHandler,
-		},
-		Route{
-			"LinkIndex",
-			"/links",
-			"GET",
-			s.LinkIndexHandler,
-		},
-		Route{
-			"LinkCreate",
-			"/links",
-			"POST",
-			s.LinkCreateHandler,
-		},
-		Route{
-			"LinkDelete",
-			"/links/{id}",
-			"DELETE",
-			s.LinkDeleteHandler,
-		},
-	}
-	router := mux.NewRouter().StrictSlash(true)
-	for _, route := range routes {
-		var handler http.Handler
+	nodeRoutes := apiRoutes.Group("/nodes")
 
-		handler = route.HandlerFunc
-		handler = Logger(handler, route.Name)
+	nodeRoutes.StaticFile("/", "./floweng/static/index.html")
+	nodeRoutes.Static("/js", "./floweng/static/js/")
+	nodeRoutes.Static("/css", "./floweng/static/css/")
+	nodeRoutes.Static("/lib", "./floweng/static/lib/")
 
-		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(handler)
-	}
-
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
-
-	return router
+	nodeRoutes.GET("/updates", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.UpdateSocketHandler) })
+	nodeRoutes.GET("/blocks/library", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockLibraryHandler) })
+	nodeRoutes.GET("/sources/library", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceLibraryHandler) })
+	nodeRoutes.GET("/groups", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupIndexHandler) })
+	nodeRoutes.GET("/groups/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupHandler) })
+	nodeRoutes.POST("/groups", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupCreateHandler) })
+	nodeRoutes.GET("/groups/{id}/export", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupExportHandler) })
+	nodeRoutes.GET("/groups/{id}/export/gist", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupExportGistHandler) })
+	nodeRoutes.POST("/groups/{id}/import", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupImportHandler) })
+	nodeRoutes.GET("/groups/{id}/import/gist", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupImportGistHandler) })
+	nodeRoutes.PUT("/groups/{id}/label", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupModifyLabelHandler) })
+	nodeRoutes.PUT("/groups/{id}/children", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupModifyAllChildrenHandler) })
+	nodeRoutes.PUT("/groups/{id}/children/{node_id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupModifyChildHandler) })
+	nodeRoutes.PUT("/groups/{id}/position", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupPositionHandler) })
+	nodeRoutes.DELETE("/groups/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupDeleteHandler) })
+	nodeRoutes.PUT("/groups/{id}/visibility", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.GroupSetRouteVisibilityHandler) })
+	nodeRoutes.GET("/blocks", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockIndexHandler) })
+	nodeRoutes.GET("/blocks/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockHandler) })
+	nodeRoutes.POST("/blocks", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockCreateHandler) })
+	nodeRoutes.DELETE("/blocks/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockDeleteHandler) })
+	nodeRoutes.PUT("/blocks/{id}/label", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockModifyNameHandler) })
+	nodeRoutes.PUT("/blocks/{id}/routes/{index}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockModifyRouteHandler) })
+	nodeRoutes.PUT("/blocks/{id}/position", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.BlockModifyPositionHandler) })
+	nodeRoutes.GET("/connections", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.ConnectionIndexHandler) })
+	nodeRoutes.GET("/connections/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.ConnectionHandler) })
+	nodeRoutes.POST("/connections", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.ConnectionCreateHandler) })
+	nodeRoutes.PUT("/connections/{id}/coordinates", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.ConnectionModifyCoordinates) })
+	nodeRoutes.DELETE("/connections/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.ConnectionDeleteHandler) })
+	nodeRoutes.POST("/sources", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceCreateHandler) })
+	nodeRoutes.GET("/sources", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceIndexHandler) })
+	nodeRoutes.PUT("/sources/{id}/label", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceModifyNameHandler) })
+	nodeRoutes.PUT("/sources/{id}/position", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceModifyPositionHandler) })
+	nodeRoutes.GET("/sources/{id}/value", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceGetValueHandler) })
+	nodeRoutes.PUT("/sources/{id}/value", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceSetValueHandler) })
+	nodeRoutes.GET("/sources/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceHandler) })
+	nodeRoutes.DELETE("/sources/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.SourceDeleteHandler) })
+	nodeRoutes.GET("/links", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.LinkIndexHandler) })
+	nodeRoutes.POST("/links", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.LinkCreateHandler) })
+	nodeRoutes.DELETE("/links/{id}", func(ctx *gin.Context) { GinToHttp(ctx, routerServer.LinkDeleteHandler) })
 }

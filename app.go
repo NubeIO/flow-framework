@@ -9,6 +9,7 @@ import (
 	"github.com/NubeDev/flow-framework/database"
 	"github.com/NubeDev/flow-framework/dbhandler"
 	"github.com/NubeDev/flow-framework/eventbus"
+	"github.com/NubeDev/flow-framework/floweng"
 	"github.com/NubeDev/flow-framework/logger"
 	"github.com/NubeDev/flow-framework/model"
 	"github.com/NubeDev/flow-framework/mqttclient"
@@ -76,6 +77,7 @@ func main() {
 		fmt.Println(err)
 	}
 	intHandler(db)
+	floweng.FlowengStart()
 	defer db.Close()
 	engine, closeable := router.Create(db, vInfo, conf)
 	defer closeable()

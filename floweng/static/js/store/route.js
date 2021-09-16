@@ -61,7 +61,7 @@ var app = app || {};
         var route = routes[event.id];
         app.Utils.request(
             'PUT',
-            '/blocks/' + route.blockId + '/routes/' + route.index,
+            'blocks/' + route.blockId + '/routes/' + route.index,
             event.value, {},
             null)
     }

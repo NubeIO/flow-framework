@@ -3,13 +3,14 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"github.com/google/go-github/github"
-	"github.com/gorilla/mux"
-	"golang.org/x/oauth2"
+
+	// "github.com/google/go-github/github"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Pattern struct {
@@ -333,23 +334,23 @@ func (s *Server) GroupExportHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, p)
 }
 
-func (s *Server) newGithubClient() *github.Client {
-	client := github.NewClient(nil)
+// func (s *Server) newGithubClient() *github.Client {
+// 	client := github.NewClient(nil)
 
-	// check to see if we should auth into github
-	if s.settings.GithubUserToken != "" {
-		log.Println("authenticating with github")
-		// auth
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: s.settings.GithubUserToken},
-		)
-		tc := oauth2.NewClient(oauth2.NoContext, ts)
+// 	// check to see if we should auth into github
+// 	if s.settings.GithubUserToken != "" {
+// 		log.Println("authenticating with github")
+// 		// auth
+// 		ts := oauth2.StaticTokenSource(
+// 			&oauth2.Token{AccessToken: s.settings.GithubUserToken},
+// 		)
+// 		tc := oauth2.NewClient(oauth2.NoContext, ts)
 
-		client = github.NewClient(tc)
-	}
-	return client
+// 		client = github.NewClient(tc)
+// 	}
+// 	return client
 
-}
+// }
 
 func (s *Server) GroupExportGistHandler(w http.ResponseWriter, r *http.Request) {
 	//id, err := getIDFromMux(mux.Vars(r))

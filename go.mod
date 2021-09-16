@@ -65,6 +65,10 @@ require (
 
 require (
 	github.com/creack/goselect v0.1.2 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/kisielk/godepgraph v0.0.0-20190626013829-57a7e4a651a9 // indirect
+	github.com/oleiade/lane v1.0.1 // indirect
+	github.com/thejerf/suture v4.0.1+incompatible // indirect
 	go.bug.st/serial v1.3.2
 )
 

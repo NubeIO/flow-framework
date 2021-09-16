@@ -2,10 +2,12 @@ package router
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/NubeDev/flow-framework/floweng/server"
 	"github.com/NubeDev/flow-framework/logger"
 	"github.com/NubeDev/location"
 	"github.com/gin-contrib/cors"
-	"time"
 
 	"github.com/NubeDev/flow-framework/api"
 	"github.com/NubeDev/flow-framework/api/stream"
@@ -83,9 +85,6 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 	dbGroup := api.DatabaseAPI{
 		DB: db,
 	}
-	nodesHandler := api.NodeAPI{
-		DB: db,
-	}
 	integrationHandler := api.IntegrationAPI{
 		DB: db,
 	}
@@ -119,7 +118,7 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 	engine.GET("/health", healthHandler.Health)
 	engine.Static("/image", conf.GetAbsUploadedImagesDir())
 	engine.Use(func(ctx *gin.Context) {
-		ctx.Header("Content-Type", "application/json")
+		// ctx.Header("Content-Type", "application/json")
 		for header, value := range conf.Server.ResponseHeaders {
 			ctx.Header(header, value)
 		}
@@ -180,7 +179,7 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 
 		apiRoutes.Group("").Use(authentication.RequireApplicationToken()).POST("/messages", messageHandler.CreateMessage)
 
-		apiRoutes.Use(authentication.RequireAdmin())
+		// apiRoutes.Use(authentication.RequireAdmin())
 
 		userRoutes := apiRoutes.Group("/users")
 		{
@@ -347,16 +346,6 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 			jobRoutes.DELETE("/:uuid", jobHandler.DeleteJob)
 		}
 
-		nodeRoutes := apiRoutes.Group("/nodes")
-		{
-			nodeRoutes.GET("", nodesHandler.GetNodesList)
-			nodeRoutes.POST("", nodesHandler.CreateNode)
-			nodeRoutes.GET("/:uuid", nodesHandler.GetNode)
-			nodeRoutes.PATCH("/:uuid", nodesHandler.UpdateNode)
-			nodeRoutes.DELETE("/:uuid", nodesHandler.DeleteNode)
-			nodeRoutes.DELETE("/drop", nodesHandler.DropNodesList)
-		}
-
 		integrationRoutes := apiRoutes.Group("/integrations")
 		{
 			integrationRoutes.GET("", integrationHandler.GetIntegrationsList)
@@ -394,5 +383,8 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 		}
 
 	}
+
+	server.NewRouter(engine, apiRoutes)
+
 	return engine, streamHandler.Close
 }

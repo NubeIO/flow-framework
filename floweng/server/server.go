@@ -28,21 +28,8 @@ const (
 	PARAM      = "param"
 )
 
-// user-session specific settings
-type Settings struct {
-	GithubUserToken string
-}
-
-// NewSettings returns the default settings object
-func NewSettings() Settings {
-	return Settings{
-		GithubUserToken: "",
-	}
-}
-
 // The Server maintains a set of handlers that coordinate the creation of Nodes
 type Server struct {
-	settings      Settings
 	groups        map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches
 	parents       map[int]int
 	blocks        map[int]*BlockLedger      // these are the nodes
@@ -60,7 +47,7 @@ type Server struct {
 }
 
 // NewServer starts a new Server. This object is immediately up and running.
-func NewServer(settings Settings) *Server {
+func NewServer() *Server {
 	groups := make(map[int]*Group)
 	groups[0] = &Group{
 		Label:        "root",
@@ -78,7 +65,6 @@ func NewServer(settings Settings) *Server {
 	sourceLibrary := core.GetSources()
 	parents := make(map[int]int)
 	s := &Server{
-		settings:      settings,
 		lastID:        0,
 		parents:       parents,
 		groups:        groups,

@@ -3,6 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"time"
+
 	"github.com/NubeDev/flow-framework/api"
 	"github.com/NubeDev/flow-framework/cachestore"
 	"github.com/NubeDev/flow-framework/config"
@@ -17,10 +22,6 @@ import (
 	"github.com/NubeDev/flow-framework/runner"
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"os"
-	"path"
-	"time"
 )
 
 var (

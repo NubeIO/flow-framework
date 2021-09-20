@@ -1,12 +1,13 @@
 package floweng
 
 import (
+	"github.com/NubeDev/flow-framework/database"
 	"github.com/NubeDev/flow-framework/floweng/server"
 )
 
 var flowEngServer *server.Server
 
-func FlowengStart() {
-	flowEngServer = server.NewServer()
+func FlowengStart(db *database.GormDatabase) {
+	flowEngServer = server.NewServer(db)
 	flowEngServer.SetRouter()
 }

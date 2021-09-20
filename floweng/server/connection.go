@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 
 	"github.com/gorilla/mux"
 )
@@ -69,6 +70,14 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, Error{err.Error()})
 		return
 	}
+
+	EngDB.CreateModel(&model.Connection{
+		Id:          nc.Id,
+		SourceId:    newConn.Source.Id,
+		SourceRoute: newConn.Source.Route,
+		TargetId:    newConn.Target.Id,
+		TargetRoute: newConn.Target.Route,
+	})
 
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, nc)

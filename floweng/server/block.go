@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 
 	"github.com/gorilla/mux"
 )
@@ -196,6 +197,19 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 	defer s.Unlock()
 
 	b, err := s.CreateBlock(m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	err = EngDB.CreateModel(&model.Block{
+		Label: m.Label,
+		Type:  m.Type,
+		Id:    b.Id,
+		PosX:  m.Position.X,
+		PosY:  m.Position.Y,
+	})
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})

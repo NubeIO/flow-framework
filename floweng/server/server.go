@@ -4,7 +4,9 @@ import (
 	"log"
 	"sync"
 
+	"github.com/NubeDev/flow-framework/database"
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 )
 
 const (
@@ -30,7 +32,8 @@ const (
 
 // The Server maintains a set of handlers that coordinate the creation of Nodes
 type Server struct {
-	groups        map[int]*Group // TODO these maps aren't strictly necessary, but save constantly performing depth first searches
+	// TODO these maps aren't strictly necessary, but save constantly performing depth first searches
+	groups        map[int]*Group
 	parents       map[int]int
 	blocks        map[int]*BlockLedger      // these are the nodes
 	connections   map[int]*ConnectionLedger // connections between the nodes
@@ -46,8 +49,11 @@ type Server struct {
 	sync.Mutex
 }
 
+var EngDB *database.GormDatabase
+
 // NewServer starts a new Server. This object is immediately up and running.
-func NewServer() *Server {
+func NewServer(db *database.GormDatabase) *Server {
+
 	groups := make(map[int]*Group)
 	groups[0] = &Group{
 		Label:        "root",
@@ -79,9 +85,47 @@ func NewServer() *Server {
 		broadcast:     make(chan []byte),
 		emitChan:      make(chan []byte),
 	}
+
 	// ws stuff
 	log.Println("starting websocket handler")
 	go s.websocketRouter()
+
+	// db stuff
+	EngDB = db
+
+	var blockArr []*model.Block
+	db.GetModelList(&blockArr)
+	for _, block := range blockArr {
+
+		_, err := s.CreateBlock(ProtoBlock{
+			Label:    block.Label,
+			Parent:   0,
+			Type:     block.Type,
+			Position: Position{block.PosX, block.PosY},
+		})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	var connArr []*model.Connection
+	db.GetModelList(&connArr)
+	for _, conn := range connArr {
+
+		_, err := s.CreateConnection(ProtoConnection{
+			Source: ConnectionNode{
+				Id:    conn.SourceId,
+				Route: conn.SourceRoute,
+			},
+			Target: ConnectionNode{
+				Id:    conn.TargetId,
+				Route: conn.TargetRoute,
+			},
+		})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	// TODO: handle IDs changing after deleting nodes
 	return s
 }
 

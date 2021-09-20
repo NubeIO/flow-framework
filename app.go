@@ -78,7 +78,7 @@ func main() {
 		fmt.Println(err)
 	}
 	intHandler(db)
-	floweng.FlowengStart()
+	floweng.FlowengStart(db)
 	defer db.Close()
 	engine, closeable := router.Create(db, vInfo, conf)
 	defer closeable()

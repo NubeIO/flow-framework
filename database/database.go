@@ -2,6 +2,9 @@ package database
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/NubeDev/flow-framework/auth/password"
 	"github.com/NubeDev/flow-framework/cachestore"
 	"github.com/NubeDev/flow-framework/eventbus"
@@ -11,8 +14,6 @@ import (
 	"github.com/NubeDev/flow-framework/utils"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"os"
-	"path/filepath"
 )
 
 var mkdirAll = os.MkdirAll
@@ -61,6 +62,8 @@ func New(dialect, connection, defaultUser, defaultPass string, strength int, log
 	var serialConnection []model.SerialConnection
 	var ipConnection []model.IpConnection
 	var schedule []model.Schedule
+	var blocks []model.Block
+	var connections []model.Connection
 	var models = []interface{}{
 		&alerts,
 		&user,
@@ -92,6 +95,8 @@ func New(dialect, connection, defaultUser, defaultPass string, strength int, log
 		&serialConnection,
 		&ipConnection,
 		&schedule,
+		&blocks,
+		&connections,
 	}
 
 	for _, v := range models {

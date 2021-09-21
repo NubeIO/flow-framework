@@ -204,9 +204,9 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = EngDB.CreateModel(&model.Block{
+		ID:    b.Id,
 		Label: m.Label,
 		Type:  m.Type,
-		Id:    b.Id,
 		PosX:  m.Position.X,
 		PosY:  m.Position.Y,
 	})
@@ -371,6 +371,8 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, Error{err.Error()})
 		return
 	}
+
+	EngDB.UpdateBlockStaticInput(id, route, v, s.blocks[id].Inputs[route].Type)
 
 	w.WriteHeader(http.StatusNoContent)
 }

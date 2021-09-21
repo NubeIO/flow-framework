@@ -96,7 +96,6 @@ func NewServer(db *database.GormDatabase) *Server {
 	var blockArr []*model.Block
 	db.GetModelList(&blockArr)
 	for _, block := range blockArr {
-
 		_, err := s.CreateBlock(ProtoBlock{
 			Label:    block.Label,
 			Parent:   0,
@@ -110,17 +109,23 @@ func NewServer(db *database.GormDatabase) *Server {
 	var connArr []*model.Connection
 	db.GetModelList(&connArr)
 	for _, conn := range connArr {
-
 		_, err := s.CreateConnection(ProtoConnection{
 			Source: ConnectionNode{
-				Id:    conn.SourceId,
+				Id:    conn.SourceID,
 				Route: conn.SourceRoute,
 			},
 			Target: ConnectionNode{
-				Id:    conn.TargetId,
+				Id:    conn.TargetID,
 				Route: conn.TargetRoute,
 			},
 		})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	blockInputs, _ := db.GetBlockStaticInputs()
+	for _, r := range blockInputs {
+		err := s.ModifyBlockRoute(r.BlockID, r.RouteIndex, &core.InputValue{Data: r.Value})
 		if err != nil {
 			log.Println(err)
 		}

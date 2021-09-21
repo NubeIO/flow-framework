@@ -72,11 +72,11 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	EngDB.CreateModel(&model.Connection{
-		Id:          nc.Id,
-		SourceId:    newConn.Source.Id,
-		SourceRoute: newConn.Source.Route,
-		TargetId:    newConn.Target.Id,
-		TargetRoute: newConn.Target.Route,
+		ID:          nc.Id,
+		SourceID:    nc.Source.Id,
+		SourceRoute: nc.Source.Route,
+		TargetID:    nc.Target.Id,
+		TargetRoute: nc.Target.Route,
 	})
 
 	w.WriteHeader(http.StatusOK)

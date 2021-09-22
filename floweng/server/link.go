@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/NubeDev/flow-framework/model"
 	"github.com/gorilla/mux"
 )
 
@@ -114,6 +115,12 @@ func (s *Server) LinkCreateHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, Error{err.Error()})
 		return
 	}
+
+	EngDB.CreateModel(&model.Link{
+		ID:       nl.Id,
+		SourceID: nl.Source.Id,
+		BlockID:  nl.Block.Id,
+	})
 
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, nl)

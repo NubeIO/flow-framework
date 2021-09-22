@@ -128,6 +128,7 @@ func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	b.Position = p
+	EngDB.UpdateBlockPosition(id, p.X, p.Y)
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
@@ -207,8 +208,11 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 		ID:    b.Id,
 		Label: m.Label,
 		Type:  m.Type,
-		PosX:  m.Position.X,
-		PosY:  m.Position.Y,
+		Position: model.Position{
+			X: m.Position.X,
+			Y: m.Position.Y,
+		},
+		IsSource: false,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -254,6 +258,12 @@ func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	s.blocks[id].Label = label
+	err = EngDB.UpdateBlockName(id, label)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not update block label"})
+		return
+	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsLabel{wsId{id}, label}}})
 	w.WriteHeader(http.StatusNoContent)

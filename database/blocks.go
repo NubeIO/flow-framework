@@ -38,6 +38,16 @@ func (d *GormDatabase) DropBlockList(model interface{}) (bool, error) {
 	return query.RowsAffected > 0, query.Error
 }
 
+func (d *GormDatabase) UpdateBlockName(blockId int, name string) error {
+	query := d.DB.Model(&model.Block{}).Where("id = ?", blockId).Update("label", name)
+	return query.Error
+}
+
+func (d *GormDatabase) UpdateBlockPosition(blockId int, x float64, y float64) error {
+	query := d.DB.Model(&model.Block{}).Where("id = ?", blockId).Updates(model.Block{Position: model.Position{X: x, Y: y}})
+	return query.Error
+}
+
 func (d *GormDatabase) UpdateBlockStaticInput(blockId int, routeIndex int, value *core.InputValue, valueType core.JSONType) error {
 	var route *model.BlockStaticRoute
 	query := d.DB.Model(&model.BlockStaticRoute{}).Where("block_id = ?", blockId).Where("route_index = ?", routeIndex).First(&route)

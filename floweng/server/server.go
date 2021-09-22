@@ -96,12 +96,34 @@ func NewServer(db *database.GormDatabase) *Server {
 	var blockArr []*model.Block
 	db.GetModelList(&blockArr)
 	for _, block := range blockArr {
-		_, err := s.CreateBlock(ProtoBlock{
-			Label:    block.Label,
-			Parent:   0,
-			Type:     block.Type,
-			Position: Position{block.PosX, block.PosY},
-		})
+		var err error = nil
+		if block.IsSource {
+			// TODO: support source parameters
+			_, err = s.CreateSource(ProtoSource{
+				Label:    block.Label,
+				Parent:   0, // TODO: fix parent
+				Type:     block.Type,
+				Position: Position{block.Position.X, block.Position.Y},
+			})
+		} else {
+			_, err = s.CreateBlock(ProtoBlock{
+				Label:    block.Label,
+				Parent:   0, // TODO: fix parent
+				Type:     block.Type,
+				Position: Position{block.Position.X, block.Position.Y},
+			})
+		}
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	var linkArr []*model.Link
+	db.GetModelList(&linkArr)
+	for _, link := range linkArr {
+		pl := ProtoLink{}
+		pl.Source.Id = link.SourceID
+		pl.Block.Id = link.BlockID
+		_, err := s.CreateLink(pl)
 		if err != nil {
 			log.Println(err)
 		}

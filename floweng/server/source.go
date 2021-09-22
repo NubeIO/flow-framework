@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 
 	"github.com/gorilla/mux"
 	"github.com/thejerf/suture"
@@ -166,6 +167,24 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ms := model.Block{
+		ID:    b.Id,
+		Label: m.Label,
+		Type:  m.Type,
+		Position: model.Position{
+			X: m.Position.X,
+			Y: m.Position.Y,
+		},
+		IsSource: true,
+	}
+	// ms.MarshalParameters(b.Parameters)
+	err = EngDB.CreateModel(&ms)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, b)
 }
@@ -247,6 +266,7 @@ func (s *Server) SourceModifyPositionHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	b.Position = p
+	EngDB.UpdateBlockPosition(id, p.X, p.Y)
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
@@ -286,6 +306,12 @@ func (s *Server) SourceModifyNameHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	s.sources[id].Label = label
+	err = EngDB.UpdateBlockName(id, label)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not update source label"})
+		return
+	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsLabel{wsId{id}, label}}})
 	w.WriteHeader(http.StatusNoContent)

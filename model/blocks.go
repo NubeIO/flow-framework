@@ -1,12 +1,24 @@
 package model
 
+import (
+	"encoding/json"
+	"log"
+)
+
+// TODO: cleanup original Proto.. structs
+
+type Position struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 type Block struct {
-	ID     int     `json:"id"`
-	Label  string  `json:"label"`
-	Parent int     `json:"parent"`
-	Type   string  `json:"type"`
-	PosX   float64 `json:"x"`
-	PosY   float64 `json:"y"`
+	ID       int      `json:"id"`
+	Label    string   `json:"label"`
+	Type     string   `json:"type"`
+	Parent   int      `json:"parent"`
+	Position Position `json:"position" gorm:"embedded"`
+	IsSource bool     `json:"is_source"`
 	// TODO: maybe add list of static block routes
 }
 
@@ -60,21 +72,16 @@ type Connection struct {
 	TargetRoute int `json:"target_route"`
 }
 
-// type Link struct {
-//     ID       int `json:"id"`
-//     SourceID int `json:"id"`
-//     BlockID  int `json:"id"`
-// }
+type SourceParameter struct {
+	BlockID    int    `json:"block_id" gorm:"REFERENCES blocks;not null`
+	Parameters string `json:"params"`
+}
 
-// type Source struct {
-//     ID         int               `json:"id"`
-//     Label      string            `json:"label"`
-//     Type       string            `json:"type"`
-//     Parent     int               `json:"parent"`
-//     Parameters map[string]string `json:"params"`
-//     PosX       float64           `json:"x"`
-//     PosY       float64           `json:"y"`
-// }
+type Link struct {
+	ID       int `json:"id"`
+	SourceID int `json:"source_id"`
+	BlockID  int `json:"block_id"`
+}
 
 // type Group struct {
 // 	ID       int     `json:"id"`
@@ -84,3 +91,21 @@ type Connection struct {
 // 	PosX     float64 `json:"x"`
 // 	PosY     float64 `json:"y"`
 // }
+
+func (source *SourceParameter) MarshalParameters(params []map[string]string) {
+	bytes, err := json.Marshal(params)
+	if err != nil {
+		log.Println("Error marshaling source paramaters")
+		source.Parameters = ""
+	}
+	source.Parameters = string(bytes)
+}
+
+func (source *SourceParameter) UnmarshalParameters() []map[string]string {
+	var params []map[string]string
+	err := json.Unmarshal([]byte(source.Parameters), &params)
+	if err != nil {
+		log.Println("Error unmarshaling source paramaters")
+	}
+	return params
+}

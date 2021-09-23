@@ -71,30 +71,6 @@ require (
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/tools v0.0.0-20201224043029-2b0845dc783e // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-)
-
-require (
-	github.com/brocaar/lora-app-server v2.5.1+incompatible
-	github.com/creack/goselect v0.1.2 // indirect
-	github.com/pkg/errors v0.9.1
-	github.com/simonvetter/modbus v1.3.0
-	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/kisielk/godepgraph v0.0.0-20190626013829-57a7e4a651a9 // indirect
-	github.com/oleiade/lane v1.0.1 // indirect
-	github.com/thejerf/suture v4.0.1+incompatible // indirect
-	go.bug.st/serial v1.3.2
-	google.golang.org/grpc v1.40.0
-)
-
-require (
-	github.com/brocaar/loraserver v2.5.0+incompatible // indirect
-	github.com/brocaar/lorawan v0.0.0-20210809075358-95fc1667572e // indirect
-	github.com/goburrow/serial v0.1.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
-	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115 // indirect
-	golang.org/x/text v0.3.3 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

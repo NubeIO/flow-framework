@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 
 	"github.com/gorilla/mux"
 	"github.com/thejerf/suture"
@@ -24,6 +25,7 @@ type SourceLedger struct {
 }
 
 type ProtoSource struct {
+	Id         int               `json:"id"`
 	Label      string            `json:"label"`
 	Type       string            `json:"type"`
 	Position   Position          `json:"position"`
@@ -89,12 +91,15 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 
 	source := f.New()
 
+	if p.Id == 0 {
+		p.Id = s.GetNextID()
+	}
 	sl := &SourceLedger{
 		Label:      p.Label,
 		Position:   p.Position,
 		Source:     source,
 		Type:       p.Type,
-		Id:         s.GetNextID(),
+		Id:         p.Id,
 		Parameters: make([]map[string]string, 0), // this will get overwritten if we have parameters
 	}
 
@@ -135,6 +140,8 @@ func (s *Server) DeleteSource(id int) error {
 
 	s.DetachChild(source)
 
+	EngDB.DeleteModel(id, &model.Block{ID: id})
+
 	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: wsSource{wsId{id}}})
 	delete(s.sources, source.Id)
 	return nil
@@ -160,6 +167,24 @@ func (s *Server) SourceCreateHandler(w http.ResponseWriter, r *http.Request) {
 	defer s.Unlock()
 
 	b, err := s.CreateSource(m)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
+	ms := model.Block{
+		ID:    b.Id,
+		Label: m.Label,
+		Type:  m.Type,
+		Position: model.Position{
+			X: m.Position.X,
+			Y: m.Position.Y,
+		},
+		IsSource: true,
+	}
+	// ms.MarshalParameters(b.Parameters)
+	err = EngDB.CreateModel(&ms)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		writeJSON(w, Error{err.Error()})
@@ -247,6 +272,7 @@ func (s *Server) SourceModifyPositionHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	b.Position = p
+	EngDB.UpdateBlockPosition(id, p.X, p.Y)
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
@@ -286,6 +312,12 @@ func (s *Server) SourceModifyNameHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	s.sources[id].Label = label
+	err = EngDB.UpdateBlockName(id, label)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not update source label"})
+		return
+	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: SOURCE, Data: wsSource{wsLabel{wsId{id}, label}}})
 	w.WriteHeader(http.StatusNoContent)

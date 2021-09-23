@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 
 	"github.com/gorilla/mux"
 )
@@ -18,6 +19,7 @@ type Position struct {
 }
 
 type ProtoBlock struct {
+	Id       int      `json:"id"`
 	Label    string   `json:"label"`
 	Parent   int      `json:"parent"`
 	Type     string   `json:"type"`
@@ -127,6 +129,7 @@ func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	b.Position = p
+	EngDB.UpdateBlockPosition(id, p.X, p.Y)
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsPosition{wsId{id}, p}}})
 	w.WriteHeader(http.StatusNoContent)
@@ -140,13 +143,16 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
 	block := core.NewBlock(blockSpec)
 
+	if p.Id == 0 {
+		p.Id = s.GetNextID()
+	}
 	m := &BlockLedger{
 		Label:        p.Label,
 		Position:     p.Position,
 		Type:         p.Type,
 		Block:        block,
 		Source:       blockSpec.Source,
-		Id:           s.GetNextID(),
+		Id:           p.Id,
 		MonitorQuit:  make(chan struct{}),
 		MonitorQuery: make(chan struct{}),
 	}
@@ -202,6 +208,22 @@ func (s *Server) BlockCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = EngDB.CreateModel(&model.Block{
+		ID:    b.Id,
+		Label: m.Label,
+		Type:  m.Type,
+		Position: model.Position{
+			X: m.Position.X,
+			Y: m.Position.Y,
+		},
+		IsSource: false,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{err.Error()})
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, b)
 }
@@ -240,6 +262,12 @@ func (s *Server) BlockModifyNameHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	s.blocks[id].Label = label
+	err = EngDB.UpdateBlockName(id, label)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, Error{"could not update block label"})
+		return
+	}
 
 	s.websocketBroadcast(Update{Action: UPDATE, Type: BLOCK, Data: wsBlock{wsLabel{wsId{id}, label}}})
 	w.WriteHeader(http.StatusNoContent)
@@ -276,6 +304,8 @@ func (s *Server) DeleteBlock(id int) error {
 
 	// remove from group
 	s.DetachChild(b)
+
+	EngDB.DeleteBlockFull(id)
 
 	// stop and delete the block
 	b.Block.Stop()
@@ -357,6 +387,8 @@ func (s *Server) BlockModifyRouteHandler(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, Error{err.Error()})
 		return
 	}
+
+	EngDB.UpdateBlockStaticInput(id, route, v, s.blocks[id].Inputs[route].Type)
 
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -3,12 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"time"
+
 	"github.com/NubeDev/flow-framework/api"
 	"github.com/NubeDev/flow-framework/cachestore"
 	"github.com/NubeDev/flow-framework/config"
 	"github.com/NubeDev/flow-framework/database"
 	"github.com/NubeDev/flow-framework/dbhandler"
 	"github.com/NubeDev/flow-framework/eventbus"
+	"github.com/NubeDev/flow-framework/floweng"
 	"github.com/NubeDev/flow-framework/logger"
 	"github.com/NubeDev/flow-framework/model"
 	"github.com/NubeDev/flow-framework/mqttclient"
@@ -16,10 +22,6 @@ import (
 	"github.com/NubeDev/flow-framework/runner"
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"os"
-	"path"
-	"time"
 )
 
 var (
@@ -76,6 +78,7 @@ func main() {
 		fmt.Println(err)
 	}
 	intHandler(db)
+	floweng.FlowengStart(db)
 	defer db.Close()
 	engine, closeable := router.Create(db, vInfo, conf)
 	defer closeable()

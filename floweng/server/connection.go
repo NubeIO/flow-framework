@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
+	"github.com/NubeDev/flow-framework/model"
 
 	"github.com/gorilla/mux"
 )
@@ -24,6 +25,7 @@ type ConnectionLedger struct {
 }
 
 type ProtoConnection struct {
+	Id     int            `json:"id"`
 	Source ConnectionNode `json:"from"`
 	Target ConnectionNode `json:"to"`
 }
@@ -70,6 +72,14 @@ func (s *Server) ConnectionCreateHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	EngDB.CreateModel(&model.Connection{
+		ID:          nc.Id,
+		SourceID:    nc.Source.Id,
+		SourceRoute: nc.Source.Route,
+		TargetID:    nc.Target.Id,
+		TargetRoute: nc.Target.Route,
+	})
+
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, nc)
 }
@@ -96,10 +106,13 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		return nil, err
 	}
 
+	if newConn.Id == 0 {
+		newConn.Id = s.GetNextID()
+	}
 	conn := &ConnectionLedger{
 		Source: newConn.Source,
 		Target: newConn.Target,
-		Id:     s.GetNextID(),
+		Id:     newConn.Id,
 	}
 
 	s.ResetGraph(conn)
@@ -236,6 +249,8 @@ func (s *Server) DeleteConnection(id int) error {
 	}
 
 	delete(s.connections, id)
+
+	EngDB.DeleteModel(id, model.Connection{ID: id})
 
 	s.ResetGraph(c)
 

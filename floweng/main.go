@@ -9,5 +9,6 @@ var flowEngServer *server.Server
 
 func FlowengStart(db *database.GormDatabase) {
 	flowEngServer = server.NewServer(db)
+	flowEngServer.LoadFromDB(db)
 	flowEngServer.SetRouter()
 }

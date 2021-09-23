@@ -25,6 +25,7 @@ type ConnectionLedger struct {
 }
 
 type ProtoConnection struct {
+	Id     int            `json:"id"`
 	Source ConnectionNode `json:"from"`
 	Target ConnectionNode `json:"to"`
 }
@@ -105,10 +106,13 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		return nil, err
 	}
 
+	if newConn.Id == 0 {
+		newConn.Id = s.GetNextID()
+	}
 	conn := &ConnectionLedger{
 		Source: newConn.Source,
 		Target: newConn.Target,
-		Id:     s.GetNextID(),
+		Id:     newConn.Id,
 	}
 
 	s.ResetGraph(conn)
@@ -245,6 +249,8 @@ func (s *Server) DeleteConnection(id int) error {
 	}
 
 	delete(s.connections, id)
+
+	EngDB.DeleteModel(id, model.Connection{ID: id})
 
 	s.ResetGraph(c)
 

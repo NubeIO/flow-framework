@@ -19,6 +19,7 @@ type Position struct {
 }
 
 type ProtoBlock struct {
+	Id       int      `json:"id"`
 	Label    string   `json:"label"`
 	Parent   int      `json:"parent"`
 	Type     string   `json:"type"`
@@ -142,13 +143,16 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
 	block := core.NewBlock(blockSpec)
 
+	if p.Id == 0 {
+		p.Id = s.GetNextID()
+	}
 	m := &BlockLedger{
 		Label:        p.Label,
 		Position:     p.Position,
 		Type:         p.Type,
 		Block:        block,
 		Source:       blockSpec.Source,
-		Id:           s.GetNextID(),
+		Id:           p.Id,
 		MonitorQuit:  make(chan struct{}),
 		MonitorQuery: make(chan struct{}),
 	}
@@ -300,6 +304,8 @@ func (s *Server) DeleteBlock(id int) error {
 
 	// remove from group
 	s.DetachChild(b)
+
+	EngDB.DeleteBlockFull(id)
 
 	// stop and delete the block
 	b.Block.Stop()

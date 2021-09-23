@@ -92,14 +92,23 @@ func NewServer(db *database.GormDatabase) *Server {
 
 	// db stuff
 	EngDB = db
+	return s
+}
+
+func (s *Server) LoadFromDB(db *database.GormDatabase) {
+	idMax := 0
 
 	var blockArr []*model.Block
 	db.GetModelList(&blockArr)
 	for _, block := range blockArr {
+		if idMax < block.ID {
+			idMax = block.ID
+		}
 		var err error = nil
 		if block.IsSource {
 			// TODO: support source parameters
 			_, err = s.CreateSource(ProtoSource{
+				Id:       block.ID,
 				Label:    block.Label,
 				Parent:   0, // TODO: fix parent
 				Type:     block.Type,
@@ -107,6 +116,7 @@ func NewServer(db *database.GormDatabase) *Server {
 			})
 		} else {
 			_, err = s.CreateBlock(ProtoBlock{
+				Id:       block.ID,
 				Label:    block.Label,
 				Parent:   0, // TODO: fix parent
 				Type:     block.Type,
@@ -120,7 +130,11 @@ func NewServer(db *database.GormDatabase) *Server {
 	var linkArr []*model.Link
 	db.GetModelList(&linkArr)
 	for _, link := range linkArr {
+		if idMax < link.ID {
+			idMax = link.ID
+		}
 		pl := ProtoLink{}
+		pl.Id = link.ID
 		pl.Source.Id = link.SourceID
 		pl.Block.Id = link.BlockID
 		_, err := s.CreateLink(pl)
@@ -131,7 +145,11 @@ func NewServer(db *database.GormDatabase) *Server {
 	var connArr []*model.Connection
 	db.GetModelList(&connArr)
 	for _, conn := range connArr {
+		if idMax < conn.ID {
+			idMax = conn.ID
+		}
 		_, err := s.CreateConnection(ProtoConnection{
+			Id: conn.ID,
 			Source: ConnectionNode{
 				Id:    conn.SourceID,
 				Route: conn.SourceRoute,
@@ -152,8 +170,8 @@ func NewServer(db *database.GormDatabase) *Server {
 			log.Println(err)
 		}
 	}
-	// TODO: handle IDs changing after deleting nodes
-	return s
+
+	s.lastID = idMax
 }
 
 // GetNextID returns the next ID to be used for a new group or a new block

@@ -21,6 +21,7 @@ type LinkLedger struct {
 }
 
 type ProtoLink struct {
+	Id     int `json:"id"` // link id
 	Source struct {
 		Id int `json:"id"`
 	} `json:"source"` // the source id
@@ -41,7 +42,10 @@ func (s *Server) CreateLink(l ProtoLink) (*LinkLedger, error) {
 	}
 
 	link := &LinkLedger{}
-	link.Id = s.GetNextID()
+	link.Id = l.Id
+	if link.Id == 0 {
+		link.Id = s.GetNextID()
+	}
 	link.Source.Id = l.Source.Id
 	link.Block.Id = l.Block.Id
 
@@ -69,6 +73,7 @@ func (s *Server) DeleteLink(id int) error {
 	}
 	block.Block.SetSource(nil)
 	delete(s.links, id)
+	EngDB.DeleteModel(id, model.Link{ID: id})
 
 	s.websocketBroadcast(Update{Action: DELETE, Type: LINK, Data: wsLink{wsId{id}}})
 	return nil

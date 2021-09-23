@@ -25,6 +25,7 @@ type SourceLedger struct {
 }
 
 type ProtoSource struct {
+	Id         int               `json:"id"`
 	Label      string            `json:"label"`
 	Type       string            `json:"type"`
 	Position   Position          `json:"position"`
@@ -90,12 +91,15 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 
 	source := f.New()
 
+	if p.Id == 0 {
+		p.Id = s.GetNextID()
+	}
 	sl := &SourceLedger{
 		Label:      p.Label,
 		Position:   p.Position,
 		Source:     source,
 		Type:       p.Type,
-		Id:         s.GetNextID(),
+		Id:         p.Id,
 		Parameters: make([]map[string]string, 0), // this will get overwritten if we have parameters
 	}
 
@@ -135,6 +139,8 @@ func (s *Server) DeleteSource(id int) error {
 	}
 
 	s.DetachChild(source)
+
+	EngDB.DeleteModel(id, &model.Block{ID: id})
 
 	s.websocketBroadcast(Update{Action: DELETE, Type: SOURCE, Data: wsSource{wsId{id}}})
 	delete(s.sources, source.Id)

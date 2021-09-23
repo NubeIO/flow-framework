@@ -33,7 +33,7 @@ func (d *GormDatabase) UpdateModel(id int, model interface{}) error {
 	return query.Error
 }
 
-func (d *GormDatabase) DropBlockList(model interface{}) (bool, error) {
+func (d *GormDatabase) DropModelList(model interface{}) (bool, error) {
 	query := d.DB.Where("1 = 1").Delete(model)
 	return query.RowsAffected > 0, query.Error
 }
@@ -139,4 +139,19 @@ func (d *GormDatabase) GetBlockStaticInputs() ([]*model.ProtoBlockStaticRoute, e
 		})
 	}
 	return blockRoutes, nil
+}
+
+func (d *GormDatabase) DeleteBlockFull(id int) error {
+	query := d.DB.Exec(`BEGIN TRANSACTION;
+                        DELETE FROM block_static_routes WHERE block_id = ?;
+                        DELETE FROM block_route_value_numbers AS v WHERE NOT EXISTS
+                            (SELECT id FROM block_static_routes AS r WHERE r.id = v.block_route);
+                        DELETE FROM block_route_value_strings AS v WHERE NOT EXISTS
+                            (SELECT id FROM block_static_routes AS r WHERE r.id = v.block_route);
+                        DELETE FROM block_route_value_bools AS v WHERE NOT EXISTS
+                            (SELECT id FROM block_static_routes AS r WHERE r.id = v.block_route);
+                        DELETE FROM blocks WHERE id = ?;
+                        COMMIT;`,
+		id, id)
+	return query.Error
 }

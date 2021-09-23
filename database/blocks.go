@@ -2,6 +2,8 @@ package database
 
 import (
 	"errors"
+	"log"
+	"reflect"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
 	"github.com/NubeDev/flow-framework/model"
@@ -50,15 +52,51 @@ func (d *GormDatabase) UpdateBlockPosition(blockId int, x float64, y float64) er
 
 func (d *GormDatabase) UpdateBlockStaticInput(blockId int, routeIndex int, value *core.InputValue, valueType core.JSONType) error {
 	var route *model.BlockStaticRoute
-	query := d.DB.Model(&model.BlockStaticRoute{}).Where("block_id = ?", blockId).Where("route_index = ?", routeIndex).First(&route)
-	if query.Error == gorm.ErrRecordNotFound {
-		route = &model.BlockStaticRoute{
-			BlockID:    blockId,
-			RouteIndex: routeIndex,
-			Type:       int(valueType),
+	query := d.DB.Where("block_id = ?", blockId).Where("route_index = ?", routeIndex).First(&route)
+
+	typeChanged := false
+	if valueType == core.ANY {
+		// Convert ANY to specific type
+		switch reflect.TypeOf(value.Data).Kind() {
+		case reflect.Int:
+			valueType = core.NUMBER
+			value.Data = float64(value.Data.(int))
+		case reflect.Float64:
+			valueType = core.NUMBER
+		case reflect.String:
+			valueType = core.STRING
+		case reflect.Bool:
+			valueType = core.BOOLEAN
+		default:
+			log.Println("block route type any not supported")
+			return errors.New("block route type any not supported")
 		}
-		d.CreateModel(&route)
+		// if type has changed from previous store
+		if query.Error == nil && route.Type != int(valueType) {
+			typeChanged = true
+			switch core.JSONType(route.Type) {
+			case core.NUMBER:
+				d.DB.Where("block_route = ?", route.ID).Delete(&model.BlockRouteValueNumber{})
+			case core.STRING:
+				d.DB.Where("block_route = ?", route.ID).Delete(&model.BlockRouteValueString{})
+			case core.BOOLEAN:
+				d.DB.Where("block_route = ?", route.ID).Delete(&model.BlockRouteValueBool{})
+			}
+			d.DB.Model(&route).Where("block_id = ?", blockId).Where("route_index = ?", routeIndex).Update("type", int(valueType))
+		}
+	}
+
+	if query.Error == gorm.ErrRecordNotFound || typeChanged {
+		if !typeChanged {
+			route = &model.BlockStaticRoute{
+				BlockID:    blockId,
+				RouteIndex: routeIndex,
+				Type:       int(valueType),
+			}
+			d.CreateModel(&route)
+		}
 		var err error = nil
+
 		switch valueType {
 		case core.NUMBER:
 			err = d.CreateModel(&model.BlockRouteValueNumber{
@@ -76,6 +114,7 @@ func (d *GormDatabase) UpdateBlockStaticInput(blockId int, routeIndex int, value
 				Value:      value.Data.(bool),
 			})
 		default:
+			log.Println("block route type not supported")
 			return errors.New("block route type not supported")
 		}
 		return err
@@ -94,6 +133,7 @@ func (d *GormDatabase) UpdateBlockStaticInput(blockId int, routeIndex int, value
 				Where("block_route = ?", route.ID).
 				Update("value", value.Data)
 		default:
+			log.Println("block route type not supported")
 			return errors.New("block route type not supported")
 		}
 	}

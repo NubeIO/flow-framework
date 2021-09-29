@@ -91,12 +91,55 @@ jobs:
         run: |
           go mod tidy
           go build -o app-amd64 app.go
+          
+          cd ./plugin/nube/system
+          go build -buildmode=plugin -o system-amd64.so *.go  && cp system-amd64.so ../../../
+          
+          cd ../../../plugin/nube/protocals/lorawan
+          go build -buildmode=plugin -o lorawan-amd64.so *.go  && cp lorawan-amd64.so ../../../../
+          
+          cd ../../../../plugin/nube/protocals/modbus
+          go build -buildmode=plugin -o modbus-amd64.so *.go  && cp modbus-amd64.so ../../../../
+          
+          cd ../../../../plugin/nube/protocals/lora
+          go build -buildmode=plugin -o lora-amd64.so *.go  && cp lora-amd64.so ../../../../
+          
+          cd ../../../../plugin/nube/protocals/bacnetserver
+          go build -buildmode=plugin -o bacnetserver-amd64.so *.go  && cp bacnetserver-amd64.so ../../../../
+          
+          cd ../../../../plugin/nube/database/influx
+          go build -buildmode=plugin -o influx-amd64.so *.go  && cp influx-amd64.so ../../../../
+          
+          cd ../../../../plugin/nube/protocals/broker
+          go build -buildmode=plugin -o broker-amd64.so *.go  && cp broker-amd64.so ../../../../
+
 
       - name: Build armv7
         if: ${{ needs.context.outputs.isRelease == 'true' }}
         run: |
           sudo apt-get install -y gcc-arm-linux-gnueabi
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -o app-armv7 app.go
+          
+          cd ./plugin/nube/system
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o system-armv7.so *.go  && cp system-armv7.so ../../../
+
+          cd ../../../plugin/nube/protocals/lorawan
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o lorawan-armv7.so *.go  && cp lorawan-armv7.so ../../../../
+
+          cd ../../../../plugin/nube/protocals/modbus
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o modbus-armv7.so *.go  && cp modbus-armv7.so ../../../../
+
+          cd ../../../../plugin/nube/protocals/lora
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o lora-armv7.so *.go  && cp lora-armv7.so ../../../../
+
+          cd ../../../../plugin/nube/protocals/bacnetserver
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o bacnetserver-armv7.so *.go  && cp bacnetserver-armv7.so ../../../../
+
+          cd ../../../../plugin/nube/database/influx
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o influx-armv7.so *.go  && cp influx-armv7.so ../../../../
+
+          cd ../../../../plugin/nube/protocals/broker
+          env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabi-gcc go build -buildmode=plugin -o broker-armv7.so *.go  && cp broker-armv7.so ../../../../
 
       - name: Zip artifacts
         if: ${{ needs.context.outputs.isRelease == 'true' }}
@@ -106,6 +149,41 @@ jobs:
           zip -r /tmp/zip/$artifact.zip ./app-armv7
           artifact=${{ needs.context.outputs.fqn }}.amd64
           zip -r /tmp/zip/$artifact.zip ./app-amd64
+
+          artifact=system-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./system-amd64
+          artifact=system-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./system-armv7
+
+          artifact=lorawan-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./lorawan-amd64
+          artifact=lorawan-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./lorawan-armv7
+
+          artifact=modbus-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./modbus-amd64
+          artifact=modbus-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./modbus-armv7
+          
+          artifact=lora-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./lora-amd64
+          artifact=lora-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./lora-armv7
+
+          artifact=bacnetserver-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./bacnetserver-amd64
+          artifact=bacnetserver-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./bacnetserver-armv7
+
+          artifact=influx-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./influx-amd64
+          artifact=influx-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./influx-armv7
+
+          artifact=broker-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.amd64
+          zip -r /tmp/zip/$artifact.zip ./broker-amd64
+          artifact=broker-${{ needs.context.outputs.version }}-${{ needs.context.outputs.shortCommitId }}.armv7
+          zip -r /tmp/zip/$artifact.zip ./broker-armv7
 
       - name: Create Release
         if: ${{ needs.context.outputs.isRelease == 'true' }}

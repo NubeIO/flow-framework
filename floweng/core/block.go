@@ -7,7 +7,6 @@ import (
 )
 
 // NewBlock creates a new block from a spec
-// TODO: DB write
 func NewBlock(s Spec) *Block {
 	var in []Input
 	var out []Output
@@ -17,7 +16,6 @@ func NewBlock(s Spec) *Block {
 			Name:  v.Name,
 			Type:  v.Type,
 			Value: nil,
-			C:     make(chan Message, 1),
 		})
 	}
 
@@ -30,13 +28,6 @@ func NewBlock(s Spec) *Block {
 	}
 
 	return &Block{
-		state: BlockState{
-			make(MessageMap),
-			make(MessageMap),
-			make(MessageMap),
-			make(Manifest),
-			false,
-		},
 		routing: BlockRouting{
 			Inputs:        in,
 			Outputs:       out,
@@ -50,38 +41,14 @@ func NewBlock(s Spec) *Block {
 	}
 }
 
-func (b *Block) Serve() {
-	defer func() {
-		b.done <- struct{}{}
-	}()
-	for {
-		var interrupt Interrupt
-		b.routing.RLock()
-		for {
-			interrupt = b.receive()
-			if interrupt != nil {
-				break
-			}
-
-			interrupt = b.process()
-			if interrupt != nil {
-				break
-			}
-
-			interrupt = b.broadcast()
-			if interrupt != nil {
-				break
-			}
-
-			b.crank()
-		}
-		b.routing.RUnlock()
-		b.routing.Lock()
-		if ok := interrupt(); !ok {
-			b.routing.Unlock()
-			return
-		}
-		b.routing.Unlock()
+func (b *Block) createState() BlockState {
+	return BlockState{
+		b,
+		make(MessageMap),
+		make(MessageMap),
+		make(MessageMap),
+		make(Manifest),
+		false,
 	}
 }
 
@@ -99,7 +66,6 @@ func (b *Block) exportInput(id RouteIndex) (*Input, error) {
 		Value: &InputValue{
 			Data: Copy((*b.routing.Inputs[id].Value).Data),
 		},
-		C:    b.routing.Inputs[id].C,
 		Name: b.routing.Inputs[id].Name,
 	}, nil
 
@@ -121,7 +87,7 @@ func (b *Block) GetInput(id RouteIndex) (Input, error) {
 func (b *Block) GetInputs() []Input {
 	b.routing.RLock()
 	re := make([]Input, len(b.routing.Inputs), len(b.routing.Inputs))
-	for i, _ := range b.routing.Inputs {
+	for i := range b.routing.Inputs {
 		r, _ := b.exportInput(RouteIndex(i))
 		re[i] = *r
 	}
@@ -131,25 +97,14 @@ func (b *Block) GetInputs() []Input {
 
 // SetInput RouteValue sets the route to always be the specified value
 func (b *Block) SetInput(id RouteIndex, v *InputValue) error {
-	returnVal := make(chan error, 1)
-	b.routing.InterruptChan <- func() bool {
-		if int(id) < 0 || int(id) >= len(b.routing.Inputs) {
-			returnVal <- errors.New("input out of range")
-			return true
-		}
-
-		// if our receive() has already set the inputValue for the kernel
-		// then delete the value out of the input map and use the new one
-		if _, ok := b.state.inputValues[id]; ok {
-			delete(b.state.inputValues, id)
-		}
-
-		b.routing.Inputs[id].Value = v
-
-		returnVal <- nil
-		return true
+	var returnVal error = nil
+	if int(id) < 0 || int(id) >= len(b.routing.Inputs) {
+		returnVal = errors.New("input out of range")
 	}
-	return <-returnVal
+
+	b.routing.Inputs[id].Value = v
+
+	return returnVal
 }
 
 // GetOutputs Outputs return a list of manifest pairs for the block
@@ -162,7 +117,7 @@ func (b *Block) GetOutputs() []Output {
 			Type:        out.Type,
 			Connections: make(map[Connection]struct{}),
 		}
-		for k, _ := range out.Connections {
+		for k := range out.Connections {
 			m[id].Connections[k] = struct{}{}
 		}
 	}
@@ -179,68 +134,92 @@ func (b *Block) GetSource() Source {
 
 // SetSource sets a store for the block. can be set to nil
 func (b *Block) SetSource(s Source) error {
-	returnVal := make(chan error, 1)
-	b.routing.InterruptChan <- func() bool {
-		if s != nil && s.GetType() != b.sourceType {
-			returnVal <- errors.New("invalid source type for this block")
-			return true
-		}
-		b.routing.Source = s
-		returnVal <- nil
-		return true
+	var returnVal error = nil
+	if s != nil && s.GetType() != b.sourceType {
+		returnVal = errors.New("invalid source type for this block")
 	}
-	return <-returnVal
+	b.routing.Source = s
+	return returnVal
 }
 
 // Connect connects a Route, specified by ID, to a connection
 func (b *Block) Connect(id RouteIndex, c Connection) error {
-	returnVal := make(chan error, 1)
-	b.routing.InterruptChan <- func() bool {
-		if int(id) < 0 || int(id) >= len(b.routing.Outputs) {
-			returnVal <- errors.New("output out of range")
-			return true
-		}
-
-		if _, ok := b.routing.Outputs[id].Connections[c]; ok {
-			returnVal <- errors.New("this connection already exists on this output")
-			return true
-		}
-
-		b.routing.Outputs[id].Connections[c] = struct{}{}
-		returnVal <- nil
-		return true
+	var returnVal error = nil
+	if int(id) < 0 || int(id) >= len(b.routing.Outputs) {
+		returnVal = errors.New("output out of range")
 	}
-	return <-returnVal
+
+	if _, ok := b.routing.Outputs[id].Connections[c]; ok {
+		returnVal = errors.New("this connection already exists on this output")
+	}
+
+	b.routing.Outputs[id].Connections[c] = struct{}{}
+	return returnVal
 }
 
 // Disconnect removes a connection from a Input
 func (b *Block) Disconnect(id RouteIndex, c Connection) error {
-	returnVal := make(chan error, 1)
-	b.routing.InterruptChan <- func() bool {
-		if int(id) < 0 || int(id) >= len(b.routing.Outputs) {
-			returnVal <- errors.New("output out of range")
-			return true
-		}
-
-		if _, ok := b.routing.Outputs[id].Connections[c]; !ok {
-			returnVal <- errors.New("connection does not exist")
-			return true
-		}
-
-		delete(b.routing.Outputs[id].Connections, c)
-		returnVal <- nil
-		return true
+	var returnVal error = nil
+	if int(id) < 0 || int(id) >= len(b.routing.Outputs) {
+		returnVal = errors.New("output out of range")
 	}
-	return <-returnVal
+
+	if _, ok := b.routing.Outputs[id].Connections[c]; !ok {
+		returnVal = errors.New("connection does not exist")
+	}
+
+	delete(b.routing.Outputs[id].Connections, c)
+	return returnVal
 }
 
-func (b *Block) Reset() {
+func (b *BlockState) Serve() []BlockState {
+	// defer func() {
+	//     b.done <- struct{}{}
+	// }()
+	// for {
+
+	if b.block.sourceType != NONE && b.block.routing.Source == nil {
+		return nil
+	}
+	// TODO: deal with interrupts
+	// var interrupt Interrupt
+	// b.routing.RLock()
+	_, success := b.receive()
+	if !success {
+		b.crank()
+		return nil
+	}
+
+	_, success = b.process()
+	if !success {
+		b.crank()
+		return nil
+	}
+
+	_, nextStates := b.broadcast()
+	// if interrupt != nil {
+	//     return nil
+	// }
+
+	b.crank()
+	// b.routing.RUnlock()
+	// b.routing.Lock()
+	// if ok := interrupt(); !ok {
+	//     b.routing.Unlock()
+	//     return
+	// }
+	// b.routing.Unlock()
+	// }
+	return nextStates
+}
+
+func (b *BlockState) Reset() {
 	b.crank()
 
 	// reset block's state as well. currently, this only applies to a handful of
 	// blocks, like GET and first.
-	for k, _ := range b.state.internalValues {
-		delete(b.state.internalValues, k)
+	for k := range b.internalValues {
+		delete(b.internalValues, k)
 	}
 
 	// if there are any messages on the input channels, flush them.
@@ -248,70 +227,72 @@ func (b *Block) Reset() {
 	// STOPPED STATE. if any block routines that possess this block's
 	// input channel are in a RUNNING state, this flush will not work
 	// because it will simply pull another message into the buffer.
-	for _, input := range b.routing.Inputs {
-		select {
-		case <-input.C:
-		default:
-		}
-	}
-
-	return
+	// for _, input := range b.routing.Inputs {
+	//     select {
+	//     case <-input.C:
+	//     default:
+	//     }
+	// }
 }
 
+// TODO: fix
 func (b *Block) Stop() {
 	b.routing.InterruptChan <- func() bool {
 		return false
 	}
 	<-b.done
-	return
 }
 
 // wait and listen for all kernel inputs to be filled.
-func (b *Block) receive() Interrupt {
-	for id, input := range b.routing.Inputs {
-		b.Monitor <- MonitorMessage{
-			BI_INPUT,
-			id,
-		}
+func (b *BlockState) receive() (Interrupt, bool) {
+	for id, input := range b.block.routing.Inputs {
+		// b.block.Monitor <- MonitorMessage{
+		//     BI_INPUT,
+		//     id,
+		// }
 
 		//if we have already received a value on this input, skip.
-		if _, ok := b.state.inputValues[RouteIndex(id)]; ok {
+		if _, ok := b.inputValues[RouteIndex(id)]; ok {
 			continue
 		}
 
 		if input.Value != nil {
-			b.state.inputValues[RouteIndex(id)] = Copy(input.Value.Data)
+			b.inputValues[RouteIndex(id)] = Copy(input.Value.Data)
 			continue
+		} else {
+			return nil, false
 		}
 
-		select {
-		case m := <-input.C:
-			b.state.inputValues[RouteIndex(id)] = m
-		case f := <-b.routing.InterruptChan:
-			return f
-		}
+		// TODO: check interrupt
+		// select {
+		// // case m := <-input.C:
+		// //     b.state.inputValues[RouteIndex(id)] = m
+		// case f := <-b.routing.InterruptChan:
+		//     return f
+		// }
 	}
-	return nil
+	return nil, true
 }
 
 // run kernel on inputs, produce outputs
-func (b *Block) process() Interrupt {
+func (b *BlockState) process() (Interrupt, bool) {
 
-	b.Monitor <- MonitorMessage{
-		BI_KERNEL,
-		nil,
-	}
+	// b.block.Monitor <- MonitorMessage{
+	//     BI_KERNEL,
+	//     nil,
+	// }
 
-	if b.state.Processed == true {
-		return nil
+	if b.Processed {
+		return nil, true
 	}
 
 	// block until connected to source if necessary
-	if b.sourceType != NONE && b.routing.Source == nil {
-		select {
-		case f := <-b.routing.InterruptChan:
-			return f
-		}
+	if b.block.sourceType != NONE && b.block.routing.Source == nil {
+		// select {
+		// case f := <-b.block.routing.InterruptChan:
+		//     return f
+		// }
+		return nil, false
 	}
 
 	// we should only be able to get here if
@@ -321,16 +302,16 @@ func (b *Block) process() Interrupt {
 	// if we have a store, lock it
 	var store sync.Locker
 	var ok bool
-	if store, ok = b.routing.Source.(sync.Locker); ok {
+	if store, ok = b.block.routing.Source.(sync.Locker); ok {
 		store.Lock()
 	}
 
 	// run the kernel
-	interrupt := b.kernel(b.state.inputValues,
-		b.state.outputValues,
-		b.state.internalValues,
-		b.routing.Source,
-		b.routing.InterruptChan)
+	interrupt := b.block.kernel(b.inputValues,
+		b.outputValues,
+		b.internalValues,
+		b.block.routing.Source,        // TODO: probs have to lock source
+		b.block.routing.InterruptChan) // TODO: deal with interrupts
 
 	// unlock the store if necessary
 	if store != nil {
@@ -339,66 +320,73 @@ func (b *Block) process() Interrupt {
 
 	// if an interrupt was received, return it
 	if interrupt != nil {
-		return interrupt
+		return interrupt, true
 	}
 
-	b.state.Processed = true
-	return nil
+	b.Processed = true
+	return nil, true
 }
 
 // broadcast the kernel output to all connections on all outputs.
-func (b *Block) broadcast() Interrupt {
-	for id, out := range b.routing.Outputs {
-		b.Monitor <- MonitorMessage{
-			BI_OUTPUT,
-			id,
-		}
+func (b *BlockState) broadcast() (Interrupt, []BlockState) {
+	nextStates := make([]BlockState, 0)
+	for id, out := range b.block.routing.Outputs {
+		// b.block.Monitor <- MonitorMessage{
+		//     BI_OUTPUT,
+		//     id,
+		// }
 
 		// if the output key is not present in the output map, then we
 		// don't deliver any message
-		_, ok := b.state.outputValues[RouteIndex(id)]
+		_, ok := b.outputValues[RouteIndex(id)]
 		if !ok {
 			continue
 		}
 		// if there no connection for this output then wait until there
 		// is one. that means we have to wait for an interrupt.
-		if len(out.Connections) == 0 {
-			select {
-			case f := <-b.routing.InterruptChan:
-				return f
-			}
-		}
-		for c, _ := range out.Connections {
+		// if len(out.Connections) == 0 {
+		//     select {
+		//     case f := <-b.routing.InterruptChan:
+		//         return f
+		//     }
+		// }
+
+		for c := range out.Connections {
 			// check to see if we have delivered a message to this
 			// connection for this block crank. if we have, then
 			// skip this delivery.
-			m := ManifestPair{id, c}
-			if _, ok := b.state.manifest[m]; ok {
+			m := ManifestPair{id, c.TargetId}
+			if _, ok := b.manifest[m]; ok {
 				continue
 			}
 
-			select {
-			case c <- b.state.outputValues[RouteIndex(id)]:
-				// set that we have delivered the message.
-				b.state.manifest[m] = struct{}{}
-			case f := <-b.routing.InterruptChan:
-				return f
-			}
+			newState := c.Target.createState()
+			nextStates = append(nextStates, newState)
+
+			newState.inputValues[c.RouteId] = Copy(b.outputValues[RouteIndex(id)])
+			b.manifest[m] = struct{}{}
+			// select {
+			// case c <- b.state.outputValues[RouteIndex(id)]:
+			//     // set that we have delivered the message.
+			//     b.state.manifest[m] = struct{}{}
+			// case f := <-b.routing.InterruptChan:
+			//     return f
+			// }
 		}
 	}
-	return nil
+	return nil, nextStates
 }
 
 // cleanup all block state for this crank of the block
-func (b *Block) crank() {
-	for k, _ := range b.state.inputValues {
-		delete(b.state.inputValues, k)
+func (b *BlockState) crank() {
+	for k := range b.inputValues {
+		delete(b.inputValues, k)
 	}
-	for k, _ := range b.state.outputValues {
-		delete(b.state.outputValues, k)
+	for k := range b.outputValues {
+		delete(b.outputValues, k)
 	}
-	for k, _ := range b.state.manifest {
-		delete(b.state.manifest, k)
+	for k := range b.manifest {
+		delete(b.manifest, k)
 	}
-	b.state.Processed = false
+	b.Processed = false
 }

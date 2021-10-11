@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -590,20 +589,20 @@ func (s *Server) ImportGroup(id int, p Pattern) ([]int, error) {
 	// reset the entire pattern on import
 	// TODO: sort this out with ResetGraph, and BlockCreate such that we have a
 	// more unified approach to block resetting.
-	for k, _ := range newBlocks {
-		log.Println("tidy: stopping id", k, s.blocks[k].Type)
-		s.blocks[k].Block.Stop()
-	}
+	// for k, _ := range newBlocks {
+	//     log.Println("tidy: stopping id", k, s.blocks[k].Type)
+	//     s.blocks[k].Block.Stop()
+	// }
 
-	for k, _ := range newBlocks {
-		log.Println("tidy: resetting id", k)
-		s.blocks[k].Block.Reset()
-	}
+	// for k, _ := range newBlocks {
+	//     log.Println("tidy: resetting id", k)
+	//     s.blocks[k].Block.Reset()
+	// }
 
-	for k, _ := range newBlocks {
-		log.Println("tidy: starting id", k)
-		go s.blocks[k].Block.Serve()
-	}
+	// for k, _ := range newBlocks {
+	//     log.Println("tidy: starting id", k)
+	//     go s.blocks[k].Block.Serve()
+	// }
 
 	// return a list of ids that have been added
 	snew := []int{}

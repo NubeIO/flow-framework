@@ -161,7 +161,6 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 		return nil, errors.New("invalid group, could not create block")
 	}
 
-	go block.Serve()
 	m.Inputs = block.GetInputs()
 	m.Outputs = block.GetOutputs()
 	s.blocks[m.Id] = m
@@ -176,7 +175,7 @@ func (s *Server) CreateBlock(p ProtoBlock) (*BlockLedger, error) {
 
 	// begin monitor
 	// TODO: remove monitor
-	go s.MonitorMux(m.Id, block.Monitor, m.MonitorQuery, m.MonitorQuit)
+	// go s.MonitorMux(m.Id, block.Monitor, m.MonitorQuery, m.MonitorQuit)
 
 	return m, nil
 }

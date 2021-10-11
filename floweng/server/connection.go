@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/NubeDev/flow-framework/floweng/core"
@@ -90,18 +89,16 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		return nil, errors.New("source block does not exist")
 	}
 
-	target, ok := s.blocks[newConn.Target.Id]
+	_, ok = s.blocks[newConn.Target.Id]
 	if !ok {
 		return nil, errors.New("target block does not exist")
 	}
 
 	sourceRoute := core.RouteIndex(newConn.Source.Route)
-	targetRoute, err := target.Block.GetInput(core.RouteIndex(newConn.Target.Route))
-	if err != nil {
-		return nil, err
-	}
 
-	err = source.Block.Connect(sourceRoute, targetRoute.C)
+	targetRouteIndex := core.RouteIndex(newConn.Target.Route)
+
+	err := source.Block.Connect(sourceRoute, core.Connection{TargetId: newConn.Target.Id, RouteId: targetRouteIndex})
 	if err != nil {
 		return nil, err
 	}
@@ -182,20 +179,21 @@ func (s *Server) ResetGraph(conn *ConnectionLedger) {
 
 	traverse(conn.Source.Id)
 
-	for k, _ := range found {
-		log.Println("tidy: stopping id", k, s.blocks[k].Type)
-		s.blocks[k].Block.Stop()
-	}
+	// TODO: re-enable this when interrupts are fixed again
+	// for k, _ := range found {
+	//     log.Println("tidy: stopping id", k, s.blocks[k].Type)
+	//     s.blocks[k].Block.Stop()
+	// }
 
-	for k, _ := range found {
-		log.Println("tidy: resetting id", k)
-		s.blocks[k].Block.Reset()
-	}
+	// for k, _ := range found {
+	//     log.Println("tidy: resetting id", k)
+	//     s.blocks[k].Block.Reset()
+	// }
 
-	for k, _ := range found {
-		log.Println("tidy: starting id", k)
-		go s.blocks[k].Block.Serve()
-	}
+	// for k, _ := range found {
+	//     log.Println("tidy: starting id", k)
+	//     go s.blocks[k].Block.Serve()
+	// }
 }
 
 // ConnectionHandler returns a description of the connection
@@ -233,17 +231,14 @@ func (s *Server) DeleteConnection(id int) error {
 		return errors.New("could not find source block")
 	}
 
-	target, ok := s.blocks[c.Target.Id]
+	_, ok = s.blocks[c.Target.Id]
 	if !ok {
 		return errors.New("could not find target block")
 	}
 
-	route, err := target.Block.GetInput(core.RouteIndex(c.Target.Route))
-	if err != nil {
-		return err
-	}
+	targetRouteIndex := core.RouteIndex(c.Target.Route)
 
-	err = source.Block.Disconnect(core.RouteIndex(c.Source.Route), route.C)
+	err := source.Block.Disconnect(core.RouteIndex(c.Source.Route), core.Connection{TargetId: c.Target.Id, RouteId: targetRouteIndex})
 	if err != nil {
 		return err
 	}

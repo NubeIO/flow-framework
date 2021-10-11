@@ -20,6 +20,7 @@ const (
 
 // JSONType defines the possible types that variables in core can take
 type JSONType uint8
+
 const (
 	NUMBER JSONType = iota
 	STRING
@@ -34,6 +35,7 @@ const (
 
 // BlockInfo BlockAlert defines the possible messages a block can emit about its running state
 type BlockInfo uint8
+
 const (
 	BI_RUNNING BlockInfo = iota
 	BI_ERROR
@@ -123,7 +125,11 @@ func (s SourceType) MarshalJSON() ([]byte, error) {
 }
 
 // Connection Connections are used to connect blocks together
-type Connection chan Message
+type Connection struct {
+	Target   *Block
+	TargetId int
+	RouteId  RouteIndex
+}
 
 // Interrupt is a function that interrupts a running block in order to change its state.
 // If the interrupt returns false, the block will quit.
@@ -153,10 +159,9 @@ type Spec struct {
 // to be passed into the block. A Input's Path is applied to the inbound Message before populating the
 // MessageMap and calling the Kernel. A Input can be set to a Value, instead of waiting for an inbound message.
 type Input struct {
-	Name  string       `json:"name"`
-	Value *InputValue  `json:"value"`
-	Type  JSONType     `json:"type"`
-	C     chan Message `json:"-"`
+	Name  string      `json:"name"`
+	Value *InputValue `json:"value"`
+	Type  JSONType    `json:"type"`
 }
 
 type InputValue struct {
@@ -188,8 +193,8 @@ type SourceFunc func() Source
 
 // A ManifestPair is a unique reference to an Output/Connection pair
 type ManifestPair struct {
-	int
-	Connection
+	output     int
+	connection int
 }
 
 // Manifest A block's Manifest is the set of Connections
@@ -197,6 +202,7 @@ type Manifest map[ManifestPair]struct{}
 
 // BlockState A block's BlockState is the pair of input/output MessageMaps, and the Manifest
 type BlockState struct {
+	block          *Block
 	inputValues    MessageMap
 	outputValues   MessageMap
 	internalValues MessageMap
@@ -233,14 +239,12 @@ type BlockRouting struct {
 
 // A Block describes the block's components
 type Block struct {
-	state      BlockState
 	routing    BlockRouting
 	kernel     Kernel
 	sourceType SourceType
 	Monitor    chan MonitorMessage
 	lastCrank  time.Time
 	done       chan struct{}
-	//blockageTimer *time.Timer
 }
 
 type MonitorMessage struct {

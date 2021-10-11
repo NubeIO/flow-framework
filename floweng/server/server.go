@@ -179,3 +179,13 @@ func (s *Server) GetNextID() int {
 	s.lastID++
 	return s.lastID
 }
+
+func (s *Server) RunRoutine(eventChannel chan core.BlockState) {
+	var nextStates []core.BlockState
+	for b := range eventChannel {
+		nextStates = b.Serve()
+		for _, n := range nextStates {
+			eventChannel <- n
+		}
+	}
+}

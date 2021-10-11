@@ -32,6 +32,7 @@ type FlowNetwork struct {
 	FlowIP   string    `json:"flow_ip,omitempty" gorm:"uniqueIndex:ip_port_composite_index"`
 	FlowPort int       `json:"flow_port,omitempty" gorm:"uniqueIndex:ip_port_composite_index"`
 	Streams  []*Stream `json:"streams" gorm:"many2many:flow_networks_streams;constraint:OnDelete:CASCADE"`
+	Schedules  []*Schedules  `json:"schedules,omitempty" gorm:"constraint:OnDelete:CASCADE"`
 }
 
 type FlowNetworkClone struct {

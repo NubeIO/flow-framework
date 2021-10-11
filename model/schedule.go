@@ -12,6 +12,7 @@ type Schedule struct {
 	CommonEnable
 	CommonThingClass
 	CommonThingType
+	FlowNetworkUUID string   `json:"flow_network_uuid,omitempty" gorm:"TYPE:varchar(255) REFERENCES flow_networks;not null;default:null"`
 	IsGlobal  *bool          `json:"is_global"`
 	Schedules datatypes.JSON `json:"schedule"`
 	CommonCreated

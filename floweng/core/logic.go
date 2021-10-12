@@ -1,12 +1,11 @@
 package core
 
-
 func And2() Spec {
 	return Spec{
 		Name:    "and2",
 		Inputs:  []Pin{Pin{"in1", BOOLEAN}, Pin{"in2", BOOLEAN}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {
 				out[0] = NewError("need boolean")
@@ -28,7 +27,7 @@ func And() Spec {
 		Name:    "and",
 		Inputs:  []Pin{Pin{"in1", BOOLEAN}, Pin{"in2", BOOLEAN}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {
 				out[0] = NewError("need boolean")
@@ -50,7 +49,7 @@ func Or() Spec {
 		Name:    "or",
 		Inputs:  []Pin{Pin{"in", BOOLEAN}, Pin{"in", BOOLEAN}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {
 				out[0] = NewError("need boolean")
@@ -67,13 +66,12 @@ func Or() Spec {
 	}
 }
 
-
 func Not() Spec {
 	return Spec{
 		Name:    "not",
 		Inputs:  []Pin{Pin{"in", BOOLEAN}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			x, ok := in[0].(bool)
 			if !ok {
 				out[0] = NewError("need boolean")
@@ -85,7 +83,6 @@ func Not() Spec {
 	}
 }
 
-
 // GreaterThan returns true if value[0] > value[1] or false otherwise
 func GreaterThan() Spec {
 	return Spec{
@@ -93,7 +90,7 @@ func GreaterThan() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
 		Outputs:  []Pin{Pin{"x>y", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("GreaterThan requires float on x")
@@ -117,7 +114,7 @@ func LessThan() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
 		Outputs:  []Pin{Pin{"x<y", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("LessThan requires floats")
@@ -141,7 +138,7 @@ func EqualTo() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", ANY}, Pin{"y", ANY}},
 		Outputs:  []Pin{Pin{"x==y", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			out[0] = in[0] == in[1]
 			return nil
 		},
@@ -155,10 +152,9 @@ func NotEqualTo() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", ANY}, Pin{"y", ANY}},
 		Outputs:  []Pin{Pin{"x!=y", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			out[0] = in[0] != in[1]
 			return nil
 		},
 	}
 }
-

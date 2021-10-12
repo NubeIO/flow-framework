@@ -6,7 +6,7 @@ func Keys() Spec {
 		Name:    "keys",
 		Inputs:  []Pin{Pin{"in", OBJECT}},
 		Outputs: []Pin{Pin{"keys", ARRAY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			obj, ok := in[0].(map[string]interface{})
 			if !ok {
 				out[0] = NewError("Keys requires an object")

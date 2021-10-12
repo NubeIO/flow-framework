@@ -9,7 +9,7 @@ func Exp() Spec {
 		Name:    "exp",
 		Inputs:  []Pin{Pin{"power", NUMBER}},
 		Outputs: []Pin{Pin{"product", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -26,7 +26,7 @@ func Floor() Spec {
 		Name:    "floor",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"out", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -43,7 +43,7 @@ func Ceil() Spec {
 		Name:    "ceil",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"out", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -60,7 +60,7 @@ func Log10() Spec {
 		Name:    "log10",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"log10", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -76,7 +76,7 @@ func Log() Spec {
 		Name:    "log",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"ln", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -93,7 +93,7 @@ func Sqrt() Spec {
 		Name:    "sqrt",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"squareRoot", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -110,7 +110,7 @@ func Sin() Spec {
 		Name:    "sin",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"sin", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -127,7 +127,7 @@ func Cos() Spec {
 		Name:    "cos",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"cos", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")
@@ -144,7 +144,7 @@ func Tan() Spec {
 		Name:    "tan",
 		Inputs:  []Pin{Pin{"in", NUMBER}},
 		Outputs: []Pin{Pin{"tan", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			p, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("need float")

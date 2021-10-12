@@ -11,7 +11,7 @@ func UniformRandom() Spec {
 		Name:    "uniform",
 		Inputs:  []Pin{},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			out[0] = rand.Float64()
 			return nil
 		},
@@ -25,7 +25,7 @@ func NormalRandom() Spec {
 		Name:    "normal",
 		Inputs:  []Pin{Pin{"mean", NUMBER}, Pin{"variance", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			variance, ok := in[1].(float64)
 			if !ok {
 				out[0] = NewError("variance must be a number")
@@ -53,14 +53,14 @@ func ZipfRandom() Spec {
 		Inputs: []Pin{
 			Pin{"q", NUMBER}, Pin{"s", NUMBER}, Pin{"N", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 
 			q, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("q must be a number")
 				return nil
 			}
-			s, ok := in[1].(float64)
+			ss, ok := in[1].(float64)
 			if !ok {
 				out[0] = NewError("s must be a number")
 				return nil
@@ -71,7 +71,7 @@ func ZipfRandom() Spec {
 				return nil
 			}
 
-			z := rand.NewZipf(RAND, s, q, uint64(N))
+			z := rand.NewZipf(RAND, ss, q, uint64(N))
 			out[0] = z.Uint64()
 			return nil
 		},
@@ -100,7 +100,7 @@ func PoissonRandom() Spec {
 		Name:    "poisson",
 		Inputs:  []Pin{Pin{"rate", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			λ, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("rate must be a number")
@@ -122,7 +122,7 @@ func ExponentialRandom() Spec {
 		Name:    "exponential",
 		Inputs:  []Pin{Pin{"rate", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, ss Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			λ, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("rate must be a number")
@@ -144,7 +144,7 @@ func BernoulliRandom() Spec {
 		Name:    "bernoulli",
 		Inputs:  []Pin{Pin{"bias", NUMBER}},
 		Outputs: []Pin{Pin{"draw", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			r := RAND.Float64()
 			p, ok := in[0].(float64)
 			if !ok {

@@ -6,7 +6,7 @@ func Head() Spec {
 		Name:    "head",
 		Inputs:  []Pin{Pin{"in", ARRAY}},
 		Outputs: []Pin{Pin{"head", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("head requires an array")
@@ -28,7 +28,7 @@ func Tail() Spec {
 		Name:    "tail",
 		Inputs:  []Pin{Pin{"in", ARRAY}},
 		Outputs: []Pin{Pin{"tail", ARRAY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("tail requires an array")
@@ -50,7 +50,7 @@ func Last() Spec {
 		Name:    "last",
 		Inputs:  []Pin{Pin{"in", ARRAY}},
 		Outputs: []Pin{Pin{"last", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("last requires an array")
@@ -72,7 +72,7 @@ func Init() Spec {
 		Name:    "init",
 		Inputs:  []Pin{Pin{"in", ARRAY}},
 		Outputs: []Pin{Pin{"init", ARRAY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("init requires an array")
@@ -94,7 +94,7 @@ func Append() Spec {
 		Name:    "append",
 		Inputs:  []Pin{Pin{"element", ANY}, Pin{"array", ARRAY}},
 		Outputs: []Pin{Pin{"array", ARRAY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[1].([]interface{})
 			if !ok {
 				out[0] = NewError("Append requires an array")
@@ -111,7 +111,7 @@ func Len() Spec {
 		Name:    "len",
 		Inputs:  []Pin{Pin{"in", ARRAY}},
 		Outputs: []Pin{Pin{"out", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = NewError("len requires an array")

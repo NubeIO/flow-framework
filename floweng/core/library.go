@@ -92,11 +92,11 @@ func GetLibrary() map[string]Spec {
 		StringSplit(),
 
 		// key value
-		kvGet(),
-		kvSet(),
-		kvClear(),
-		kvDump(),
-		kvDelete(),
+		// kvGet(),
+		// kvSet(),
+		// kvClear(),
+		// kvDump(),
+		// kvDelete(),
 
 		// parsers
 		ParseJSON(),
@@ -118,23 +118,23 @@ func GetLibrary() map[string]Spec {
 		InArray(),
 
 		// primitive value
-		ValueGet(),
-		ValueSet(),
+		// ValueGet(),
+		// ValueSet(),
 
 		// list
-		listGet(),
-		listSet(),
-		listShift(),
-		listAppend(),
-		listPop(),
-		listDump(),
+		// listGet(),
+		// listSet(),
+		// listShift(),
+		// listAppend(),
+		// listPop(),
+		// listDump(),
 
 		// priority queue
-		pqPush(),
-		pqPop(),
-		pqPeek(),
-		pqLen(),
-		pqClear(),
+		// pqPush(),
+		// pqPop(),
+		// pqPeek(),
+		// pqLen(),
+		// pqClear(),
 
 		// network IO
 		HTTPRequest(),
@@ -144,9 +144,9 @@ func GetLibrary() map[string]Spec {
 		StringSplit(),
 
 		// websocket
-		wsClientConnect(),
-		wsClientReceive(),
-		wsClientSend(),
+		// wsClientConnect(),
+		// wsClientReceive(),
+		// wsClientSend(),
 
 		// stdin
 		StdinReceive(),

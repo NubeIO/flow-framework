@@ -2,11 +2,11 @@ package core
 
 func GetSources() map[string]SourceSpec {
 	sources := []SourceSpec{
-		KeyValueStore(),
-		ValueStore(),
-		PriorityQueueStore(),
-		ListStore(),
-		WebsocketClient(),
+		// KeyValueStore(),
+		// ValueStore(),
+		// PriorityQueueStore(),
+		// ListStore(),
+		// WebsocketClient(),
 		StdinInterface(),
 	}
 
@@ -17,4 +17,12 @@ func GetSources() map[string]SourceSpec {
 	}
 
 	return library
+}
+
+func (sc *SourceCommon) AddLink(block *Block, l chan interface{}) {
+	sc.Links[block] = l
+}
+
+func (sc *SourceCommon) RemoveLink(block *Block, l chan interface{}) {
+	delete(sc.Links, block)
 }

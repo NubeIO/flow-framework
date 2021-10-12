@@ -25,16 +25,26 @@ type stdinMsg struct {
 }
 
 type Stdin struct {
+	SourceCommon
 	quit        chan chan error
 	fromScanner chan stdinMsg
 }
 
-func NewStdin() Source {
+func NewStdin(eq chan<- BlockState) Source {
 	stdin := &Stdin{
-		quit:        make(chan chan error),
-		fromScanner: make(chan stdinMsg),
+		SourceCommon: SourceCommon{eq, make(map[*Block]chan interface{})},
+		quit:         make(chan chan error),
+		fromScanner:  make(chan stdinMsg),
 	}
 	return stdin
+}
+
+func (stdin *Stdin) AddLink(b *Block, l chan interface{}) {
+	stdin.SourceCommon.AddLink(b, l)
+}
+
+func (stdin *Stdin) RemoveLink(b *Block, l chan interface{}) {
+	stdin.SourceCommon.RemoveLink(b, l)
 }
 
 func (stdin *Stdin) Serve() {
@@ -45,7 +55,12 @@ func (stdin *Stdin) Serve() {
 	}
 	err := scanner.Err()
 	if err != nil {
-		stdin.fromScanner <- stdinMsg{"", err}
+		for block := range stdin.Links {
+			stdin.EventQueue <- block.createState()
+		}
+		for _, link := range stdin.Links {
+			link <- stdinMsg{"", err}
+		}
 	} else {
 		stdin.fromScanner <- stdinMsg{"", errors.New("EOF")}
 	}
@@ -54,9 +69,10 @@ func (stdin *Stdin) Serve() {
 func (stdin *Stdin) Stop() {
 }
 
-func (stdin Stdin) ReceiveMessage(i chan Interrupt) (string, Interrupt, error) {
+func (stdin Stdin) ReceiveMessage(i chan Interrupt, recChan <-chan interface{}) (string, Interrupt, error) {
 	select {
-	case msg := <-stdin.fromScanner:
+	case i := <-recChan:
+		msg := i.(stdinMsg)
 		log.Println("FROM SCANNER", msg.err == nil, msg.err)
 		return msg.msg, nil, msg.err
 	case f := <-i:
@@ -69,9 +85,9 @@ func StdinReceive() Spec {
 		Name:    "stdinReceive",
 		Outputs: []Pin{Pin{"msg", STRING}},
 		Source:  STDIN,
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			stdin := s.(*Stdin)
-			msg, f, err := stdin.ReceiveMessage(i)
+			msg, f, err := stdin.ReceiveMessage(i, stdin.Links[block])
 			if err != nil {
 				out[0] = NewError("EOF")
 				return nil

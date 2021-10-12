@@ -137,7 +137,7 @@ type Interrupt func() bool
 
 // Kernel is a block's core function that operates on an inbound message. It works by populating
 // the outbound MessageMap, and can be interrupted on its Interrupt channel.
-type Kernel func(MessageMap, MessageMap, MessageMap, Source, chan Interrupt) Interrupt
+type Kernel func(MessageMap, MessageMap, MessageMap, Source, chan Interrupt, *Block) Interrupt
 
 // A Pin contains information about a particular input or output
 type Pin struct {
@@ -180,17 +180,6 @@ type Output struct {
 	Connections map[Connection]struct{} `json:"-"`
 }
 
-// A SourceSpec defines a source's name and type
-type SourceSpec struct {
-	Name     string
-	Type     SourceType
-	New      SourceFunc
-	Category []string
-}
-
-// SourceFunc A function that creates a source
-type SourceFunc func() Source
-
 // A ManifestPair is a unique reference to an Output/Connection pair
 type ManifestPair struct {
 	output     int
@@ -208,24 +197,6 @@ type BlockState struct {
 	internalValues MessageMap
 	manifest       Manifest
 	Processed      bool
-}
-
-type Source interface {
-	GetType() SourceType
-}
-
-type Interface interface {
-	Source
-	Serve()
-	Stop()
-}
-
-type Store interface {
-	Source
-	Get() interface{}
-	Set(interface{}) error
-	Lock()
-	Unlock()
 }
 
 // BlockRouting A block's BlockRouting is the set of Input and Output routes, and the Interrupt channel
@@ -250,4 +221,40 @@ type Block struct {
 type MonitorMessage struct {
 	Type BlockInfo   `json:"type"`
 	Data interface{} `json:"data,omitempty"`
+}
+
+// A SourceSpec defines a source's name and type
+type SourceSpec struct {
+	Name     string
+	Type     SourceType
+	New      SourceFunc
+	Category []string
+}
+
+type SourceCommon struct {
+	EventQueue chan<- BlockState
+	Links      map[*Block]chan interface{}
+}
+
+// SourceFunc A function that creates a source
+type SourceFunc func(chan<- BlockState) Source
+
+type Source interface {
+	GetType() SourceType
+	AddLink(*Block, chan interface{})
+	RemoveLink(*Block, chan interface{})
+}
+
+type Interface interface {
+	Source
+	Serve()
+	Stop()
+}
+
+type Store interface {
+	Source
+	Get() interface{}
+	Set(interface{}) error
+	Lock()
+	Unlock()
 }

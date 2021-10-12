@@ -139,6 +139,8 @@ func (b *Block) SetSource(s Source) error {
 		returnVal = errors.New("invalid source type for this block")
 	}
 	b.routing.Source = s
+	receiveChan := make(chan interface{})
+	s.AddLink(b, receiveChan)
 	return returnVal
 }
 
@@ -311,7 +313,8 @@ func (b *BlockState) process() (Interrupt, bool) {
 		b.outputValues,
 		b.internalValues,
 		b.block.routing.Source,        // TODO: probs have to lock source
-		b.block.routing.InterruptChan) // TODO: deal with interrupts
+		b.block.routing.InterruptChan, // TODO: deal with interrupts
+		b.block)
 
 	// unlock the store if necessary
 	if store != nil {

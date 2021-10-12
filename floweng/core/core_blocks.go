@@ -13,7 +13,7 @@ func First() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"in", ANY}},
 		Outputs:  []Pin{{"first", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := internal[0]
 			if !ok {
 				out[0] = true
@@ -33,7 +33,7 @@ func Delay() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"in", ANY}, {"duration", STRING}},
 		Outputs:  []Pin{{"out", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			t, err := time.ParseDuration(in[1].(string))
 			if err != nil {
 				out[0] = err
@@ -58,7 +58,7 @@ func Set() Spec {
 		Category: []string{"object"},
 		Inputs:   []Pin{{"key", STRING}, {"value", ANY}},
 		Outputs:  []Pin{{"object", OBJECT}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			out[0] = map[string]interface{}{
 				in[0].(string): in[1],
 			}
@@ -74,7 +74,7 @@ func Get() Spec {
 		Category: []string{"object"},
 		Inputs:   []Pin{{"in", OBJECT}, {"key", STRING}},
 		Outputs:  []Pin{{"out", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			obj, ok := in[0].(map[string]interface{})
 			if !ok {
 				out[0] = NewError("inbound message must be an object")
@@ -99,7 +99,7 @@ func Console() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"log", ANY}},
 		Outputs:  []Pin{},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			o, err := json.Marshal(in[0])
 			if err != nil {
 				fmt.Println(err)
@@ -117,7 +117,7 @@ func Sink() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"in", ANY}},
 		Outputs:  []Pin{},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			return nil
 		},
 	}
@@ -131,7 +131,7 @@ func Latch() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"in", ANY}, {"ctrl", BOOLEAN}},
 		Outputs:  []Pin{{"true", ANY}, {"false", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			controlSignal, ok := in[1].(bool)
 			if !ok {
 				out[0] = NewError("Latch ctrl requires bool")
@@ -154,7 +154,7 @@ func Gate() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"in", ANY}, {"ctrl", ANY}},
 		Outputs:  []Pin{{"out", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			out[0] = in[0]
 			return nil
 		},
@@ -168,7 +168,7 @@ func Identity() Spec {
 		Category: []string{"mechanism"},
 		Inputs:   []Pin{{"in", ANY}},
 		Outputs:  []Pin{{"out", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			out[0] = in[0]
 			return nil
 		},
@@ -185,7 +185,7 @@ func Merge() Spec {
 			{"in", OBJECT},
 		},
 		Outputs: []Pin{{"out", OBJECT}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			result := make(map[string]interface{})
 			var err error
 			in0, ok := in[0].(map[string]interface{})

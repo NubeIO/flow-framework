@@ -8,7 +8,7 @@ func InArray() Spec {
 		Name:    "inArray",
 		Inputs:  []Pin{Pin{"element", ANY}, Pin{"array", ARRAY}},
 		Outputs: []Pin{Pin{"inArray", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			arr, ok := in[1].([]interface{})
 			if !ok {
 				out[0] = NewError("inArray requires array")
@@ -32,7 +32,7 @@ func HasField() Spec {
 		Name:    "hasField",
 		Inputs:  []Pin{Pin{"field", STRING}, Pin{"object", OBJECT}},
 		Outputs: []Pin{Pin{"hasField", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			obj, ok := in[1].(map[string]interface{})
 			if !ok {
 				out[0] = NewError("HasField requires map for object")
@@ -55,7 +55,7 @@ func InString() Spec {
 		Name:    "inString",
 		Inputs:  []Pin{Pin{"substring", STRING}, Pin{"string", STRING}},
 		Outputs: []Pin{Pin{"inString", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("inString requires string for substring")
@@ -78,7 +78,7 @@ func HasPrefix() Spec {
 		Name:    "hasPrefix",
 		Inputs:  []Pin{Pin{"substring", STRING}, Pin{"string", STRING}},
 		Outputs: []Pin{Pin{"inString", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("HasPrefix requires strings")
@@ -101,7 +101,7 @@ func HasSuffix() Spec {
 		Name:    "hasSuffix",
 		Inputs:  []Pin{Pin{"substring", STRING}, Pin{"string", STRING}},
 		Outputs: []Pin{Pin{"inString", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			substring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("HasSuffix requires strings")

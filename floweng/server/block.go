@@ -92,7 +92,6 @@ func (s *Server) BlockHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	writeJSON(w, b)
-	return
 }
 
 func (s *Server) BlockModifyPositionHandler(w http.ResponseWriter, r *http.Request) {
@@ -290,7 +289,7 @@ func (s *Server) DeleteBlock(id int) error {
 	}
 
 	// delete the connections that involve this block
-	for k, _ := range deleteSet {
+	for k := range deleteSet {
 		s.DeleteConnection(k)
 	}
 

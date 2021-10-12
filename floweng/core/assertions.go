@@ -10,7 +10,7 @@ func IsError() Spec {
 		Name:    "isError",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := in[0].(*stcoreError)
 			if !ok {
 				out[0] = false
@@ -27,7 +27,7 @@ func IsBoolean() Spec {
 		Name:    "isBoolean",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := in[0].(bool)
 			if !ok {
 				out[0] = false
@@ -44,7 +44,7 @@ func IsString() Spec {
 		Name:    "isString",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := in[0].(string)
 			if !ok {
 				out[0] = false
@@ -61,7 +61,7 @@ func IsNumber() Spec {
 		Name:    "isNumber",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := in[0].(float64)
 			if !ok {
 				out[0] = false
@@ -78,7 +78,7 @@ func IsArray() Spec {
 		Name:    "isArray",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := in[0].([]interface{})
 			if !ok {
 				out[0] = false
@@ -95,7 +95,7 @@ func IsObject() Spec {
 		Name:    "isObject",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", BOOLEAN}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			_, ok := in[0].(map[string]interface{})
 			if !ok {
 				out[0] = false
@@ -112,7 +112,7 @@ func ToString() Spec {
 		Name:    "toString",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", STRING}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			switch t := in[0].(type) {
 			case float64:
 				out[0] = strconv.FormatFloat(t, 'f', -1, 64)
@@ -135,7 +135,7 @@ func ToNumber() Spec {
 		Name:    "toNumber",
 		Inputs:  []Pin{Pin{"in", ANY}},
 		Outputs: []Pin{Pin{"out", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			switch t := in[0].(type) {
 			case float64:
 				out[0] = t
@@ -158,6 +158,3 @@ func ToNumber() Spec {
 		},
 	}
 }
-
-
-

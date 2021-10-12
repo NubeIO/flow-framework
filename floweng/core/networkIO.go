@@ -15,7 +15,7 @@ func HTTPRequest() Spec {
 		Name:    "HTTPRequest",
 		Inputs:  []Pin{Pin{"URL", STRING}, Pin{"header", OBJECT}, Pin{"method", STRING}, Pin{"body", STRING}},
 		Outputs: []Pin{Pin{"response", STRING}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 
 			url, ok := in[0].(string)
 			if !ok {

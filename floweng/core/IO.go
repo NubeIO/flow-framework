@@ -16,7 +16,7 @@ func Write() Spec {
 		Outputs: []Pin{
 			Pin{"writer", WRITER},
 		},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 
 			writer, ok := in[0].(io.Writer)
 			if !ok {
@@ -50,7 +50,7 @@ func Close() Spec {
 		Inputs: []Pin{
 			Pin{"writer", WRITER},
 		},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 
 			writer, ok := in[0].(io.Closer)
 			if !ok {
@@ -78,7 +78,7 @@ func Flush() Spec {
 		Outputs: []Pin{
 			Pin{"writer", WRITER},
 		},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 
 			writer, ok := in[0].(http.Flusher)
 			if !ok {

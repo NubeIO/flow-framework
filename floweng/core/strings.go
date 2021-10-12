@@ -7,7 +7,7 @@ func StringConcat() Spec {
 		Name:    "concat",
 		Inputs:  []Pin{Pin{"a", STRING}, Pin{"b", STRING}},
 		Outputs: []Pin{Pin{"a+b", STRING}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			a, ok := in[0].(string)
 			b, ok := in[1].(string)
 			if !ok {
@@ -25,7 +25,7 @@ func StringSplit() Spec {
 		Name:    "split",
 		Inputs:  []Pin{Pin{"a<sep>b", STRING}, Pin{"sep", STRING}},
 		Outputs: []Pin{Pin{"[a,b]", ARRAY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			ab, ok := in[0].(string)
 			sep, ok := in[1].(string)
 			if !ok {

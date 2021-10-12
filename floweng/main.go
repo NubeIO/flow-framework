@@ -9,11 +9,11 @@ import (
 var flowEngServer *server.Server
 
 func EngStart(db *database.GormDatabase) {
-	flowEngServer = server.NewServer(db)
+	eventPool := make(chan core.BlockState, 256)
+	flowEngServer = server.NewServer(db, eventPool)
 	flowEngServer.LoadFromDB(db)
 	flowEngServer.SetRouter()
-	eventPool := make(chan core.BlockState, 256)
 	for i := 0; i < 10; i++ {
-		go flowEngServer.RunRoutine(eventPool)
+		go flowEngServer.RunRoutine()
 	}
 }

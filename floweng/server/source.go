@@ -89,7 +89,7 @@ func (s *Server) CreateSource(p ProtoSource) (*SourceLedger, error) {
 		return nil, errors.New("source type " + p.Type + " does not exist")
 	}
 
-	source := f.New()
+	source := f.New(EventQueue)
 
 	if p.Id == 0 {
 		p.Id = s.GetNextID()

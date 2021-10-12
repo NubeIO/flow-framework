@@ -9,7 +9,7 @@ func Addition() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
 		Outputs:  []Pin{Pin{"x+y", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			a1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Addition requires floats")
@@ -33,7 +33,7 @@ func Subtraction() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}, Pin{"yy", NUMBER}},
 		Outputs:  []Pin{Pin{"x-yy", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			minuend, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Subtraction requires floats")
@@ -57,7 +57,7 @@ func Multiplication() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
 		Outputs:  []Pin{Pin{"x*y", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			m1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Multiplication requires floats")
@@ -81,7 +81,7 @@ func Division() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"x", NUMBER}, Pin{"y", NUMBER}},
 		Outputs:  []Pin{Pin{"x/y", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Division requires floats")
@@ -105,7 +105,7 @@ func Exponentiation() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"base", NUMBER}, Pin{"exponent", NUMBER}},
 		Outputs:  []Pin{Pin{"power", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Exponentiation requires floats")
@@ -129,7 +129,7 @@ func Modulation() Spec {
 		Category: []string{"maths"},
 		Inputs:   []Pin{Pin{"dividend", NUMBER}, Pin{"divisor", NUMBER}},
 		Outputs:  []Pin{Pin{"remainder", NUMBER}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			d1, ok := in[0].(float64)
 			if !ok {
 				out[0] = NewError("Modulation requires floats")

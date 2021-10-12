@@ -7,7 +7,7 @@ func ParseJSON() Spec {
 		Name:    "parseJSON",
 		Inputs:  []Pin{Pin{"in", STRING}},
 		Outputs: []Pin{Pin{"out", ANY}},
-		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt) Interrupt {
+		Kernel: func(in, out, internal MessageMap, s Source, i chan Interrupt, block *Block) Interrupt {
 			msgstring, ok := in[0].(string)
 			if !ok {
 				out[0] = NewError("ParseJSON needs string")

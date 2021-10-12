@@ -50,9 +50,10 @@ type Server struct {
 }
 
 var EngDB *database.GormDatabase
+var EventQueue chan core.BlockState
 
 // NewServer starts a new Server. This object is immediately up and running.
-func NewServer(db *database.GormDatabase) *Server {
+func NewServer(db *database.GormDatabase, eq chan core.BlockState) *Server {
 
 	groups := make(map[int]*Group)
 	groups[0] = &Group{
@@ -92,6 +93,7 @@ func NewServer(db *database.GormDatabase) *Server {
 
 	// db stuff
 	EngDB = db
+	EventQueue = eq
 	return s
 }
 
@@ -180,12 +182,12 @@ func (s *Server) GetNextID() int {
 	return s.lastID
 }
 
-func (s *Server) RunRoutine(eventChannel chan core.BlockState) {
+func (s *Server) RunRoutine() {
 	var nextStates []core.BlockState
-	for b := range eventChannel {
+	for b := range EventQueue {
 		nextStates = b.Serve()
 		for _, n := range nextStates {
-			eventChannel <- n
+			EventQueue <- n
 		}
 	}
 }

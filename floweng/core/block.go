@@ -251,13 +251,13 @@ func (b *BlockState) receive() (Interrupt, bool) {
 		//     id,
 		// }
 
-		//if we have already received a value on this input, skip.
-		if _, ok := b.inputValues[RouteIndex(id)]; ok {
-			continue
-		}
-
-		if input.Value != nil {
-			// TODO: need to set the block route for other events
+		if value, ok := b.inputValues[RouteIndex(id)]; ok {
+			if input.Value != nil {
+				input.Value.Data = Copy(value)
+			} else {
+				b.block.SetInput(RouteIndex(id), &InputValue{Data: Copy(value)})
+			}
+		} else if input.Value != nil {
 			b.inputValues[RouteIndex(id)] = Copy(input.Value.Data)
 			continue
 		} else {

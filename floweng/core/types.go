@@ -242,7 +242,7 @@ type SourceFunc func(chan<- BlockState) Source
 type Source interface {
 	GetType() SourceType
 	AddLink(*Block, chan interface{})
-	RemoveLink(*Block, chan interface{})
+	RemoveLink(*Block)
 }
 
 type Interface interface {

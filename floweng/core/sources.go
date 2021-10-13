@@ -23,6 +23,6 @@ func (sc *SourceCommon) AddLink(block *Block, l chan interface{}) {
 	sc.Links[block] = l
 }
 
-func (sc *SourceCommon) RemoveLink(block *Block, l chan interface{}) {
+func (sc *SourceCommon) RemoveLink(block *Block) {
 	delete(sc.Links, block)
 }

@@ -54,6 +54,8 @@ func (s *Server) CreateLink(l ProtoLink) (*LinkLedger, error) {
 		return nil, err
 	}
 
+	receiveChan := make(chan interface{})
+	sl.Source.AddLink(b.Block, receiveChan)
 	s.links[link.Id] = link
 
 	s.websocketBroadcast(Update{Action: CREATE, Type: LINK, Data: wsLink{*link}})
@@ -71,7 +73,14 @@ func (s *Server) DeleteLink(id int) error {
 	if !ok {
 		return errors.New("could not find block")
 	}
+
+	source, ok := s.sources[link.Source.Id]
+	if !ok {
+		return errors.New("could not find source")
+	}
+
 	block.Block.SetSource(nil)
+	source.Source.RemoveLink(block.Block)
 	delete(s.links, id)
 	EngDB.DeleteModel(id, model.Link{ID: id})
 

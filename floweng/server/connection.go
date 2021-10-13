@@ -89,16 +89,19 @@ func (s *Server) CreateConnection(newConn ProtoConnection) (*ConnectionLedger, e
 		return nil, errors.New("source block does not exist")
 	}
 
-	_, ok = s.blocks[newConn.Target.Id]
+	target, ok := s.blocks[newConn.Target.Id]
 	if !ok {
 		return nil, errors.New("target block does not exist")
 	}
 
 	sourceRoute := core.RouteIndex(newConn.Source.Route)
+	targetRoute := core.RouteIndex(newConn.Target.Route)
 
-	targetRouteIndex := core.RouteIndex(newConn.Target.Route)
-
-	err := source.Block.Connect(sourceRoute, core.Connection{TargetId: newConn.Target.Id, RouteId: targetRouteIndex})
+	err := source.Block.Connect(sourceRoute, core.Connection{
+		Target:   target.Block,
+		TargetId: newConn.Target.Id,
+		RouteId:  targetRoute,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -231,14 +234,18 @@ func (s *Server) DeleteConnection(id int) error {
 		return errors.New("could not find source block")
 	}
 
-	_, ok = s.blocks[c.Target.Id]
+	target, ok := s.blocks[c.Target.Id]
 	if !ok {
 		return errors.New("could not find target block")
 	}
 
-	targetRouteIndex := core.RouteIndex(c.Target.Route)
+	targetRoute := core.RouteIndex(c.Target.Route)
 
-	err := source.Block.Disconnect(core.RouteIndex(c.Source.Route), core.Connection{TargetId: c.Target.Id, RouteId: targetRouteIndex})
+	err := source.Block.Disconnect(core.RouteIndex(c.Source.Route), core.Connection{
+		Target:   target.Block,
+		TargetId: c.Target.Id,
+		RouteId:  targetRoute,
+	})
 	if err != nil {
 		return err
 	}

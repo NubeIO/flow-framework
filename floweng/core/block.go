@@ -139,8 +139,6 @@ func (b *Block) SetSource(s Source) error {
 		returnVal = errors.New("invalid source type for this block")
 	}
 	b.routing.Source = s
-	receiveChan := make(chan interface{})
-	s.AddLink(b, receiveChan)
 	return returnVal
 }
 
@@ -259,6 +257,7 @@ func (b *BlockState) receive() (Interrupt, bool) {
 		}
 
 		if input.Value != nil {
+			// TODO: need to set the block route for other events
 			b.inputValues[RouteIndex(id)] = Copy(input.Value.Data)
 			continue
 		} else {

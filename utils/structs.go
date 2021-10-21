@@ -1,6 +1,9 @@
 package utils
 
-import "reflect"
+import (
+	"errors"
+	"reflect"
+)
 
 //ArrayValues returns strut values as an array
 func ArrayValues(arr interface{}) []interface{} {
@@ -31,5 +34,20 @@ func ExistsInStrut(arr interface{}, toCheck string) bool {
 		}
 	}
 	return false
+}
 
+//GetStructFieldByString returns the named field as an interface{}, also returns the Type of the interface.
+func GetStructFieldByString(arr interface{}, toGet string) (interface{}, string, error) {
+	v := reflect.ValueOf(arr)
+	t := v.Kind().String()
+	if t != "struct" {
+		err := errors.New("GetStrutFieldByString(): input interface is not type Struct")
+		return nil, "", err
+	}
+	f := reflect.Indirect(v).FieldByName(toGet)
+	if !f.IsValid() {
+		err := errors.New("GetStrutFieldByString(): cannot find field in struct")
+		return nil, "", err
+	}
+	return f.Interface(), f.Type().String(), nil
 }

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/NubeIO/flow-framework/api"
-	"github.com/NubeIO/flow-framework/model"
-	edgerest "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/restclient"
-	"github.com/NubeIO/flow-framework/src/poller"
-	"github.com/NubeIO/flow-framework/utils"
 	"errors"
 	"fmt"
+	"github.com/NubeDev/flow-framework/api"
+	"github.com/NubeDev/flow-framework/model"
+	edgerest "github.com/NubeDev/flow-framework/plugin/nube/protocals/edge28/restclient"
+	"github.com/NubeDev/flow-framework/src/poller"
+	"github.com/NubeDev/flow-framework/utils"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/edge28"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/numbers"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/thermistor"
@@ -50,16 +50,6 @@ func (i *Instance) processWrite(pnt *model.Point, value float64, rest *edgerest.
 	}
 }
 
-//GPIOValueToDigital
-//TODO remove this and get from helpers
-func GPIOValueToDigital(value float64) float64 {
-	if value < 0.2 {
-		return 1 //ON / Closed Circuit
-	} else { //previous functions used > 0.6 as an OFF threshold.
-		return 0 //OFF / Open Circuit
-	}
-}
-
 func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float64) (float64, error) {
 	cov := utils.Float64IsNil(pnt.COV) //TODO add in point scaling to get COV to work correct (as in scale temp or 0-10)
 	covEvent, _ := utils.COV(value, utils.Float64IsNil(pnt.PresentValue), cov)
@@ -87,7 +77,6 @@ func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float6
 
 	}
 	return value, nil
-
 }
 
 func (i *Instance) polling(p polling) error {
@@ -116,10 +105,12 @@ func (i *Instance) polling(p polling) error {
 			time.Sleep(15000 * time.Millisecond)
 			log.Info("edge-28: NO NETWORKS FOUND")
 		}
+
 		for _, net := range nets { //NETWORKS
 			if net.UUID != "" && net.PluginConfId == i.pluginUUID {
 				log.Infof("edge-28: LOOP COUNT: %v\n", counter)
 				counter++
+
 				for _, dev := range net.Devices { //DEVICES
 					if err != nil {
 						log.Errorf("edge-28: failed to vaildate device %v %s\n", err, dev.CommonIP.Host)
@@ -183,6 +174,41 @@ func (i *Instance) polling(p polling) error {
 							_, err = i.processRead(pnt, rv, counter)
 
 						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
+							readValStruct, readValType, err = utils.GetStructFieldByString(getUI.Val, pnt.IoID)
+							if err != nil {
+								log.Error(err)
+								continue
+							} else if readValType != "struct" {
+								log.Error("edge-28: IoID does not match any points from Edge28")
+								continue
+							}
+							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
+							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
+							if err != nil {
+								log.Error(err)
+								continue
+							}
+							_, err = i.processRead(pnt, rv, counter)
+
+						//INPUTS
+						case pointList.DI1, pointList.DI2, pointList.DI3, pointList.DI4, pointList.DI5, pointList.DI6, pointList.DI7:
+							readValStruct, readValType, err = utils.GetStructFieldByString(getDI.Val, pnt.IoID)
+							if err != nil {
+								log.Error(err)
+								continue
+							} else if readValType != "struct" {
+								log.Error("edge-28: IoID does not match any points from Edge28")
+								continue
+							}
+							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
+							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
+							if err != nil {
+								log.Error(err)
+								continue
+							}
+							_, err = i.processRead(pnt, rv, counter)
+
+						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
 							fmt.Println("POINT")
 							fmt.Printf("%+v\n", *(pnt))
 							readValStruct, readValType, err = utils.GetStructFieldByString(getUI.Val, pnt.IoID)
@@ -214,6 +240,7 @@ func (i *Instance) polling(p polling) error {
 		} else {
 			return false, nil
 		}
+
 	}
 	err := poll.Poll(context.Background(), f)
 	if err != nil {
@@ -232,10 +259,10 @@ func GetGPIOValueForUOByType(point *model.Point) (float64, error) {
 	}
 	//fmt.Println("point")
 	//fmt.Printf("%+v\n", point)
-	//fmt.Println("point.Priority")
-	//fmt.Printf("%+v\n", point.Priority)
-	//fmt.Println("point.Priority.P16")
-	//fmt.Printf("%+v\n", point.Priority.P16)
+	fmt.Println("point.Priority")
+	fmt.Printf("%+v\n", point.Priority)
+	fmt.Println("point.Priority.P16")
+	fmt.Printf("%+v\n", point.Priority.P16)
 	//wv = *(point.PresentValue)   //TODO: use PresentValue instead of Priority 16 value
 	if numbers.Float64PointerIsNil(point.Priority.P16) {
 		return 0, errors.New("no value to write.")
@@ -303,6 +330,5 @@ func GetValueFromGPIOForUIByType(point *model.Point, value float64) (float64, er
 		err = errors.New("UI IoType is not a recognized type")
 		return 0, err
 	}
-	fmt.Println("result", result)
 	return result, nil
 }

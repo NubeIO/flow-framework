@@ -61,8 +61,28 @@ func (i *Instance) wizard(body wizard) (string, error) {
 		pnt.Name = pName
 		pnt.Description = pName
 		pnt.IoID = e
-		pnt.IoType = model.IOType.RAW
-		pnt.COV = utils.NewFloat64(0.5)
+		if pnt.IoID == "UO1" || pnt.IoID == "UO2" {
+			pnt.IoType = UOTypes.DIGITAL
+		} else if pnt.IoID == "UO3" || pnt.IoID == "UO4" {
+			pnt.IoType = UOTypes.VOLTSDC
+		} else if pnt.IoID == "UO5" || pnt.IoID == "UO6" || pnt.IoID == "UO7" {
+			pnt.IoType = UOTypes.VOLTSDC
+		} else if pnt.IoID == "UI1" || pnt.IoID == "UI2" {
+			pnt.IoType = UITypes.DIGITAL
+		} else if pnt.IoID == "UO3" || pnt.IoID == "UO4" {
+			pnt.IoType = UITypes.PERCENT
+		} else if pnt.IoID == "UO5" {
+			pnt.IoType = UITypes.VOLTSDC
+		} else if pnt.IoID == "UO6" {
+			pnt.IoType = UITypes.RESISTANCE
+		} else if pnt.IoID == "UO7" {
+			pnt.IoType = UITypes.THERMISTOR10KT2
+		} else {
+			pnt.IoType = model.IOType.RAW
+		}
+
+		//pnt.IoType = model.IOType.RAW
+		pnt.COV = utils.NewFloat64(0.1)
 		point, err := i.db.CreatePoint(&pnt)
 		if err != nil {
 			return "", err

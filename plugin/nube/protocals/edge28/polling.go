@@ -50,6 +50,16 @@ func (i *Instance) processWrite(pnt *model.Point, value float64, rest *edgerest.
 	}
 }
 
+//GPIOValueToDigital
+//TODO remove this and get from helpers
+func GPIOValueToDigital(value float64) float64 {
+	if value < 0.2 {
+		return 1 //ON / Closed Circuit
+	} else { //previous functions used > 0.6 as an OFF threshold.
+		return 0 //OFF / Open Circuit
+	}
+}
+
 func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float64) (float64, error) {
 	cov := utils.Float64IsNil(pnt.COV) //TODO add in point scaling to get COV to work correct (as in scale temp or 0-10)
 	covEvent, _ := utils.COV(value, utils.Float64IsNil(pnt.PresentValue), cov)
@@ -67,7 +77,6 @@ func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float6
 		}
 	} else if covEvent {
 		pnt.InSync = utils.NewTrue()
-		pnt.Priority.P16 = utils.NewFloat64(value)
 		_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false)
 		if err != nil {
 			log.Errorf("edge-28: READ UPDATE POINT %s: %v\n", pnt.IoID, value)

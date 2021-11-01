@@ -23,12 +23,12 @@ func (i *Instance) Enable() error {
 			go func() error {
 				err := i.polling(arg)
 				if err != nil {
-					log.Errorf("modbus: POLLING ERROR on routine: %v\n", err)
+					log.Errorf("edge28: POLLING ERROR on routine: %v\n", err)
 				}
 				return nil
 			}()
 			if err != nil {
-				log.Errorf("modbus: POLLING ERROR: %v\n", err)
+				log.Errorf("edge28: POLLING ERROR: %v\n", err)
 			}
 		}
 	}

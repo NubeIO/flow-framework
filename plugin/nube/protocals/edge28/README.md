@@ -21,7 +21,7 @@ write to DOs or R1, R2 can write true/false/1/0
 
 ``` 
 http://192.168.15.101:5000/api/1.1/write/do/r1/false/16
-http://192.168.15.101:5000/api/1.1/write/do/r1/1/16
+http://192.168.15.101:5000`/api/1.1/write/do/r1/1/16`
 ```
 
 read UIS
@@ -42,4 +42,9 @@ http://192.168.15.101:5000/api/1.1/read/all/di
 
 ``` 
 localhost:5000/api/1.1/write/do/lc/0/16
+```
+
+### RAW to Resistance Calculation (thermistor reading based on RAW 0-1)
+```
+T= (8.65943*((RAW/0.5555)/0.1774))/(9.89649 - (RAW/0.5555/0.1774))*1000
 ```

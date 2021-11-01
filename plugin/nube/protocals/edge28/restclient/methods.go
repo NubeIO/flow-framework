@@ -149,6 +149,7 @@ func (a *RestClient) GetDIs() (*DI, error) {
 // WriteUO to a UO point
 func (a *RestClient) WriteUO(ioNum string, value float64) (*WriteResponseUO, error) {
 	req := fmt.Sprintf("/api/1.1/write/uo/%s/%d/16", strings.ToLower(ioNum), utils.ToInt(value))
+	fmt.Println("WriteUO:", req)
 	resp, err := a.client.R().
 		SetResult(WriteResponseUO{}).
 		Get(req)

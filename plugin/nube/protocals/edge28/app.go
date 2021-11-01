@@ -73,3 +73,43 @@ func pointsAll() []string {
 	out = append(out, UIs...)
 	return out
 }
+
+var UOTypes = struct {
+	//RAW  string
+	DIGITAL string
+	PERCENT string
+	VOLTSDC string
+	//MILLIAMPS  string
+}{
+	//RAW:  "RAW",
+	DIGITAL: "DIGITAL",
+	PERCENT: "PERCENT",
+	VOLTSDC: "0-10VDC",
+	//MILLIAMPS:  "4-20mA",
+}
+
+var UITypes = struct {
+	RAW              string
+	DIGITAL          string
+	PERCENT          string
+	VOLTSDC          string
+	MILLIAMPS        string
+	RESISTANCE       string
+	THERMISTOR10KT2  string
+	THERMISTOR10KT3  string
+	THERMISTOR20KT1  string
+	THERMISTORPT100  string
+	THERMISTORPT1000 string
+}{
+	RAW:              "RAW",
+	DIGITAL:          "DIGITAL",
+	PERCENT:          "PERCENT",
+	VOLTSDC:          "0-10VDC",
+	MILLIAMPS:        "4-20mA",
+	RESISTANCE:       "RESISTANCE",
+	THERMISTOR10KT2:  "THERMISTOR_10K_TYPE2",
+	THERMISTOR10KT3:  "THERMISTOR_10K_TYPE3",
+	THERMISTOR20KT1:  "THERMISTOR_20K_TYPE1",
+	THERMISTORPT100:  "THERMISTOR_PT100",
+	THERMISTORPT1000: "THERMISTOR_PT1000",
+}

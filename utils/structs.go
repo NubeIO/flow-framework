@@ -49,5 +49,7 @@ func GetStructFieldByString(arr interface{}, toGet string) (interface{}, string,
 		err := errors.New("GetStrutFieldByString(): cannot find field in struct")
 		return nil, "", err
 	}
-	return f.Interface(), f.Type().String(), nil
+	//return f.Interface(), f.Type().String(), nil
+	return f.Interface(), f.Kind().String(), nil
+
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"errors"
+
 	"github.com/NubeDev/flow-framework/api"
 	"github.com/NubeDev/flow-framework/plugin/nube/protocals/lora/decoder"
 	log "github.com/sirupsen/logrus"
@@ -97,19 +97,11 @@ func (s *SerialSetting) NewSerialConnection() (connected bool, err error) {
 		DataBits: dataBits,
 		StopBits: stopBits,
 	}
+
 	ports, err := serial.GetPortsList()
-	log.Info("LORA: ports: ", ports)
-	portNameFound := ""
-	for _, port := range ports {
-		if port == portName {
-			portNameFound = portName
-		}
-	}
-	if portNameFound == "" {
-		log.Errorf("LORA: port not found: %v\n", s.SerialPort)
-		return false, errors.New("LORA: port not found")
-	}
 	s.ActivePortList = ports
+	log.Info("LORA: ports: ", ports)
+
 	port, err := serial.Open(portName, m)
 	if err != nil {
 		s.Error = true

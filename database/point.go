@@ -394,6 +394,8 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 		}
 		d.DB.Model(&pointModel.Priority).Updates(&priority)
 	}
+	ov := utils.Float64IsNil(presentValue)
+	body.ValueOriginal = &ov
 	presentValue = pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax)
 	presentValue = pointRange(presentValue, limitMin, limitMax)
 	eval, err := pointEval(presentValue, body.ValueOriginal, pointModel.EvalMode, pointModel.Eval)

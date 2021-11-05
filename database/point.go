@@ -366,6 +366,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 				if val == nil {
 					priority[typeOfPriority.Field(i).Name] = nil
 				} else {
+					fmt.Println("UpdatePointValue() - i, val:", typeOfPriority.Field(i).Name, *val)
 					highestPri.Add(i)
 					highestValue.Set(i, *val)
 					priority[typeOfPriority.Field(i).Name] = *val
@@ -383,7 +384,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 			val := highestValue.Get(min)     //get the highest priority value
 			body.CurrentPriority = &min      //TODO check conversion
 			v := val.(float64)
-			body.PresentValue = &v //process the units as in temperature conversion
+			presentValue = &v //process the units as in temperature conversion
 			if presentValueIsNil {
 				_pv := v
 				presentValue = &_pv

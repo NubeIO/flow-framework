@@ -67,14 +67,19 @@ func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float6
 		}
 	} else if covEvent {
 		pnt.InSync = utils.NewTrue()
-		_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false)
+		fmt.Println("processRead()  value:", value)
+		fmt.Println("pnt.Priority.P16 - 1", *(pnt.Priority.P16))
+		pnt.Priority.P16 = utils.NewFloat64(value)
+		fmt.Printf("%+v\n", pnt)
+		fmt.Printf("%+v\n", pnt.Priority.P16)
+		fmt.Println("pnt.Priority.P16 - 2", *(pnt.Priority.P16))
+		_, err := i.db.UpdatePointValue(pnt.UUID, pnt, true)
 		if err != nil {
 			log.Errorf("edge-28: READ UPDATE POINT %s: %v\n", pnt.IoID, value)
 			return value, err
 		} else {
 			log.Infof("edge-28: READ ON START %s: %v\n", pnt.IoID, value)
 		}
-
 	}
 	return value, nil
 }
@@ -176,7 +181,12 @@ func (i *Instance) polling(p polling) error {
 							_, err = i.processRead(pnt, rv, counter)
 
 						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
+							fmt.Println("POINT")
+							fmt.Printf("%+v\n", *(pnt))
 							readValStruct, readValType, err = utils.GetStructFieldByString(getUI.Val, pnt.IoID)
+							fmt.Println("readValStruct", readValStruct)
+							fmt.Println("readValType", readValType)
+							//fmt.Printf("%+v\n", *(pnt))
 							if err != nil {
 								log.Error(err)
 								continue
@@ -185,7 +195,9 @@ func (i *Instance) polling(p polling) error {
 								continue
 							}
 							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
+							fmt.Println("rv1", rv)
 							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
+							fmt.Println("rv2", rv)
 							if err != nil {
 								log.Error(err)
 								continue
@@ -219,10 +231,10 @@ func GetGPIOValueForUOByType(point *model.Point) (float64, error) {
 	}
 	//fmt.Println("point")
 	//fmt.Printf("%+v\n", point)
-	fmt.Println("point.Priority")
-	fmt.Printf("%+v\n", point.Priority)
-	fmt.Println("point.Priority.P16")
-	fmt.Printf("%+v\n", point.Priority.P16)
+	//fmt.Println("point.Priority")
+	//fmt.Printf("%+v\n", point.Priority)
+	//fmt.Println("point.Priority.P16")
+	//fmt.Printf("%+v\n", point.Priority.P16)
 	//wv = *(point.PresentValue)   //TODO: use PresentValue instead of Priority 16 value
 	if numbers.Float64PointerIsNil(point.Priority.P16) {
 		return 0, errors.New("no value to write.")
@@ -280,15 +292,14 @@ func GetValueFromGPIOForUIByType(point *model.Point, value float64) (float64, er
 		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T120K)
 	case UITypes.THERMISTORPT100:
 		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT100)
+		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT100)
 	case UITypes.THERMISTORPT1000:
 		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT1000)
+		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT1000)
 	default:
 		err = errors.New("UI IoType is not a recognized type")
 		return 0, err
 	}
+	fmt.Println("result", result)
 	return result, nil
 }

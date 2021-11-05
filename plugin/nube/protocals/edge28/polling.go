@@ -67,14 +67,19 @@ func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float6
 		}
 	} else if covEvent {
 		pnt.InSync = utils.NewTrue()
-		_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false)
+		fmt.Println("processRead()  value:", value)
+		fmt.Println("pnt.Priority.P16 - 1", *(pnt.Priority.P16))
+		pnt.Priority.P16 = utils.NewFloat64(value)
+		fmt.Printf("%+v\n", pnt)
+		fmt.Printf("%+v\n", pnt.Priority.P16)
+		fmt.Println("pnt.Priority.P16 - 2", *(pnt.Priority.P16))
+		_, err := i.db.UpdatePointValue(pnt.UUID, pnt, true)
 		if err != nil {
 			log.Errorf("edge-28: READ UPDATE POINT %s: %v\n", pnt.IoID, value)
 			return value, err
 		} else {
 			log.Infof("edge-28: READ ON START %s: %v\n", pnt.IoID, value)
 		}
-
 	}
 	return value, nil
 }
@@ -190,84 +195,9 @@ func (i *Instance) polling(p polling) error {
 								continue
 							}
 							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
-							fmt.Println("rv", rv)
+							fmt.Println("rv1", rv)
 							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
-							if err != nil {
-								log.Error(err)
-								continue
-							}
-							_, err = i.processRead(pnt, rv, counter)
-
-						//INPUTS
-						case pointList.DI1, pointList.DI2, pointList.DI3, pointList.DI4, pointList.DI5, pointList.DI6, pointList.DI7:
-							readValStruct, readValType, err = utils.GetStructFieldByString(getDI.Val, pnt.IoID)
-							if err != nil {
-								log.Error(err)
-								continue
-							} else if readValType != "struct" {
-								log.Error("edge-28: IoID does not match any points from Edge28")
-								continue
-							}
-							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
-							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
-							if err != nil {
-								log.Error(err)
-								continue
-							}
-							_, err = i.processRead(pnt, rv, counter)
-
-						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
-							fmt.Println("POINT")
-							fmt.Printf("%+v\n", *(pnt))
-							readValStruct, readValType, err = utils.GetStructFieldByString(getUI.Val, pnt.IoID)
-							fmt.Println("readValStruct", readValStruct)
-							fmt.Println("readValType", readValType)
-							//fmt.Printf("%+v\n", *(pnt))
-							if err != nil {
-								log.Error(err)
-								continue
-							} else if readValType != "struct" {
-								log.Error("edge-28: IoID does not match any points from Edge28")
-								continue
-							}
-							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
-							fmt.Println("rv", rv)
-							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
-							if err != nil {
-								log.Error(err)
-								continue
-							}
-							_, err = i.processRead(pnt, rv, counter)
-
-						//INPUTS
-						case pointList.DI1, pointList.DI2, pointList.DI3, pointList.DI4, pointList.DI5, pointList.DI6, pointList.DI7:
-							readValStruct, readValType, err = utils.GetStructFieldByString(getDI.Val, pnt.IoID)
-							if err != nil {
-								log.Error(err)
-								continue
-							} else if readValType != "struct" {
-								log.Error("edge-28: IoID does not match any points from Edge28")
-								continue
-							}
-							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
-							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
-							if err != nil {
-								log.Error(err)
-								continue
-							}
-							_, err = i.processRead(pnt, rv, counter)
-
-						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
-							readValStruct, readValType, err = utils.GetStructFieldByString(getUI.Val, pnt.IoID)
-							if err != nil {
-								log.Error(err)
-								continue
-							} else if readValType != "struct" {
-								log.Error("edge-28: IoID does not match any points from Edge28")
-								continue
-							}
-							rv = reflect.ValueOf(readValStruct).FieldByName("Val").Float()
-							rv, err = GetValueFromGPIOForUIByType(pnt, rv)
+							fmt.Println("rv2", rv)
 							if err != nil {
 								log.Error(err)
 								continue
@@ -327,34 +257,6 @@ func GetGPIOValueForUOByType(point *model.Point) (float64, error) {
 	} else {
 		return result, nil
 	}
-	//fmt.Println("point")
-	//fmt.Printf("%+v\n", point)
-	fmt.Println("point.Priority")
-	fmt.Printf("%+v\n", point.Priority)
-	fmt.Println("point.Priority.P16")
-	fmt.Printf("%+v\n", point.Priority.P16)
-	//wv = *(point.PresentValue)   //TODO: use PresentValue instead of Priority 16 value
-	if numbers.Float64PointerIsNil(point.Priority.P16) {
-		return 0, errors.New("no value to write.")
-	} else {
-		result = *(point.Priority.P16)
-	}
-
-	switch point.IoType {
-	case UOTypes.DIGITAL:
-		result, err = edge28.DigitalToGPIOValue(result)
-	case UOTypes.PERCENT:
-		result = edge28.PercentToGPIOValue(result)
-	case UOTypes.VOLTSDC:
-		result = edge28.VoltageToGPIOValue(result)
-	default:
-		err = errors.New("UO IoType is not a recognized type")
-	}
-	if err != nil {
-		return 0, err
-	} else {
-		return result, nil
-	}
 }
 
 // GetValueFromGPIOForUIByType converts the GPIO value to the scaled UI value based on the IoType
@@ -390,146 +292,10 @@ func GetValueFromGPIOForUIByType(point *model.Point, value float64) (float64, er
 		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T120K)
 	case UITypes.THERMISTORPT100:
 		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT100)
+		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT100)
 	case UITypes.THERMISTORPT1000:
 		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT1000)
-	default:
-		err = errors.New("UI IoType is not a recognized type")
-		return 0, err
-	}
-	fmt.Println("result", result)
-	return result, nil
-}
-
-// GetValueFromGPIOForUIByType converts the GPIO value to the scaled UI value based on the IoType
-func GetValueFromGPIOForUIByType(point *model.Point, value float64) (float64, error) {
-	var err error
-	var result float64
-
-	if !utils.ExistsInStrut(UITypes, point.IoType) {
-		err = errors.New(fmt.Sprintf("edge-28: skipping %v, IoType %v not recognized.", point.IoID, point.IoType))
-		return 0, err
-	}
-	switch point.IoType {
-	case UITypes.RAW:
-		result = value
-	case UITypes.DIGITAL:
-		result = edge28.GPIOValueToDigital(value)
-	case UITypes.PERCENT:
-		result = edge28.GPIOValueToPercent(value)
-	case UITypes.VOLTSDC:
-		result = edge28.GPIOValueToVoltage(value)
-	case UITypes.MILLIAMPS:
-		result = edge28.ScaleGPIOValueTo420ma(value)
-	case UITypes.RESISTANCE:
-		result = edge28.ScaleGPIOValueToResistance(value)
-	case UITypes.THERMISTOR10KT2:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T210K)
-	case UITypes.THERMISTOR10KT3:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T310K)
-	case UITypes.THERMISTOR20KT1:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T120K)
-	case UITypes.THERMISTORPT100:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT100)
-	case UITypes.THERMISTORPT1000:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT1000)
-	default:
-		err = errors.New("UI IoType is not a recognized type")
-		return 0, err
-	}
-	return result, nil
-		return err
-	}
-	return nil
-}
-
-// GetGPIOValueForUOByType converts the point value to the correct edge28 UO GPIO value based on the IoType
-func GetGPIOValueForUOByType(point *model.Point) (float64, error) {
-	var err error
-	var result float64
-	if !utils.ExistsInStrut(UOTypes, point.IoType) {
-		err = errors.New(fmt.Sprintf("edge-28: skipping %v, IoType %v not recognized.", point.IoID, point.IoType))
-		return 0, err
-	}
-	//fmt.Println("point")
-	//fmt.Printf("%+v\n", point)
-	//fmt.Println("point.Priority")
-	//fmt.Printf("%+v\n", point.Priority)
-	//fmt.Println("point.Priority.P16")
-	//fmt.Printf("%+v\n", point.Priority.P16)
-	//wv = *(point.PresentValue)   //TODO: use PresentValue instead of Priority 16 value
-	if numbers.Float64PointerIsNil(point.Priority.P16) {
-		return 0, errors.New("no value to write.")
-	} else {
-		result = *(point.Priority.P16)
-	}
-
-	switch point.IoType {
-	case UOTypes.DIGITAL:
-		result, err = edge28.DigitalToGPIOValue(result)
-	case UOTypes.PERCENT:
-		result = edge28.PercentToGPIOValue(result)
-	case UOTypes.VOLTSDC:
-		result = edge28.VoltageToGPIOValue(result)
-	default:
-		err = errors.New("UO IoType is not a recognized type")
-	}
-	if err != nil {
-		return 0, err
-	} else {
-		return result, nil
-	}
-}
-
-// GetValueFromGPIOForUIByType converts the GPIO value to the scaled UI value based on the IoType
-func GetValueFromGPIOForUIByType(point *model.Point, value float64) (float64, error) {
-	var err error
-	var result float64
-
-	if !utils.ExistsInStrut(UITypes, point.IoType) {
-		err = errors.New(fmt.Sprintf("edge-28: skipping %v, IoType %v not recognized.", point.IoID, point.IoType))
-		return 0, err
-	}
-	switch point.IoType {
-	case UITypes.RAW:
-		result = value
-	case UITypes.DIGITAL:
-		result = edge28.GPIOValueToDigital(value)
-	case UITypes.PERCENT:
-		result = edge28.GPIOValueToPercent(value)
-	case UITypes.VOLTSDC:
-		result = edge28.GPIOValueToVoltage(value)
-	case UITypes.MILLIAMPS:
-		result = edge28.ScaleGPIOValueTo420ma(value)
-	case UITypes.RESISTANCE:
-		result = edge28.ScaleGPIOValueToResistance(value)
-	case UITypes.THERMISTOR10KT2:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T210K)
-	case UITypes.THERMISTOR10KT3:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T310K)
-	case UITypes.THERMISTOR20KT1:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.T120K)
-	case UITypes.THERMISTORPT100:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT100)
-	case UITypes.THERMISTORPT1000:
-		resistance := edge28.ScaleGPIOValueToResistance(value)
-		result = resistance
-		//result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT1000)
+		result, err = thermistor.ResistanceToTemperature(resistance, thermistor.PT1000)
 	default:
 		err = errors.New("UI IoType is not a recognized type")
 		return 0, err

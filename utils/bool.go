@@ -25,3 +25,11 @@ func IsTrue(b *bool) bool {
 		return *b
 	}
 }
+
+func BoolIsNilCheck(b *bool) bool {
+	if b == nil {
+		return true
+	} else {
+		return false
+	}
+}

@@ -55,6 +55,7 @@ func (i *Instance) processRead(pnt *model.Point, value float64, pollCount float6
 	covEvent, _ := utils.COV(value, utils.Float64IsNil(pnt.PresentValue), cov)
 	if pollCount == 1 || !utils.BoolIsNil(pnt.InSync) {
 		pnt.InSync = utils.NewTrue()
+		pnt.Priority.P16 = utils.NewFloat64(value)
 		_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false)
 		if err != nil {
 			log.Errorf("edge-28: READ UPDATE POINT %s: %v\n", pnt.IoID, value)
@@ -164,6 +165,9 @@ func (i *Instance) polling(p polling) error {
 
 						//INPUTS
 						case pointList.DI1, pointList.DI2, pointList.DI3, pointList.DI4, pointList.DI5, pointList.DI6, pointList.DI7:
+							if getDI == nil {
+								continue
+							}
 							readValStruct, readValType, err = utils.GetStructFieldByString(getDI.Val, pnt.IoID)
 							if err != nil {
 								log.Error(err)
@@ -181,6 +185,9 @@ func (i *Instance) polling(p polling) error {
 							_, err = i.processRead(pnt, rv, counter)
 
 						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
+							if getUI == nil {
+								continue
+							}
 							fmt.Println("POINT")
 							fmt.Printf("%+v\n", *(pnt))
 							readValStruct, readValType, err = utils.GetStructFieldByString(getUI.Val, pnt.IoID)

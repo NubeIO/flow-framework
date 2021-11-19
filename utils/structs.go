@@ -51,5 +51,4 @@ func GetStructFieldByString(arr interface{}, toGet string) (interface{}, string,
 	}
 	//return f.Interface(), f.Type().String(), nil
 	return f.Interface(), f.Kind().String(), nil
-
 }

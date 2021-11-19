@@ -66,19 +66,19 @@ func (i *Instance) wizard(body wizard) (string, error) {
 		} else if pnt.IoID == "UO3" || pnt.IoID == "UO4" {
 			pnt.IoType = UOTypes.VOLTSDC
 		} else if pnt.IoID == "UO5" || pnt.IoID == "UO6" || pnt.IoID == "UO7" {
-			pnt.IoType = UOTypes.VOLTSDC
+			pnt.IoType = UOTypes.PERCENT
 		} else if pnt.IoID == "UI1" || pnt.IoID == "UI2" {
 			pnt.IoType = UITypes.DIGITAL
-		} else if pnt.IoID == "UO3" || pnt.IoID == "UO4" {
+		} else if pnt.IoID == "UI3" || pnt.IoID == "UI4" {
 			pnt.IoType = UITypes.PERCENT
-		} else if pnt.IoID == "UO5" {
+		} else if pnt.IoID == "UI5" {
 			pnt.IoType = UITypes.VOLTSDC
-		} else if pnt.IoID == "UO6" {
+		} else if pnt.IoID == "UI6" {
 			pnt.IoType = UITypes.RESISTANCE
-		} else if pnt.IoID == "UO7" {
+		} else if pnt.IoID == "UI7" {
 			pnt.IoType = UITypes.THERMISTOR10KT2
 		} else {
-			pnt.IoType = model.IOType.RAW
+			pnt.IoType = UITypes.DIGITAL
 		}
 
 		//pnt.IoType = model.IOType.RAW

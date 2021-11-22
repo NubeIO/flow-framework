@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/NubeDev/flow-framework/api"
-	"github.com/NubeDev/flow-framework/model"
-	edgerest "github.com/NubeDev/flow-framework/plugin/nube/protocals/edge28/restclient"
-	"github.com/NubeDev/flow-framework/src/poller"
-	"github.com/NubeDev/flow-framework/utils"
+	"github.com/NubeIO/flow-framework/api"
+	"github.com/NubeIO/flow-framework/model"
+	edgerest "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/restclient"
+	"github.com/NubeIO/flow-framework/src/poller"
+	"github.com/NubeIO/flow-framework/utils"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/edge28"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/numbers"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/thermistor"
 	log "github.com/sirupsen/logrus"
 	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -102,8 +103,6 @@ func (i *Instance) polling(p polling) error {
 	var arg api.Args
 	arg.WithDevices = true
 	arg.WithPoints = true
-	arg.WithSerialConnection = true
-	arg.WithIpConnection = true
 	f := func() (bool, error) {
 		nets, err := i.db.GetNetworksByPlugin(i.pluginUUID, arg)
 		if err != nil {
@@ -138,19 +137,20 @@ func (i *Instance) polling(p polling) error {
 						switch pnt.IoID {
 						//OUTPUTS
 						case pointList.R1, pointList.R2, pointList.DO1, pointList.DO2, pointList.DO3, pointList.DO4, pointList.DO5:
-							if pnt.Priority != nil {
-								wv, err = edge28.DigitalToGPIOValue(wv)
+							if pnt.PresentValue != nil {
+								wv, err = DigitalToGPIOValue(*(pnt.PresentValue), false)
 								if err != nil {
 									log.Errorf("edge-28: invalid input to  DigitalToGPIOValue")
 									continue
 								}
+								fmt.Println("Relay/DO to processWrite():", wv)
 								_, err = i.processWrite(pnt, wv, rest, counter, false)
 							}
 
 						case pointList.UO1, pointList.UO2, pointList.UO3, pointList.UO4, pointList.UO5, pointList.UO6, pointList.UO7:
 							//fmt.Println(*(pnt))
 							//fmt.Printf("%+v\n", *(pnt))
-							if pnt.Priority != nil {
+							if pnt.PresentValue != nil {
 								wv, err = GetGPIOValueForUOByType(pnt)
 								if err != nil {
 									log.Error(err)
@@ -243,15 +243,15 @@ func GetGPIOValueForUOByType(point *model.Point) (float64, error) {
 	//fmt.Println("point.Priority.P16")
 	//fmt.Printf("%+v\n", point.Priority.P16)
 	//wv = *(point.PresentValue)   //TODO: use PresentValue instead of Priority 16 value
-	if numbers.Float64PointerIsNil(point.Priority.P16) {
+	if numbers.Float64PointerIsNil(point.PresentValue) {
 		return 0, errors.New("no value to write.")
 	} else {
-		result = *(point.Priority.P16)
+		result = *(point.PresentValue)
 	}
 
 	switch point.IoType {
 	case UOTypes.DIGITAL:
-		result, err = edge28.DigitalToGPIOValue(result)
+		result, err = DigitalToGPIOValue(result, true)
 	case UOTypes.PERCENT:
 		result = edge28.PercentToGPIOValue(result)
 	case UOTypes.VOLTSDC:
@@ -309,4 +309,38 @@ func GetValueFromGPIOForUIByType(point *model.Point, value float64) (float64, er
 	}
 	fmt.Println("result", result)
 	return result, nil
+}
+
+//TODO: update this function in Edge28 helpers
+//DigitalToRelayGPIO converts true/false values (all basic types allowed) to BBB GPIO 0/1 ON/OFF (FOR DOs/Relays) and to 100/0 (FOR UOs).  Note that the GPIO value for digital points is inverted.
+func DigitalToGPIOValue(input interface{}, isUO bool) (float64, error) {
+	var inputAsBool bool
+	var err error = nil
+	switch input.(type) {
+	case string:
+		inputAsBool, err = strconv.ParseBool(reflect.ValueOf(input).String())
+	case int, int8, int16, int32, int64, uint8, uint16, uint32, uint64:
+		inputAsBool = reflect.ValueOf(input).Int() != 0
+	case float32, float64:
+		inputAsBool = reflect.ValueOf(input).Float() != float64(0)
+	case bool:
+		inputAsBool = reflect.ValueOf(input).Bool()
+	default:
+		err = errors.New("input is not a recognized type")
+	}
+	if err != nil {
+		return 0, err
+	} else if inputAsBool {
+		if isUO {
+			return 0, nil // 0 is the 12vdc/ON GPIO value for UOs
+		} else {
+			return 1, nil // 0 is the 12vdc/ON GPIO value for DOs/Relays
+		}
+	} else {
+		if isUO {
+			return 100, nil // 100 is the 0vdc/OF GPIO value for UOs
+		} else {
+			return 0, nil // 1 is the 0vdc/OFF GPIO value for DOs/Relays
+		}
+	}
 }

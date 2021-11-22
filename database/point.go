@@ -391,11 +391,16 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 				_v := utils.Float64IsNil(presentValue)
 				body.OriginalValue = &_v
 			}
+		} else if !utils.FloatIsNilCheck(body.Fallback) {
+			body.Priority.P16 = utils.NewFloat64(*body.Fallback)
+			body.OriginalValue = utils.NewFloat64(*body.Fallback)
+			body.CurrentPriority = utils.NewInt(16)
+			presentValue = utils.NewFloat64(*body.Fallback)
 		}
 		d.DB.Model(&pointModel.Priority).Updates(&priority)
 	}
 	ov := utils.Float64IsNil(presentValue)
-	body.ValueOriginal = &ov
+	body.OriginalValue = &ov
 	presentValue = pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax)
 	presentValue = pointRange(presentValue, limitMin, limitMax)
 	eval, err := pointEval(presentValue, body.OriginalValue, pointModel.EvalMode, pointModel.Eval)

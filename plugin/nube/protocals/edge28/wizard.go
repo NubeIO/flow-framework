@@ -61,6 +61,7 @@ func (i *Instance) wizard(body wizard) (string, error) {
 		pnt.Name = pName
 		pnt.Description = pName
 		pnt.IoID = e
+		pnt.Fallback = utils.NewFloat64(0)
 		if pnt.IoID == "UO1" || pnt.IoID == "UO2" {
 			pnt.IoType = UOTypes.DIGITAL
 		} else if pnt.IoID == "UO3" || pnt.IoID == "UO4" {

@@ -2,6 +2,7 @@ package main
 
 import (
 	edgerest "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/restclient"
+	"github.com/NubeIO/flow-framework/plugin/nube/protocals/rubix/rubixmodel"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -12,9 +13,27 @@ func bodyWizard(ctx *gin.Context) (dto wizard, err error) {
 	return dto, err
 }
 
+const (
+	schemaNetwork = "/schema/network"
+	schemaDevice  = "/schema/device"
+	schemaPoint   = "/schema/point"
+)
+
 // RegisterWebhook implements plugin.Webhooker
 func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	i.basePath = basePath
+
+	mux.GET(schemaNetwork, func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, rubixmodel.GetNetworkSchema())
+	})
+
+	mux.GET(schemaDevice, func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, rubixmodel.GetDeviceSchema())
+	})
+
+	mux.GET(schemaPoint, func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, rubixmodel.GetPointSchema())
+	})
 
 	mux.GET("/edge/ping", func(ctx *gin.Context) {
 		body, err := bodyWizard(ctx)

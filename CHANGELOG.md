@@ -1,5 +1,19 @@
 # CHANGELOG
 ## [v0.1.6](https://github.com/NubeIO/flow-framework/tree/v0.1.6) (2021-11-04)
+- made rubix a network #304
+- Breaking issue fix on modubs polling #302 
+- Improvements/misc #301
+- Improvement/misc #300
+- Add history influx log #299
+- Fix: NubeIO vs NubeDev package #298
+- Feature/schema api #297
+- Update go.mod #296
+- updated the bash script #295
+- Improvement/misc #294
+- Close DB connection #293
+- sample api helper #290
+
+## [v0.1.6](https://github.com/NubeIO/flow-framework/tree/v0.1.6) (2021-11-04)
 - add APIs for proxying fn, fnc
 - serial port fix (#288)
 

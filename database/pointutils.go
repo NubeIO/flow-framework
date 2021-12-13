@@ -69,7 +69,7 @@ func pointRange(presentValue, limitMin, limitMax *float64) (value *float64) {
 	return presentValue
 }
 
-func pointScale(presentValue *float64, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax *float64) (value *float64) {
+func pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax *float64) (value *float64) {
 	if !utils.FloatIsNilCheck(presentValue) && !utils.FloatIsNilCheck(scaleInMin) && !utils.FloatIsNilCheck(scaleInMax) && !utils.FloatIsNilCheck(scaleOutMin) && !utils.FloatIsNilCheck(scaleOutMax) {
 		if *scaleInMin == 0 && *scaleInMax == 0 && *scaleOutMin == 0 && *scaleOutMax == 0 {
 			return presentValue

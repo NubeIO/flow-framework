@@ -22,11 +22,15 @@ func (h *Handler) GetPoint(uuid string) (*model.Point, error) {
 }
 
 func (h *Handler) CreatePoint(body *model.Point) (*model.Point, error) {
-	q, err := getDb().CreatePoint(body, "")
+	pnt, err := getDb().CreatePoint(body, "")
 	if err != nil {
 		return nil, err
 	}
-	return q, nil
+	pnt, err = getDb().UpdatePoint(pnt.UUID, pnt, false)
+	if err != nil {
+		return nil, err
+	}
+	return pnt, nil
 }
 
 func (h *Handler) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {

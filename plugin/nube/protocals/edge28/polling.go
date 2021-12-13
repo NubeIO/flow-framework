@@ -137,6 +137,7 @@ func (i *Instance) polling(p polling) error {
 						switch pnt.IoID {
 						//OUTPUTS
 						case pointList.R1, pointList.R2, pointList.DO1, pointList.DO2, pointList.DO3, pointList.DO4, pointList.DO5:
+							//_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false)  //TODO: This call sets the fallback value, but it ends up being called too often and overrides value changes from API calls
 							if pnt.PresentValue != nil {
 								wv, err = DigitalToGPIOValue(*(pnt.PresentValue), false)
 								if err != nil {
@@ -150,6 +151,7 @@ func (i *Instance) polling(p polling) error {
 						case pointList.UO1, pointList.UO2, pointList.UO3, pointList.UO4, pointList.UO5, pointList.UO6, pointList.UO7:
 							//fmt.Println(*(pnt))
 							//fmt.Printf("%+v\n", *(pnt))
+							//_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false) //TODO: This call sets the fallback value, but it ends up being called too often and overrides value changes from API calls
 							if pnt.PresentValue != nil {
 								wv, err = GetGPIOValueForUOByType(pnt)
 								if err != nil {

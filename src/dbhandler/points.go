@@ -26,7 +26,7 @@ func (h *Handler) CreatePoint(body *model.Point) (*model.Point, error) {
 	if err != nil {
 		return nil, err
 	}
-	pnt, err = getDb().UpdatePoint(pnt.UUID, pnt, false)
+	pnt, err = getDb().UpdatePoint(pnt.UUID, pnt, false) //MARC: UpdatePoint is called here so that the PresentValue and Priority are updated to use the fallback value.  Otherwise they are left as Null and the Edge28 Outputs are left floating.
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/NubeIO/flow-framework/utils"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/NubeIO/flow-framework/logger"
 	"github.com/NubeIO/flow-framework/model"
@@ -25,6 +26,9 @@ func New(dialect, connection, logLevel string) (*GormDatabase, error) {
 	_connection := fmt.Sprintf("%s?_foreign_keys=on", connection)
 	db, err := gorm.Open(sqlite.Open(_connection), &gorm.Config{
 		Logger: logger.New().SetLogMode(logLevel),
+		NowFunc: func() time.Time {
+			return time.Now().UTC()
+		},
 	})
 
 	if err != nil {

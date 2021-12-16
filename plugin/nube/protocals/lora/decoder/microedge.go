@@ -1,10 +1,15 @@
 package decoder
 
 import (
-	"github.com/NubeIO/flow-framework/model"
 	"math"
 	"strconv"
+
+	"github.com/NubeIO/flow-framework/model"
 )
+
+const MEDeviceName = "MicroEdge"
+const MEModel = "MicroEdge"
+const MESensorCode = "AA"
 
 type TMicroEdge struct {
 	CommonValues
@@ -15,22 +20,29 @@ type TMicroEdge struct {
 	AI3     float64 `json:"ai_3"`
 }
 
-func MicroEdge(data string, sensor TSensorType) TMicroEdge {
-	d := Common(data, sensor)
+func GetPointsStructME() interface{} {
+	return TMicroEdge{}
+}
+
+func CheckPayloadLengthME(data string) bool {
+	dl := len(data)
+	return dl == 36 || dl == 32 || dl == 44
+}
+
+func DecodeME(data string, _ *LoRaDeviceDescription) (*CommonValues, interface{}) {
 	p := pulse(data)
 	a1 := ai1(data)
 	a2 := ai2(data)
 	a3 := ai3(data)
 	vol := voltage(data)
 	v := TMicroEdge{
-		CommonValues: d,
-		Voltage:      vol,
-		Pulse:        p,
-		AI1:          a1,
-		AI2:          a2,
-		AI3:          a3,
+		Voltage: vol,
+		Pulse:   p,
+		AI1:     a1,
+		AI2:     a2,
+		AI3:     a3,
 	}
-	return v
+	return &v.CommonValues, v
 }
 
 func pulse(data string) int {
@@ -59,17 +71,17 @@ func voltage(data string) float64 {
 	return v_
 }
 
-func MicroEdgePointType(sensorType string, value float64) float64 {
-	switch sensorType {
-	case model.IOType.RAW:
+func MicroEdgePointType(pointType string, value float64) float64 {
+	switch model.IOType(pointType) {
+	case model.IOTypeRAW:
 		return value
-	case model.IOType.Digital:
+	case model.IOTypeDigital:
 		if value == 0 || value >= 1000 {
 			return 0
 		} else {
 			return 1
 		}
-	case model.IOType.Thermistor10K:
+	case model.IOTypeThermistor10K:
 		vlt := 3.34
 		v := (value / 1024) * vlt
 		R0 := 10000.0
@@ -81,7 +93,7 @@ func MicroEdgePointType(sensorType string, value float64) float64 {
 		T := 1.0 / (1.0/t0 + (1.0/b)*ml)
 		output := T - 273.15
 		return output
-	case model.IOType.VoltageDC:
+	case model.IOTypeVoltageDC:
 		output := (value / 1024) * 10
 		return output
 	default:

@@ -1,7 +1,6 @@
-package rubixmodel
+package system_model
 
 import "github.com/NubeIO/flow-framework/plugin/defaults"
-
 
 type NameStruct struct {
 	Type     string `json:"type" default:"string"`
@@ -23,7 +22,7 @@ type Network struct {
 	PluginName  struct {
 		Type     string `json:"type" default:"string"`
 		Required bool   `json:"required" default:"true"`
-		Default  string `json:"default" default:"rubix"`
+		Default  string `json:"default" default:"system"`
 	} `json:"plugin_name"`
 }
 
@@ -36,7 +35,6 @@ type Point struct {
 	Name        NameStruct        `json:"name"`
 	Description DescriptionStruct `json:"description"`
 }
-
 
 func GetNetworkSchema() *Network {
 	network := &Network{}
@@ -55,4 +53,3 @@ func GetPointSchema() *Point {
 	defaults.Set(point)
 	return point
 }
-

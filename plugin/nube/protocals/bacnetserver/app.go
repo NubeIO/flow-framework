@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	baseModel "github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/mqttclient"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/bacnetserver/model"
@@ -11,7 +13,6 @@ import (
 	"github.com/NubeIO/flow-framework/utils"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 //bacnetUpdate listen on mqtt and then update the point in flow-framework
@@ -57,7 +58,7 @@ func (i *Instance) addPoint(body *baseModel.Point) (*model.Point, error) {
 	point.ObjectName = body.Name
 	point.Enable = true
 	point.Description = body.Description
-	point.Address = utils.IntIsNil(body.AddressId)
+	point.Address = utils.IntIsNil(body.AddressID)
 	point.ObjectType = body.ObjectType
 	point.COV = utils.Float64IsNil(body.COV)
 	point.EventState = "normal"
@@ -104,7 +105,7 @@ func (i *Instance) pointPatch(body *baseModel.Point) (*model.Point, error) {
 		(*point.Priority).P16 = (*body.Priority).P16
 	}
 	point.ObjectName = body.Name
-	addr := body.AddressId
+	addr := body.AddressID
 	obj := body.ObjectType
 
 	cli := plgrest.NewNoAuth(ip, port)
@@ -120,7 +121,7 @@ func (i *Instance) pointPatch(body *baseModel.Point) (*model.Point, error) {
 //deletePoint point make sure
 func (i *Instance) deletePoint(body *baseModel.Point) (bool, error) {
 	cli := plgrest.NewNoAuth(ip, port)
-	_, err := cli.DeletePoint(body.ObjectType, utils.IntIsNil(body.AddressId))
+	_, err := cli.DeletePoint(body.ObjectType, utils.IntIsNil(body.AddressID))
 	if err != nil {
 		return false, err
 	}

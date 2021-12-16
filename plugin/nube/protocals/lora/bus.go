@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/mustafaturan/bus/v3"
 	log "github.com/sirupsen/logrus"
 )
 
-func (i *Instance) BusServ() {
+func (inst *Instance) BusServ() {
 	handlerCreated := bus.Handler{ //PLUGIN CREATED BUS
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {
@@ -32,7 +33,7 @@ func (i *Instance) BusServ() {
 				}
 				if dev != nil {
 					log.Info("LORA BUS PluginsCreated IsDevice", " ", dev.UUID)
-					_, err = i.addPoints(dev)
+					err = inst.addDevicePoints(dev)
 					if err != nil {
 						return
 					}
@@ -78,7 +79,7 @@ func (i *Instance) BusServ() {
 					return
 				}
 				if dev != nil {
-					err = i.updatePointAddress(dev)
+					err = inst.updateDevicePointsAddress(dev)
 					log.Info("LORA BUS PluginsUpdated IsDevice", " ", dev.UUID)
 					if err != nil {
 						return

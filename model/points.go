@@ -1,7 +1,5 @@
 package model
 
-import "gorm.io/datatypes"
-
 // TimeOverride TODO add in later
 //TimeOverride where a point value can be overridden for a duration of time
 type TimeOverride struct {
@@ -18,137 +16,102 @@ type MathOperation struct {
 	X    float64
 }
 
-var ObjectTypes = struct {
+type ObjectType string
+
+const (
 	//bacnet
-	AnalogInput  string `json:"analog_input"`
-	AnalogOutput string `json:"analog_output"`
-	AnalogValue  string `json:"analog_value"`
-	BinaryInput  string `json:"binary_input"`
-	BinaryOutput string `json:"binary_output"`
-	BinaryValue  string `json:"binary_value"`
+	ObjTypeAnalogInput  ObjectType = "analog_input"
+	ObjTypeAnalogOutput ObjectType = "analog_output"
+	ObjTypeAnalogValue  ObjectType = "analog_value"
+	ObjTypeBinaryInput  ObjectType = "binary_input"
+	ObjTypeBinaryOutput ObjectType = "binary_output"
+	ObjTypeBinaryValue  ObjectType = "binary_value"
 	//modbus
-	ReadCoil           string `json:"read_coil"`
-	ReadCoils          string `json:"read_coils"`
-	ReadDiscreteInput  string `json:"read_discrete_input"`
-	ReadDiscreteInputs string `json:"read_discrete_inputs"`
-	WriteCoil          string `json:"write_coil"`
-	WriteCoils         string `json:"write_coils"`
-	ReadRegister       string `json:"read_register"`
-	ReadRegisters      string `json:"read_registers"`
-	ReadHolding        string `json:"read_holding"`
-	ReadHoldings       string `json:"read_holdings"`
-	WriteHolding       string `json:"write_holding"`
-	WriteHoldings      string `json:"write_holdings"`
-	ReadInt16          string `json:"read_int_16"`
-	ReadSingleInt16    string `json:"read_single_int_16"`
-	WriteSingleInt16   string `json:"write_single_int_16"`
-	ReadUint16         string `json:"read_uint_16"`
-	ReadSingleUint16   string `json:"read_single_uint_16"`
-	WriteSingleUint16  string `json:"write_single_uint_16"`
-	ReadInt32          string `json:"read_int_32"`
-	ReadSingleInt32    string `json:"read_single_int_32"`
-	WriteSingleInt32   string `json:"write_single_int_32"`
-	ReadUint32         string `json:"read_uint_32"`
-	ReadSingleUint32   string `json:"read_single_uint_32"`
-	WriteSingleUint32  string `json:"write_single_uint_32"`
-	ReadFloat32        string `json:"read_float_32"`
-	ReadSingleFloat32  string `json:"read_single_float_32"`
-	WriteSingleFloat32 string `json:"write_single_float_32"`
-	ReadFloat64        string `json:"read_float_64"`
-	ReadSingleFloat64  string `json:"read_single_float_64"`
-	WriteSingleFloat64 string `json:"write_single_float_64"`
-}{
-	//bacnet
-	AnalogInput:  "analogInput",
-	AnalogOutput: "analogOutput",
-	AnalogValue:  "analogValue",
-	BinaryInput:  "binaryInput",
-	BinaryOutput: "binaryOutput",
-	BinaryValue:  "binaryValue",
+	ObjTypeReadCoil           ObjectType = "read_coil"
+	ObjTypeReadCoils          ObjectType = "read_coils"
+	ObjTypeReadDiscreteInput  ObjectType = "read_discrete_input"
+	ObjTypeReadDiscreteInputs ObjectType = "read_discrete_inputs"
+	ObjTypeWriteCoil          ObjectType = "write_coil"
+	ObjTypeWriteCoils         ObjectType = "write_coils"
+	ObjTypeReadRegister       ObjectType = "read_register"
+	ObjTypeReadRegisters      ObjectType = "read_registers"
+	ObjTypeReadHolding        ObjectType = "read_holding"
+	ObjTypeReadHoldings       ObjectType = "read_holdings"
+	ObjTypeWriteHolding       ObjectType = "write_holding"
+	ObjTypeWriteHoldings      ObjectType = "write_holdings"
+	ObjTypeReadInt16          ObjectType = "read_int_16"
+	ObjTypeReadSingleInt16    ObjectType = "read_single_int_16"
+	ObjTypeWriteSingleInt16   ObjectType = "write_single_int_16"
+	ObjTypeReadUint16         ObjectType = "read_uint_16"
+	ObjTypeReadSingleUint16   ObjectType = "read_single_uint_16"
+	ObjTypeWriteSingleUint16  ObjectType = "write_single_uint_16"
+	ObjTypeReadInt32          ObjectType = "read_int_32"
+	ObjTypeReadSingleInt32    ObjectType = "read_single_int_32"
+	ObjTypeWriteSingleInt32   ObjectType = "write_single_int_32"
+	ObjTypeReadUint32         ObjectType = "read_uint_32"
+	ObjTypeReadSingleUint32   ObjectType = "read_single_uint_32"
+	ObjTypeWriteSingleUint32  ObjectType = "write_single_uint_32"
+	ObjTypeReadFloat32        ObjectType = "read_float_32"
+	ObjTypeReadSingleFloat32  ObjectType = "read_single_float_32"
+	ObjTypeWriteSingleFloat32 ObjectType = "write_single_float_32"
+	ObjTypeReadFloat64        ObjectType = "read_float_64"
+	ObjTypeReadSingleFloat64  ObjectType = "read_single_float_64"
+	ObjTypeWriteSingleFloat64 ObjectType = "write_single_float_64"
+)
+
+var ObjectTypesMap = map[ObjectType]int8{
+	ObjTypeAnalogInput: 0, ObjTypeAnalogOutput: 0, ObjTypeAnalogValue: 2,
+	ObjTypeBinaryInput: 0, ObjTypeBinaryOutput: 0, ObjTypeBinaryValue: 0,
 	//modbus
-	ReadCoil:           "readCoil",
-	ReadCoils:          "readCoils",
-	ReadDiscreteInput:  "readDiscreteInput",
-	ReadDiscreteInputs: "readDiscreteInputs",
-	WriteCoil:          "writeCoil",
-	WriteCoils:         "writeCoils",
-	ReadRegister:       "readRegister",
-	ReadRegisters:      "readRegisters",
-	ReadHolding:        "readHolding",
-	ReadHoldings:       "readHoldings",
-	WriteHolding:       "writeHolding",
-	WriteHoldings:      "writeHoldings",
-	ReadInt16:          "readInt16",
-	ReadSingleInt16:    "readSingleInt16",
-	WriteSingleInt16:   "writeSingleInt16",
-	ReadUint16:         "readUint16",
-	ReadSingleUint16:   "readSingleUint16",
-	WriteSingleUint16:  "writeSingleUint16",
-	ReadInt32:          "readInt32",
-	ReadSingleInt32:    "readSingleInt32",
-	WriteSingleInt32:   "writeSingleInt32",
-	ReadUint32:         "readUint32",
-	ReadSingleUint32:   "readSingleUint32",
-	WriteSingleUint32:  "writeSingleUint32",
-	ReadFloat32:        "readFloat32",
-	ReadSingleFloat32:  "readSingleFloat32",
-	WriteSingleFloat32: "writeSingleFloat32",
-	ReadFloat64:        "readFloat64",
-	ReadSingleFloat64:  "readSingleFloat64",
-	WriteSingleFloat64: "writeSingleFloat64",
+	ObjTypeReadCoil: 0, ObjTypeReadCoils: 0, ObjTypeReadDiscreteInput: 0,
+	ObjTypeReadDiscreteInputs: 0, ObjTypeWriteCoil: 0, ObjTypeWriteCoils: 0,
+	ObjTypeReadRegister: 0, ObjTypeReadRegisters: 0, ObjTypeReadHolding: 0,
+	ObjTypeReadHoldings: 0, ObjTypeWriteHolding: 0, ObjTypeWriteHoldings: 0,
+	ObjTypeReadInt16: 0, ObjTypeReadSingleInt16: 0, ObjTypeWriteSingleInt16: 0,
+	ObjTypeReadUint16: 0, ObjTypeReadSingleUint16: 0, ObjTypeWriteSingleUint16: 0,
+	ObjTypeReadInt32: 0, ObjTypeReadSingleInt32: 0, ObjTypeWriteSingleInt32: 0,
+	ObjTypeReadUint32: 0, ObjTypeReadSingleUint32: 0, ObjTypeWriteSingleUint32: 0,
+	ObjTypeReadFloat32: 0, ObjTypeReadSingleFloat32: 0, ObjTypeWriteSingleFloat32: 0,
+	ObjTypeReadFloat64: 0, ObjTypeReadSingleFloat64: 0, ObjTypeWriteSingleFloat64: 0,
 }
 
-var ObjectEncoding = struct {
-	LebBew string `json:"leb_bew"` //LITTLE_ENDIAN, HIGH_WORD_FIRST
-	LebLew string `json:"leb_lew"`
-	BebLew string `json:"beb_lew"`
-	BebBew string `json:"beb_bew"`
-}{
-	LebBew: "lebBew",
-	LebLew: "lebLew",
-	BebLew: "bebLew",
-	BebBew: "bebBew",
-}
+type ByteOrder string
 
-var IOType = struct {
-	RAW           string `json:"raw"`
-	Digital       string `json:"digital"`
-	AToDigital    string `json:"a_to_digital"`
-	VoltageDC     string `json:"voltage_dc"`
-	Current       string `json:"current"`
-	Thermistor    string `json:"thermistor"`
-	Thermistor10K string `json:"thermistor_10k_type_2"`
-}{
-	RAW:           "raw",
-	Digital:       "digital",
-	AToDigital:    "a_to_digital",
-	VoltageDC:     "voltage_dc",
-	Current:       "current",
-	Thermistor:    "thermistor",
-	Thermistor10K: "thermistor_10k_type_2",
-}
+const (
+	ByteOrderLebBew ByteOrder = "leb_bew" //LITTLE_ENDIAN, HIGH_WORD_FIRST
+	ByteOrderLebLew ByteOrder = "leb_lew"
+	ByteOrderBebLew ByteOrder = "beb_lew"
+	ByteOrderBebBew ByteOrder = "beb_bew"
+)
 
-var EvalExamples = struct {
-	Example             string `json:"example"`
-	BoolInvert          string `json:"bool_invert"`
-	CelsiusToFahrenheit string `json:"celsius_to_fahrenheit"`
-}{
-	Example:             "x + 0",
-	BoolInvert:          "1-x",
-	CelsiusToFahrenheit: "(x * 9/5) + 32",
-}
+type IOType string
 
-var EvalMode = struct {
-	Enable              string `json:"enable"`
-	Disabled            string `json:"disabled"`
-	CalcOnOriginalValue string `json:"calc_on_original_value"`
-	CalcAfterScale      string `json:"calc_after_scale"`
-}{
-	Enable:              "enable",
-	Disabled:            "disabled",
-	CalcOnOriginalValue: "calcOnOriginalValue",
-	CalcAfterScale:      "calcAfterScale",
-}
+const (
+	IOTypeRAW           IOType = "raw"
+	IOTypeDigital       IOType = "digital"
+	IOTypeAToDigital    IOType = "a_to_digital"
+	IOTypeVoltageDC     IOType = "voltage_dc"
+	IOTypeCurrent       IOType = "current"
+	IOTypeThermistor    IOType = "thermistor"
+	IOTypeThermistor10K IOType = "thermistor_10k_type_2"
+)
+
+type EvalExamples string
+
+const (
+	EvalExExample             EvalExamples = "example"
+	EvalExBoolInvert          EvalExamples = "bool_invert"
+	EvalExCelsiusToFahrenheit EvalExamples = "celsius_to_fahrenheit"
+)
+
+type EvalMode string
+
+const (
+	EvalModeEnable              EvalMode = "enable"
+	EvalModeDisabled            EvalMode = "disabled"
+	EvalModeCalcOnOriginalValue EvalMode = "calc_on_original_value"
+	EvalModeCalcAfterScale      EvalMode = "calc_after_scale"
+)
 
 //Point table
 type Point struct {
@@ -156,47 +119,48 @@ type Point struct {
 	CommonName
 	CommonDescription
 	CommonEnable
-	PresentValue         *float64 `json:"present_value"` //point value, read only
-	OriginalValue        *float64 `json:"original_value"`
-	CurrentPriority      *int     `json:"current_priority,omitempty"`
-	InSync               *bool    `json:"in_sync"`                    //if user edits the point it will disable the COV for one time
-	WriteValueOnce       *bool    `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
-	WriteValueOnceSync   *bool    `json:"write_value_once_sync,omitempty"`
-	Fallback             *float64 `json:"fallback"`
-	DeviceUUID           string   `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
-	EnableWriteable      *bool    `json:"writeable,omitempty"`
-	IsOutput             *bool    `json:"is_output,omitempty"`
-	EvalMode             string   `json:"eval_mode,omitempty"`
-	Eval                 string   `json:"eval_expression,omitempty"`
-	EvalExample          string   `json:"eval_example,omitempty"`
-	COV                  *float64 `json:"cov"`
-	ObjectType           string   `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
-	ObjectEncoding       string   `json:"object_encoding,omitempty"` //BEB_LEW bebLew
-	IoID                 string   `json:"io_id,omitempty"`           //DI1,UI1,AO1, temp, pulse, motion
-	IoType               string   `json:"io_type,omitempty"`         //0-10dc, 0-40ma, thermistor
-	AddressId            *int     `json:"address_id"`                // for example a modbus address or bacnet address
-	AddressLength        *int     `json:"address_length"`            // for example a modbus address offset
-	AddressUUID          string   `json:"address_uuid,omitempty"`    // for example a droplet id (so a string)
-	NextAvailableAddress *bool    `json:"use_next_available_address,omitempty"`
-	Decimal              *uint32  `json:"decimal,omitempty"`
-	LimitMin             *float64 `json:"limit_min"`
-	LimitMax             *float64 `json:"limit_max"`
-	ScaleInMin           *float64 `json:"scale_in_min"`
-	ScaleInMax           *float64 `json:"scale_in_max"`
-	ScaleOutMin          *float64 `json:"scale_out_min"`
-	ScaleOutMax          *float64 `json:"scale_out_max"`
-	UnitType             string   `json:"unit_type,omitempty"` //temperature
-	Unit                 string   `json:"unit,omitempty"`
-	UnitTo               string   `json:"unit_to,omitempty"` //with take the unit and convert to, this would affect the presentValue and the original value will be stored in the raw
+	CommonCreated
 	CommonThingClass
 	CommonThingRef
 	CommonThingType
-	IsProducer *bool `json:"is_producer,omitempty"`
-	IsConsumer *bool `json:"is_consumer,omitempty"`
 	CommonFault
-	ValueRaw datatypes.JSON `json:"value_raw,omitempty"`
-	Priority *Priority      `json:"priority,omitempty" gorm:"constraint:OnDelete:CASCADE"`
-	Tags     []*Tag         `json:"tags,omitempty" gorm:"many2many:points_tags;constraint:OnDelete:CASCADE"`
+	PresentValue         *float64  `json:"present_value"` //point value, read only
+	OriginalValue        *float64  `json:"original_value"`
+	CurrentPriority      *int      `json:"current_priority,omitempty"`
+	InSync               *bool     `json:"in_sync"`                    //if user edits the point it will disable the COV for one time
+	WriteValueOnce       *bool     `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
+	WriteValueOnceSync   *bool     `json:"write_value_once_sync,omitempty"`
+	Fallback             *float64  `json:"fallback"`
+	DeviceUUID           string    `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
+	EnableWriteable      *bool     `json:"writeable,omitempty"`
+	IsOutput             *bool     `json:"is_output,omitempty"`
+	EvalMode             string    `json:"eval_mode,omitempty"`
+	Eval                 string    `json:"eval_expression,omitempty"`
+	EvalExample          string    `json:"eval_example,omitempty"`
+	COV                  *float64  `json:"cov"`
+	ObjectType           string    `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
+	ObjectEncoding       string    `json:"object_encoding,omitempty"` //BEB_LEW bebLew
+	IoID                 string    `json:"io_id,omitempty"`           //DI1,UI1,AO1, temp, pulse, motion
+	IoType               string    `json:"io_type,omitempty"`         //0-10dc, 0-40ma, thermistor
+	AddressID            *int      `json:"address_id"`                // for example a modbus address or bacnet address
+	AddressLength        *int      `json:"address_length"`            // for example a modbus address offset
+	AddressUUID          string    `json:"address_uuid,omitempty"`    // for example a droplet id (so a string)
+	NextAvailableAddress *bool     `json:"use_next_available_address,omitempty"`
+	Decimal              *uint32   `json:"decimal,omitempty"`
+	LimitMin             *float64  `json:"limit_min"`
+	LimitMax             *float64  `json:"limit_max"`
+	ScaleInMin           *float64  `json:"scale_in_min"`
+	ScaleInMax           *float64  `json:"scale_in_max"`
+	ScaleOutMin          *float64  `json:"scale_out_min"`
+	ScaleOutMax          *float64  `json:"scale_out_max"`
+	UnitType             string    `json:"unit_type,omitempty"` //temperature
+	Unit                 string    `json:"unit,omitempty"`
+	UnitTo               string    `json:"unit_to,omitempty"` //with take the unit and convert to, this would affect the presentValue and the original value will be stored in the raw
+	IsProducer           *bool     `json:"is_producer,omitempty"`
+	IsConsumer           *bool     `json:"is_consumer,omitempty"`
+	ValueRaw             string    `json:"value_raw,omitempty"`
+	Priority             *Priority `json:"priority,omitempty" gorm:"constraint:OnDelete:CASCADE"`
+	Tags                 []*Tag    `json:"tags,omitempty" gorm:"many2many:points_tags;constraint:OnDelete:CASCADE"`
 }
 
 type Priority struct {

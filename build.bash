@@ -58,8 +58,6 @@ go build -buildmode=plugin -o mqttapi.so *.go  && cp mqttapi.so  $pluginDir
 cd $dir/plugin/nube/utils/git
 go build -buildmode=plugin -o git.so *.go  && cp git.so  $pluginDir
 
-cd $dir/plugin/nube/networking/rubixnet
-go build -buildmode=plugin -o rubixnet.so *.go  && cp rubixnet.so  $pluginDir
 
 cd $dir/plugin/nube/protocals/edge28
 go build -buildmode=plugin -o edge28.so *.go  && cp edge28.so $pluginDir
@@ -73,8 +71,6 @@ go build -buildmode=plugin -o modbus.so *.go  && cp modbus.so $pluginDir
 cd $dir/plugin/nube/protocals/lora
 go build -buildmode=plugin -o lora.so *.go  && cp lora.so $pluginDir
 
-cd $dir/plugin/nube/protocals/rubix
-go build -buildmode=plugin -o rubix.so *.go  && cp rubix.so $pluginDir
 
 cd $dir/plugin/nube/protocals/bacnetserver
 go build -buildmode=plugin -o bacnetserver.so *.go  && cp bacnetserver.so $pluginDir

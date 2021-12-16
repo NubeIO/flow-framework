@@ -9,10 +9,6 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-var (
-	conf = config.Get()
-)
-
 type FlowClient struct {
 	client      *resty.Client
 	ClientToken string
@@ -21,7 +17,7 @@ type FlowClient struct {
 func GetFlowToken(ip string, port int, username string, password string) (*string, error) {
 	client := resty.New()
 	client.SetDebug(false)
-	url := fmt.Sprintf("http://%s:%d", ip, port)
+	url := fmt.Sprintf("%s://%s:%d", getSchema(port), ip, port)
 	client.SetHostURL(url)
 	client.SetError(&Error{})
 	cli := &FlowClient{client: client}
@@ -47,7 +43,7 @@ func NewFlowClientCli(ip *string, port *int, token *string, isMasterSlave *bool,
 func newSessionWithToken(ip string, port int, token string) *FlowClient {
 	client := resty.New()
 	client.SetDebug(false)
-	url := fmt.Sprintf("http://%s:%d/ff", ip, port)
+	url := fmt.Sprintf("%s://%s:%d/ff", getSchema(port), ip, port)
 	client.SetHostURL(url)
 	client.SetError(&Error{})
 	client.SetHeader("Authorization", token)
@@ -57,6 +53,7 @@ func newSessionWithToken(ip string, port int, token string) *FlowClient {
 func newMasterToSlaveSession(globalUUID string) *FlowClient {
 	client := resty.New()
 	client.SetDebug(false)
+	conf := config.Get()
 	url := fmt.Sprintf("http://%s:%d/slave/%s/ff", "0.0.0.0", conf.Server.RSPort, globalUUID)
 	client.SetHostURL(url)
 	client.SetError(&Error{})
@@ -67,9 +64,17 @@ func newMasterToSlaveSession(globalUUID string) *FlowClient {
 func newSlaveToMasterCallSession() *FlowClient {
 	client := resty.New()
 	client.SetDebug(false)
+	conf := config.Get()
 	url := fmt.Sprintf("http://%s:%d/master/ff", "0.0.0.0", conf.Server.RSPort)
 	client.SetHostURL(url)
 	client.SetError(&Error{})
 	client.SetHeader("Authorization", auth.GetRubixServiceInternalToken())
 	return &FlowClient{client: client}
+}
+
+func getSchema(port int) string {
+	if port == 443 {
+		return "https"
+	}
+	return "http"
 }

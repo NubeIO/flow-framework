@@ -1,0 +1,26 @@
+{
+  "events":
+  {},
+  "weekly":
+  {
+    "919d7b4c-2540-4759-bb29-afc017ed03c7":
+    {
+      "name": "HVAC",
+      "days":
+      [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday"
+      ],
+      "start": "09:00",
+      "end": "17:00",
+      "value": 20,
+      "color": "#4a90e2",
+      "timezone": "Australia/Sydney"
+    }
+  },
+  "holiday":
+  {}
+}

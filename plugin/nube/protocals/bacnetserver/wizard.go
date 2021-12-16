@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
 )
@@ -37,7 +38,7 @@ func (i *Instance) wizard() (string, error) {
 	pName := utils.NameIsNil()
 	pnt.Name = pName
 	pnt.Description = pName
-	pnt.AddressId = utils.NewInt(1)
+	pnt.AddressID = utils.NewInt(1)
 	pnt.ObjectType = "analogValue"
 	pnt.COV = utils.NewFloat64(0.5)
 	pnt.Fallback = utils.NewFloat64(1)

@@ -10,13 +10,13 @@ import (
 
 /*
 Implements functionality to define a weekly prototypical schedule in JSON format. You can then
-https://github.com/rickar/cal TODO add in holidays
+https://github.com/rickar/cal TODO add in exceptions
 
 
 TODO add in a master/global schedule feature
 
 Existing JSON
-{"events":{"2ee2a7b9-cf34-4b6d-b9d3-819c33d86040":{"name":"Back-Zone-1","dates":[{"start":"2021-08-21T13:45:00.000Z","end":"2021-08-21T17:45:00.000Z"}],"value":20,"color":"#9013fe"}},"weekly":{"33874fa3-dc9b-42de-a358-5bf83b2b1f1e":{"name":"Front-Zone-1","days":["sunday","monday","tuesday","wednesday","thursday","friday","saturday"],"start":"17:00","end":"03:00","value":20,"color":"#d0021b"}},"holiday":{}}
+{"events":{"2ee2a7b9-cf34-4b6d-b9d3-819c33d86040":{"name":"Back-Zone-1","dates":[{"start":"2021-08-21T13:45:00.000Z","end":"2021-08-21T17:45:00.000Z"}],"value":20,"color":"#9013fe"}},"weekly":{"33874fa3-dc9b-42de-a358-5bf83b2b1f1e":{"name":"Front-Zone-1","days":["sunday","monday","tuesday","wednesday","thursday","friday","saturday"],"start":"17:00","end":"03:00","value":20,"color":"#d0021b"}},"exception":{}}
 
 */
 

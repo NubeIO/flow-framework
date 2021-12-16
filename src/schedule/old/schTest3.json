@@ -1,0 +1,44 @@
+{
+  "events":
+  {},
+  "weekly":
+  {
+    "919d7b4c-2540-4759-bb29-afc017ed03c7":
+    {
+      "name": "HVAC",
+      "days":
+      [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday"
+      ],
+      "start": "09:00",
+      "end": "12:45",
+      "value": 20,
+      "color": "#4a90e2",
+      "timezone": "Australia/Sydney"
+    }
+  },
+  "holiday":
+  {
+    "59201e03-7356-4687-911f-c0840dad4977":
+    {
+      "name": "HVAC",
+      "dates":
+      [
+        {
+          "start": "2021-12-08T00:00:00.000Z",
+          "end": "2021-12-08T05:00:00.000Z"
+        },
+        {
+          "start": "2021-12-08T01:00:00.000Z",
+          "end": "2021-12-08T02:00:00.000Z"
+        }
+      ],
+      "value": 20,
+      "color": "#d0021b"
+    }
+  }
+}

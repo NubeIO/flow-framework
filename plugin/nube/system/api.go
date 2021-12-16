@@ -1,17 +1,24 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/NubeIO/flow-framework/model"
 	system_model "github.com/NubeIO/flow-framework/plugin/nube/system/model"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gomarkdown/markdown"
-	"net/http"
 )
 
 func resolveName(ctx *gin.Context) string {
 	return ctx.Param("name")
 }
+
+const (
+	schemaNetwork = "/schema/network"
+	schemaDevice  = "/schema/device"
+	schemaPoint   = "/schema/point"
+)
 
 //markdown guide
 const helpText = `
@@ -45,31 +52,18 @@ this is *some* normal texy`
 //supportedObjects return all objects that are not bacnet
 func supportedObjects() *utils.Array {
 	out := utils.NewArray()
-	objs := utils.ArrayValues(model.ObjectTypes)
-	for _, obj := range objs {
-		switch obj {
-		case model.ObjectTypes.AnalogInput:
-			out.Add(obj)
-		case model.ObjectTypes.AnalogOutput:
-			out.Add(obj)
-		case model.ObjectTypes.AnalogValue:
-			out.Add(obj)
-		case model.ObjectTypes.BinaryInput:
-			out.Add(obj)
-		case model.ObjectTypes.BinaryOutput:
-			out.Add(obj)
-		case model.ObjectTypes.BinaryValue:
-			out.Add(obj)
-		default:
-		}
-	}
+	out.Add(model.ObjTypeAnalogInput)
+	out.Add(model.ObjTypeAnalogOutput)
+	out.Add(model.ObjTypeAnalogValue)
+	out.Add(model.ObjTypeBinaryInput)
+	out.Add(model.ObjTypeBinaryOutput)
+	out.Add(model.ObjTypeBinaryValue)
 	return out
 }
 
 const (
-	help        = "/help"
-	helpHTML    = "/help/guide"
-	schemaPoint = "/schema/point"
+	help     = "/help"
+	helpHTML = "/help/guide"
 )
 
 var Supports = struct {
@@ -83,6 +77,19 @@ var Supports = struct {
 // RegisterWebhook implements plugin.Webhooker
 func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	i.basePath = basePath
+
+	mux.GET(schemaNetwork, func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, system_model.GetNetworkSchema())
+	})
+
+	mux.GET(schemaDevice, func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, system_model.GetDeviceSchema())
+	})
+
+	mux.GET(schemaPoint, func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, system_model.GetPointSchema())
+	})
+
 	mux.GET(help, func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Supports)
 	})
@@ -90,10 +97,6 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 		md := []byte(helpText)
 		output := markdown.ToHTML(md, nil, nil)
 		ctx.Writer.Write(output)
-	})
-	mux.GET(schemaPoint, func(ctx *gin.Context) {
-		point := system_model.GetPointSchema()
-		ctx.JSON(http.StatusOK, point)
 	})
 	mux.GET("/system/schedule/store/:name", func(ctx *gin.Context) {
 		obj, ok := i.store.Get(resolveName(ctx))

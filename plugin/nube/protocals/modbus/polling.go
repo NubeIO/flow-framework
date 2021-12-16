@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 const defaultInterval = 1000 * time.Millisecond
@@ -129,7 +130,7 @@ func (i *Instance) PollingTCP(p polling) error {
 							}
 							if !isConnected() {
 							} else {
-								a := utils.IntIsNil(pnt.AddressId)
+								a := utils.IntIsNil(pnt.AddressID)
 								ops.Addr = uint16(a)
 								l := utils.IntIsNil(pnt.AddressLength)
 								ops.Length = uint16(l)

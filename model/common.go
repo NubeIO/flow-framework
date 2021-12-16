@@ -1,8 +1,10 @@
+// Package model contains all models used across the flow-framework
 package model
 
 import (
-	"github.com/NubeIO/null"
 	"time"
+
+	"github.com/NubeIO/null"
 )
 
 type CommonDescription struct {

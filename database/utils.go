@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
 )
@@ -51,13 +52,13 @@ func checkTransport(t string) (string, error) {
 	return t, nil
 }
 
-func checkObjectType(t string) (string, error) {
+func checkObjectType(t string) (model.ObjectType, error) {
 	if t == "" {
-		return model.ObjectTypes.AnalogValue, nil
+		return model.ObjTypeAnalogValue, nil
 	}
-	i := utils.ArrayValues(model.ObjectTypes)
-	if !utils.ArrayContains(i, t) {
+	objType := model.ObjectType(t)
+	if _, ok := model.ObjectTypesMap[objType]; !ok {
 		return "", errors.New("please provide a valid object type ie: analogInput or readCoil")
 	}
-	return t, nil
+	return objType, nil
 }

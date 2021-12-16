@@ -1,9 +1,10 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/lora/model"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 const (
@@ -29,8 +30,8 @@ func bodyWizard(ctx *gin.Context) (dto wizard, err error) {
 }
 
 // RegisterWebhook implements plugin.Webhooker
-func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
-	i.basePath = basePath
+func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
+	inst.basePath = basePath
 	mux.GET(help, func(ctx *gin.Context) {
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
@@ -39,11 +40,11 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 		}
 	})
 	mux.POST(restartSerial, func(ctx *gin.Context) {
-		err := i.SerialClose()
+		err := inst.Disable()
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 		} else {
-			err := i.SerialOpen()
+			err := inst.Enable()
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, err)
 			} else {
@@ -52,7 +53,7 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 		}
 	})
 	mux.GET(listSerial, func(ctx *gin.Context) {
-		serial, err := i.listSerialPorts()
+		serial, err := inst.listSerialPorts()
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 		} else {
@@ -60,8 +61,8 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 		}
 	})
 	mux.POST(wizardSerial, func(ctx *gin.Context) {
-		body, err := bodyWizard(ctx)
-		serial, err := i.wizardSerial(body)
+		body, _ := bodyWizard(ctx)
+		serial, err := inst.wizardSerial(body)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 		} else {

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"time"
+
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/plugin/plugin-api"
 	"github.com/NubeIO/flow-framework/src/cachestore"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/patrickmn/go-cache"
+	log "github.com/sirupsen/logrus"
 )
 
 const path = "lora" //must be unique across all plugins
@@ -25,14 +28,15 @@ const transportType = "serial" //serial, ip
 
 // Instance is plugin instance
 type Instance struct {
-	config      *Config
-	enabled     bool
-	basePath    string
-	db          dbhandler.Handler
-	store       cachestore.Handler
-	bus         eventbus.BusService
-	pluginUUID  string
-	networkUUID string
+	config        *Config
+	enabled       bool
+	basePath      string
+	db            dbhandler.Handler
+	store         cachestore.Handler
+	bus           eventbus.BusService
+	pluginUUID    string
+	networkUUID   string
+	interruptChan chan struct{}
 }
 
 // GetFlowPluginInfo returns plugin info.
@@ -57,4 +61,37 @@ func NewFlowPluginInstance() plugin.Plugin {
 //main will not let main run
 func main() {
 	panic("this should be built as plugin")
+}
+
+// run LoRa plugin loop
+func (inst *Instance) run() {
+	defer inst.SerialClose()
+
+	for {
+		sc, err := inst.SerialOpen()
+		if err != nil {
+			log.Error("lora: error opening serial ", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		serialPayloadChan := make(chan string, 1)
+		serialCloseChan := make(chan error, 1)
+		go sc.Loop(serialPayloadChan, serialCloseChan)
+
+	readLoop:
+		for {
+			select {
+			case <-inst.interruptChan:
+				log.Info("lora: interrupt received on run")
+				return
+			case err := <-serialCloseChan:
+				log.Error("lora: serial connection error: ", err)
+				log.Info("lora: serial connection attempting to reconnect...")
+				break readLoop
+			case data := <-serialPayloadChan:
+				inst.handleSerialPayload(data)
+			}
+		}
+	}
 }

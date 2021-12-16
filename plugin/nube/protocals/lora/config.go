@@ -6,15 +6,15 @@ type Config struct {
 }
 
 // DefaultConfig implements plugin.Configurer
-func (i *Instance) DefaultConfig() interface{} {
+func (inst *Instance) DefaultConfig() interface{} {
 	return &Config{
 		MagicString: "",
 	}
 }
 
 // ValidateAndSetConfig implements plugin.Configurer
-func (i *Instance) ValidateAndSetConfig(config interface{}) error {
+func (inst *Instance) ValidateAndSetConfig(config interface{}) error {
 	newConfig := config.(*Config)
-	i.config = newConfig
+	inst.config = newConfig
 	return nil
 }

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"net/http"
+
 	baseModel "github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/model"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 const (
@@ -70,24 +71,12 @@ type T2 struct {
 //supportedObjects return all objects that are not bacnet
 func supportedObjects() *utils.Array {
 	out := utils.NewArray()
-	objs := utils.ArrayValues(baseModel.ObjectTypes)
-	for _, obj := range objs {
-		switch obj {
-		case baseModel.ObjectTypes.AnalogInput:
-			out.Add(obj)
-		case baseModel.ObjectTypes.AnalogOutput:
-			out.Add(obj)
-		case baseModel.ObjectTypes.AnalogValue:
-			out.Add(obj)
-		case baseModel.ObjectTypes.BinaryInput:
-			out.Add(obj)
-		case baseModel.ObjectTypes.BinaryOutput:
-			out.Add(obj)
-		case baseModel.ObjectTypes.BinaryValue:
-			out.Add(obj)
-		default:
-		}
-	}
+	out.Add(baseModel.ObjTypeAnalogInput)
+	out.Add(baseModel.ObjTypeAnalogOutput)
+	out.Add(baseModel.ObjTypeAnalogValue)
+	out.Add(baseModel.ObjTypeBinaryInput)
+	out.Add(baseModel.ObjTypeBinaryOutput)
+	out.Add(baseModel.ObjTypeBinaryValue)
 	return out
 }
 

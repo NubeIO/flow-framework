@@ -22,40 +22,55 @@ type TDropletTHLM struct {
 	Motion bool `json:"motion"`
 }
 
-func DropletTH(data string, sensor TSensorType) TDropletTH {
-	d := Common(data, sensor)
+func GetPointsStructTH() interface{} {
+	return TDropletTH{}
+}
+
+func GetPointsStructTHL() interface{} {
+	return TDropletTHL{}
+}
+
+func GetPointsStructTHLM() interface{} {
+	return TDropletTHLM{}
+}
+
+func CheckPayloadLengthDroplet(data string) bool {
+	dl := len(data)
+	return dl == 36 || dl == 32 || dl == 44
+}
+
+func DecodeDropletTH(data string, _ *LoRaDeviceDescription) (*CommonValues, interface{}) {
 	temperature := dropletTemp(data)
 	pressure := dropletPressure(data)
 	humidity := dropletHumidity(data)
 	voltage := dropletVoltage(data)
 	v := TDropletTH{
-		CommonValues: d,
-		Voltage:      voltage,
-		Temperature:  temperature,
-		Pressure:     pressure,
-		Humidity:     humidity,
+		Voltage:     voltage,
+		Temperature: temperature,
+		Pressure:    pressure,
+		Humidity:    humidity,
 	}
-	return v
+	return &v.CommonValues, v
 }
 
-func DropletTHL(data string, sensor TSensorType) TDropletTHL {
-	d := DropletTH(data, sensor)
+func DecodeDropletTHL(data string, devDesc *LoRaDeviceDescription) (*CommonValues, interface{}) {
+	_, d := DecodeDropletTH(data, devDesc)
 	light := dropletLight(data)
 	v := TDropletTHL{
-		TDropletTH: d,
+		TDropletTH: d.(TDropletTH),
 		Light:      light,
 	}
-	return v
+	return &v.CommonValues, v
 }
 
-func DropletTHLM(data string, sensor TSensorType) TDropletTHLM {
-	d := DropletTHL(data, sensor)
+func DecodeDropletTHLM(data string, devDesc *LoRaDeviceDescription) (*CommonValues, interface{}) {
+	_, d := DecodeDropletTHL(data, devDesc)
 	motion := dropletMotion(data)
 	v := TDropletTHLM{
-		TDropletTHL: d,
-		Motion: motion,
+		TDropletTHL: d.(TDropletTHL),
+		Motion:      motion,
 	}
-	return v
+	return &v.CommonValues, v
 }
 
 func dropletTemp(data string) float64 {

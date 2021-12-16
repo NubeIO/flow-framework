@@ -3,11 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/simonvetter/modbus"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 const (
@@ -33,14 +34,14 @@ const (
 )
 
 func isWrite(t string) bool {
-	switch t {
-	case model.ObjectTypes.WriteCoil, model.ObjectTypes.WriteCoils:
+	switch model.ObjectType(t) {
+	case model.ObjTypeWriteCoil, model.ObjTypeWriteCoils:
 		return true
-	case model.ObjectTypes.WriteHolding, model.ObjectTypes.WriteHoldings:
+	case model.ObjTypeWriteHolding, model.ObjTypeWriteHoldings:
 		return true
-	case model.ObjectTypes.WriteSingleInt16, model.ObjectTypes.WriteSingleUint16:
+	case model.ObjTypeWriteSingleInt16, model.ObjTypeWriteSingleUint16:
 		return true
-	case model.ObjectTypes.WriteSingleFloat32, model.ObjectTypes.WriteSingleFloat64:
+	case model.ObjTypeWriteSingleFloat32, model.ObjTypeWriteSingleFloat64:
 		return true
 	}
 	return false
@@ -68,14 +69,14 @@ type Operation struct {
 }
 
 func setRequest(body Operation) (Operation, error) {
-	r := body.ObjectType
-	if r == model.ObjectTypes.ReadCoil || r == model.ObjectTypes.ReadDiscreteInput || r == model.ObjectTypes.ReadHolding {
+	r := model.ObjectType(body.ObjectType)
+	if r == model.ObjTypeReadCoil || r == model.ObjTypeReadDiscreteInput || r == model.ObjTypeReadHolding {
 		body.Length = 1
 	}
-	if r == model.ObjectTypes.ReadCoil || r == model.ObjectTypes.ReadCoils || r == model.ObjectTypes.WriteCoil || r == model.ObjectTypes.WriteCoils {
+	if r == model.ObjTypeReadCoil || r == model.ObjTypeReadCoils || r == model.ObjTypeWriteCoil || r == model.ObjTypeWriteCoils {
 		body.IsCoil = true
 	}
-	if r == model.ObjectTypes.ReadHolding || r == model.ObjectTypes.ReadHoldings {
+	if r == model.ObjTypeReadHolding || r == model.ObjTypeReadHoldings {
 		body.IsHoldingReg = true
 	}
 	return body, nil
@@ -83,13 +84,13 @@ func setRequest(body Operation) (Operation, error) {
 
 func parseRequest(body Operation) (Operation, error) {
 	set, _ := setRequest(body)
-	ops := utils.NewString(body.ObjectType).ToCamelCase() //eg: readCoil, read_coil, writeCoil
-	ops = utils.LcFirst(ops)
+	opsObjT := utils.NewString(body.ObjectType).ToCamelCase() //eg: readCoil, read_coil, writeCoil
+	ops := model.ObjectType(utils.LcFirst(opsObjT))
 	switch ops {
-	case model.ObjectTypes.ReadCoil, model.ObjectTypes.ReadCoils, model.ObjectTypes.ReadDiscreteInput, model.ObjectTypes.ReadDiscreteInputs:
+	case model.ObjTypeReadCoil, model.ObjTypeReadCoils, model.ObjTypeReadDiscreteInput, model.ObjTypeReadDiscreteInputs:
 		set.op = readBool
 		return set, err
-	case model.ObjectTypes.WriteCoil, model.ObjectTypes.WriteCoils:
+	case model.ObjTypeWriteCoil, model.ObjTypeWriteCoils:
 		if body.WriteValue > 0 {
 			set.coil = true
 		} else {
@@ -97,17 +98,17 @@ func parseRequest(body Operation) (Operation, error) {
 		}
 		set.op = writeCoil
 		return set, err
-	case model.ObjectTypes.ReadRegister, model.ObjectTypes.ReadRegisters, model.ObjectTypes.ReadHolding, model.ObjectTypes.ReadHoldings:
+	case model.ObjTypeReadRegister, model.ObjTypeReadRegisters, model.ObjTypeReadHolding, model.ObjTypeReadHoldings:
 		set.op = readInt16
 		return set, err
-	case model.ObjectTypes.ReadFloat32, model.ObjectTypes.ReadSingleFloat32:
+	case model.ObjTypeReadFloat32, model.ObjTypeReadSingleFloat32:
 		set.IsHoldingReg = false
 		if body.IsHoldingReg {
 			set.IsHoldingReg = true
 		}
 		set.op = readFloat32
 		return set, err
-	case model.ObjectTypes.WriteSingleFloat32:
+	case model.ObjTypeWriteSingleFloat32:
 		set.IsHoldingReg = true
 		set.op = writeFloat32
 		set.f32 = float32(body.WriteValue)
@@ -132,15 +133,15 @@ func zeroMode(addr uint16, mode bool) uint16 {
 func networkRequest(client *modbus.ModbusClient, o Operation) (response interface{}, responseValue float64, err error) {
 	o.Addr = zeroMode(o.Addr, o.ZeroMode)
 	sel := utils.NewString(o.Encoding).ToCamelCase() //eg: LEB_BEW, lebBew
-	sel = utils.LcFirst(sel)
-	switch sel {
-	case model.ObjectEncoding.LebBew:
+	selBO := model.ByteOrder(utils.LcFirst(sel))
+	switch selBO {
+	case model.ByteOrderLebBew:
 		err = client.SetEncoding(modbus.LITTLE_ENDIAN, modbus.HIGH_WORD_FIRST)
-	case model.ObjectEncoding.LebLew:
+	case model.ByteOrderLebLew:
 		err = client.SetEncoding(modbus.LITTLE_ENDIAN, modbus.LOW_WORD_FIRST)
-	case model.ObjectEncoding.BebLew:
+	case model.ByteOrderBebLew:
 		err = client.SetEncoding(modbus.BIG_ENDIAN, modbus.LOW_WORD_FIRST)
-	case model.ObjectEncoding.BebBew:
+	case model.ByteOrderBebBew:
 		err = client.SetEncoding(modbus.BIG_ENDIAN, modbus.HIGH_WORD_FIRST)
 	default:
 		err = client.SetEncoding(modbus.BIG_ENDIAN, modbus.LOW_WORD_FIRST)
@@ -207,12 +208,12 @@ func networkRequest(client *modbus.ModbusClient, o Operation) (response interfac
 		}
 	case readFloat32:
 		var res []float32
-		if o.ObjectType == model.ObjectTypes.ReadSingleFloat32 {
+		if model.ObjectType(o.ObjectType) == model.ObjTypeReadSingleFloat32 {
 			o.Length = 1
 		}
 		if o.IsHoldingReg {
 			res, err = client.ReadFloat32s(o.Addr, o.Length, modbus.HOLDING_REGISTER)
-			if o.ObjectType == model.ObjectTypes.ReadSingleFloat32 {
+			if model.ObjectType(o.ObjectType) == model.ObjTypeReadSingleFloat32 {
 				if err != nil {
 					log.Errorf("modbus: failed to read holding/input registers: %v\n", err)
 					return nil, 0, err
@@ -227,7 +228,7 @@ func networkRequest(client *modbus.ModbusClient, o Operation) (response interfac
 			}
 		} else {
 			res, err = client.ReadFloat32s(o.Addr, o.Length, modbus.INPUT_REGISTER)
-			if o.ObjectType == model.ObjectTypes.ReadSingleFloat32 {
+			if model.ObjectType(o.ObjectType) == model.ObjTypeReadSingleFloat32 {
 				if err != nil {
 					log.Errorf("modbus: failed to read holding/input registers: %v\n", err)
 				}

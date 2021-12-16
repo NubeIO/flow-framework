@@ -18,9 +18,9 @@ type Schedule struct {
 }
 
 type Schedules struct {
-	Events  map[string]Events  `json:"events"`
-	Weekly  map[string]Weekly  `json:"weekly"`
-	Holiday map[string]Holiday `json:"holiday"`
+	Events    map[string]Events    `json:"events"`
+	Weekly    map[string]Weekly    `json:"weekly"`
+	Exception map[string]Exception `json:"exception"`
 }
 
 type Events struct {
@@ -42,7 +42,7 @@ type Weekly struct {
 	Color string   `json:"color"`
 }
 
-type Holiday struct {
+type Exception struct {
 	Id    string `json:"id"`
 	Name  string `json:"name"`
 	Color string `json:"color"`

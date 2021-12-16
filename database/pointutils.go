@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/model"
 	unit "github.com/NubeIO/flow-framework/src/units"
@@ -37,7 +38,7 @@ func (d *GormDatabase) PointDeviceByAddressID(pointUUID string, body *model.Poin
 	var pointModel *model.Point
 	deviceUUID := body.DeviceUUID
 	objType := body.ObjectType
-	addressID := body.AddressId
+	addressID := body.AddressID
 	f := fmt.Sprintf("device_uuid = ? AND object_type = ? AND address_id = ?")
 	query := d.DB.Where(f, deviceUUID, objType, addressID, pointUUID).Preload("Priority").First(&pointModel)
 	if query.Error != nil {
@@ -81,16 +82,17 @@ func pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax *
 }
 
 func pointEval(presentValue, originalValue *float64, evalMode, evalString string) (value *float64, err error) {
+
 	var val *float64
-	if evalMode == model.EvalMode.CalcAfterScale || evalMode == model.EvalMode.Enable {
+	if model.EvalMode(evalMode) == model.EvalModeCalcAfterScale || model.EvalMode(evalMode) == model.EvalModeEnable {
 		val = presentValue
-	} else if evalMode == model.EvalMode.CalcOnOriginalValue {
+	} else if model.EvalMode(evalMode) == model.EvalModeCalcOnOriginalValue {
 		val = originalValue
 	} else {
 		val = presentValue
 	}
 	exp := evalString
-	if evalString != "" && evalMode != model.EvalMode.Disabled {
+	if evalString != "" && model.EvalMode(evalMode) != model.EvalModeDisabled {
 		eval, err := gval.Full().NewEvaluable(exp)
 		if err != nil && val != nil {
 			return nil, err

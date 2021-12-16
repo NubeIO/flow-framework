@@ -1,11 +1,12 @@
 package main
 
 import (
+	"time"
+
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
 	log "github.com/sirupsen/logrus"
 	"go.bug.st/serial"
-	"time"
 )
 
 //pointUpdate update point present value
@@ -53,8 +54,8 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 	var pnt model.Point
 	pnt.Name = "modbus"
 	pnt.Description = "modbus"
-	pnt.AddressId = utils.NewInt(1) //TODO check conversion
-	pnt.ObjectType = model.ObjectTypes.WriteSingleFloat32
+	pnt.AddressID = utils.NewInt(1) //TODO check conversion
+	pnt.ObjectType = string(model.ObjTypeWriteSingleFloat32)
 
 	_, err = i.db.WizardNewNetworkDevicePoint("modbus", &net, &dev, &pnt)
 	if err != nil {
@@ -97,8 +98,8 @@ func (i *Instance) wizardSerial(body wizard) (string, error) {
 	var pnt model.Point
 	pnt.Name = "modbus"
 	pnt.Description = "modbus"
-	pnt.AddressId = utils.NewInt(1) //TODO check conversion
-	pnt.ObjectType = model.ObjectTypes.WriteCoil
+	pnt.AddressID = utils.NewInt(1) //TODO check conversion
+	pnt.ObjectType = string(model.ObjTypeWriteCoil)
 
 	pntRet, err := i.db.WizardNewNetworkDevicePoint("modbus", &net, &dev, &pnt)
 	if err != nil {

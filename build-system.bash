@@ -7,7 +7,7 @@ RED="\033[31m"
 
 PRODUCTION=false
 SYSTEM=true
-RUBIX=false
+EDGE28=false
 MODBUS=false
 LORA=false
 
@@ -29,8 +29,8 @@ parseCommand() {
         --system)
             SYSTEM=true
           ;;
-        --rubix)
-            RUBIX=true
+        --edge28)
+            EDGE28=true
           ;;
         --modbus)
             MODBUS=true
@@ -68,10 +68,10 @@ if [ ${SYSTEM} == true ]; then
      go build -buildmode=plugin -o system.so *.go  && cp system.so  $pluginDir
      echo -e "${GREEN}BUILD SYSTEM"
 fi
-if [ ${RUBIX} == true ]; then
-     cd $dir/plugin/nube/protocals/rubix
-     go build -buildmode=plugin -o rubix.so *.go  && cp rubix.so  $pluginDir
-     echo -e "${GREEN}BUILD RUBIX"
+if [ ${EDGE28} == true ]; then
+     cd $dir/plugin/nube/protocals/edge28
+     go build -buildmode=plugin -o edge28.so *.go  && cp edge28.so  $pluginDir
+     echo -e "${GREEN}BUILD EDGE28"
 fi
 if [ ${MODBUS} == true ]; then
     cd $dir/plugin/nube/protocals/modbus

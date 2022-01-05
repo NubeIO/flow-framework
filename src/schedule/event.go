@@ -60,10 +60,11 @@ func CheckEventScheduleEntry(entry EventScheduleEntry) (ScheduleCheckerResult, e
 }
 
 //CheckEventScheduleCollection checks if there is a EventScheduleEntry in the provided EventScheduleCollection that matches the specified schedule Name and is currently within the scheduled period.
-func CheckEventScheduleCollection(scheduleMap TypeEvents, scheduleName string) ScheduleCheckerResult {
+//If isException is set (when checking exception schedules) Event Schedules with Name "ALL" OR "ANY" will be checked.
+func CheckEventScheduleCollection(scheduleMap TypeEvents, scheduleName string, isException bool) ScheduleCheckerResult {
 	finalResult := ScheduleCheckerResult{}
 	for _, scheduleEntry := range scheduleMap {
-		if scheduleName == "ANY" || scheduleName == "ALL" || scheduleEntry.Name == scheduleName {
+		if scheduleName == "ANY" || scheduleName == "ALL" || scheduleEntry.Name == scheduleName || (isException && scheduleEntry.Name == "ALL") || (isException && scheduleEntry.Name == "ANY") {
 			//fmt.Println("EVENT SCHEDULE ", i, ": ", scheduleEntry)
 			singleResult, err := CheckEventScheduleEntry(scheduleEntry)
 			singleResult.Name = scheduleName
@@ -84,6 +85,6 @@ func CheckEventScheduleCollection(scheduleMap TypeEvents, scheduleName string) S
 
 //EventCheck checks all Event Schedules in the payload for active periods. It returns a combined ScheduleCheckerResult of all Event Schedules.
 func EventCheck(events TypeEvents, scheduleName string) (ScheduleCheckerResult, error) {
-	results := CheckEventScheduleCollection(events, scheduleName)
+	results := CheckEventScheduleCollection(events, scheduleName, false)
 	return results, nil
 }

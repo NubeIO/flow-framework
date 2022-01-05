@@ -9,7 +9,7 @@ import (
 //ExceptionCheck checks all Exception Schedules in the payload for active periods. It returns a combined ScheduleCheckerResult of all Exception Schedules.
 func ExceptionCheck(exceptions TypeEvents, scheduleName string) (ScheduleCheckerResult, error) {
 	//treat Exception schedules as Event schedules until the final step.
-	results := CheckEventScheduleCollection(exceptions, scheduleName, true)
+	results := CheckEventScheduleCollection(exceptions, scheduleName)
 
 	//once the ScheduleCheckerResult has been computed (as an Event type schedule) then set the IsException flag.  This result should later be combined with Event and Weekly schedules.
 	results.IsException = true

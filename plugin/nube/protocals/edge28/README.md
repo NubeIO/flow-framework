@@ -21,7 +21,7 @@ write to DOs or R1, R2 can write true/false/1/0
 
 ``` 
 http://192.168.15.101:5000/api/1.1/write/do/r1/false/16
-http://192.168.15.101:5000`/api/1.1/write/do/r1/1/16`
+http://192.168.15.101:5000/api/1.1/write/do/r1/1/16
 ```
 
 read UIS

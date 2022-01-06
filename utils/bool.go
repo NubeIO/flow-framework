@@ -10,14 +10,6 @@ func NewFalse() *bool {
 	return &b
 }
 
-func BoolIsNil(b *bool) bool {
-	if b == nil {
-		return false
-	} else {
-		return *b
-	}
-}
-
 func IsTrue(b *bool) bool {
 	if b == nil {
 		return false

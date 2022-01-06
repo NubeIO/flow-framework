@@ -303,53 +303,23 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 	}
 	var limitMax *float64
 	if body.LimitMax == nil {
-		if pointModel.LimitMax != nil {
-			limitMax = pointModel.LimitMax
-		} else {
-			limitMax = body.LimitMax
-		}
-	} else {
-		limitMax = body.LimitMax
+		limitMax = pointModel.LimitMax
 	}
 	var scaleInMin *float64
 	if body.ScaleInMin == nil {
-		if pointModel.ScaleInMin != nil {
-			scaleInMin = pointModel.ScaleInMin
-		} else {
-			scaleInMin = body.ScaleInMin
-		}
-	} else {
-		scaleInMin = body.ScaleInMin
+		scaleInMin = pointModel.ScaleInMin
 	}
 	var scaleInMax *float64
 	if body.ScaleInMax == nil {
-		if pointModel.ScaleInMax != nil {
-			scaleInMax = pointModel.ScaleInMax
-		} else {
-			scaleInMax = body.ScaleInMax
-		}
-	} else {
-		scaleInMax = body.ScaleInMax
+		scaleInMax = pointModel.ScaleInMax
 	}
 	var scaleOutMin *float64
 	if body.ScaleOutMin == nil {
-		if pointModel.ScaleOutMin != nil {
-			scaleOutMin = pointModel.ScaleOutMin
-		} else {
-			scaleOutMin = body.ScaleOutMin
-		}
-	} else {
-		scaleOutMin = body.ScaleOutMin
+		scaleOutMin = pointModel.ScaleOutMin
 	}
 	var scaleOutMax *float64
 	if body.ScaleOutMax == nil {
-		if pointModel.ScaleOutMax != nil {
-			scaleOutMax = pointModel.ScaleOutMax
-		} else {
-			scaleOutMax = body.ScaleOutMax
-		}
-	} else {
-		scaleOutMax = body.ScaleOutMax
+		scaleOutMax = pointModel.ScaleOutMax
 	}
 	if body.Priority != nil {
 		priority := map[string]interface{}{}
@@ -363,7 +333,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 				if val == nil {
 					priority[typeOfPriority.Field(i).Name] = nil
 				} else {
-					fmt.Println("UpdatePointValue() - i, val:", typeOfPriority.Field(i).Name, *val)
+					//log.Info("UpdatePointValue() - i, val:", typeOfPriority.Field(i).Name, *val)
 					highestPri.Add(i)
 					highestValue.Set(i, *val)
 					priority[typeOfPriority.Field(i).Name] = *val
@@ -376,7 +346,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 				notNil = true
 			}
 		}
-		fmt.Println("UpdatePointValue() - body.Fallback:", body.Fallback)
+		//log.Info("UpdatePointValue() - body.Fallback:", body.Fallback)
 		if notNil {
 			min, _ := highestPri.MinMaxInt() //get the highest priority
 			val := highestValue.Get(min)     //get the highest priority value
@@ -388,31 +358,31 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 			body.OriginalValue = utils.NewFloat64(*body.Fallback)
 			body.CurrentPriority = utils.NewInt(16)
 			presentValue = utils.NewFloat64(*body.Fallback)
-			fmt.Println("UpdatePointValue() - FloatIsNilCheck(body.Fallback):", body.Priority.P16, body.OriginalValue, body.CurrentPriority, presentValue)
+			//log.Info("UpdatePointValue() - FloatIsNilCheck(body.Fallback):", body.Priority.P16, body.OriginalValue, body.CurrentPriority, presentValue)
 		}
 		d.DB.Model(&pointModel.Priority).Updates(&priority)
 	}
 	ov := utils.Float64IsNil(presentValue)
 	body.OriginalValue = &ov
 	if scaleInMin != nil {
-		fmt.Println("UpdatePointValue() - *presentValue1:", *presentValue)
+		//log.Info("UpdatePointValue() - *presentValue1:", *presentValue)
 	}
 	if scaleInMin != nil {
-		fmt.Println("UpdatePointValue() - *scaleInMin:", *scaleInMin)
+		//log.Info("UpdatePointValue() - *scaleInMin:", *scaleInMin)
 	}
 	if scaleInMin != nil {
-		fmt.Println("UpdatePointValue() - *scaleInMax:", *scaleInMax)
+		//log.Info("UpdatePointValue() - *scaleInMax:", *scaleInMax)
 	}
 	if scaleInMin != nil {
-		fmt.Println("UpdatePointValue() - *scaleOutMin:", *scaleOutMin)
+		//log.Info("UpdatePointValue() - *scaleOutMin:", *scaleOutMin)
 	}
 	if scaleInMin != nil {
-		fmt.Println("UpdatePointValue() - *scaleOutMax:", *scaleOutMax)
+		//log.Info("UpdatePointValue() - *scaleOutMax:", *scaleOutMax)
 	}
 	presentValue = pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax)
-	fmt.Println("UpdatePointValue() - presentValue2:", *presentValue)
+	//log.Info("UpdatePointValue() - presentValue2:", *presentValue)
 	presentValue = pointRange(presentValue, limitMin, limitMax)
-	fmt.Println("UpdatePointValue() - presentValue3:", *presentValue)
+	//log.Info("UpdatePointValue() - presentValue3:", *presentValue)
 	eval, err := pointEval(presentValue, body.OriginalValue, pointModel.EvalMode, pointModel.Eval)
 	if err != nil {
 		log.Errorf("ERROR on point invalid point unit")

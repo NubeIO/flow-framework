@@ -333,7 +333,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 				if val == nil {
 					priority[typeOfPriority.Field(i).Name] = nil
 				} else {
-					//log.Info("UpdatePointValue() - i, val:", typeOfPriority.Field(i).Name, *val)
+					log.Debug("UpdatePointValue() - i, val:", typeOfPriority.Field(i).Name, *val)
 					highestPri.Add(i)
 					highestValue.Set(i, *val)
 					priority[typeOfPriority.Field(i).Name] = *val
@@ -346,7 +346,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 				notNil = true
 			}
 		}
-		//log.Info("UpdatePointValue() - body.Fallback:", body.Fallback)
+		log.Debug("UpdatePointValue() - body.Fallback:", body.Fallback)
 		if notNil {
 			min, _ := highestPri.MinMaxInt() //get the highest priority
 			val := highestValue.Get(min)     //get the highest priority value
@@ -358,31 +358,31 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 			body.OriginalValue = utils.NewFloat64(*body.Fallback)
 			body.CurrentPriority = utils.NewInt(16)
 			presentValue = utils.NewFloat64(*body.Fallback)
-			//log.Info("UpdatePointValue() - FloatIsNilCheck(body.Fallback):", body.Priority.P16, body.OriginalValue, body.CurrentPriority, presentValue)
+			log.Debug("UpdatePointValue() - FloatIsNilCheck(body.Fallback):", body.Priority.P16, body.OriginalValue, body.CurrentPriority, presentValue)
 		}
 		d.DB.Model(&pointModel.Priority).Updates(&priority)
 	}
 	ov := utils.Float64IsNil(presentValue)
 	body.OriginalValue = &ov
 	if scaleInMin != nil {
-		//log.Info("UpdatePointValue() - *presentValue1:", *presentValue)
+		log.Debug("UpdatePointValue() - *presentValue1:", *presentValue)
 	}
 	if scaleInMin != nil {
-		//log.Info("UpdatePointValue() - *scaleInMin:", *scaleInMin)
+		log.Debug("UpdatePointValue() - *scaleInMin:", *scaleInMin)
 	}
 	if scaleInMin != nil {
-		//log.Info("UpdatePointValue() - *scaleInMax:", *scaleInMax)
+		log.Debug("UpdatePointValue() - *scaleInMax:", *scaleInMax)
 	}
 	if scaleInMin != nil {
-		//log.Info("UpdatePointValue() - *scaleOutMin:", *scaleOutMin)
+		log.Debug("UpdatePointValue() - *scaleOutMin:", *scaleOutMin)
 	}
 	if scaleInMin != nil {
-		//log.Info("UpdatePointValue() - *scaleOutMax:", *scaleOutMax)
+		log.Debug("UpdatePointValue() - *scaleOutMax:", *scaleOutMax)
 	}
 	presentValue = pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax)
-	//log.Info("UpdatePointValue() - presentValue2:", *presentValue)
+	log.Debug("UpdatePointValue() - presentValue2:", *presentValue)
 	presentValue = pointRange(presentValue, limitMin, limitMax)
-	//log.Info("UpdatePointValue() - presentValue3:", *presentValue)
+	log.Debug("UpdatePointValue() - presentValue3:", *presentValue)
 	eval, err := pointEval(presentValue, body.OriginalValue, pointModel.EvalMode, pointModel.Eval)
 	if err != nil {
 		log.Errorf("ERROR on point invalid point unit")
@@ -402,7 +402,7 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 		val := utils.RoundTo(*presentValue, *pointModel.Decimal)
 		presentValue = &val
 	}
-	if utils.BoolIsNil(pointModel.IsProducer) && utils.BoolIsNil(body.IsProducer) {
+	if pointModel.IsProducer == nil && body.IsProducer == nil {
 		if compare(pointModel, body) {
 			_, err := d.ProducerWrite("point", pointModel)
 			if err != nil {
@@ -484,7 +484,7 @@ func (d *GormDatabase) UpdatePointByFieldAndUnit(field string, value string, bod
 	if err != nil {
 		return nil, err
 	}
-	if utils.BoolIsNil(pointModel.IsProducer) {
+	if pointModel.IsProducer == nil {
 		if compare(pointModel, body) {
 			_, err := d.ProducerWrite("point", pointModel)
 			if err != nil {

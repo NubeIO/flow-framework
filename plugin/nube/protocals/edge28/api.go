@@ -1,8 +1,8 @@
 package main
 
 import (
+	model "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/model"
 	edgerest "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/restclient"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/rubix/rubixmodel"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -24,15 +24,15 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	i.basePath = basePath
 
 	mux.GET(schemaNetwork, func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, rubixmodel.GetNetworkSchema())
+		ctx.JSON(http.StatusOK, model.GetNetworkSchema())
 	})
 
 	mux.GET(schemaDevice, func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, rubixmodel.GetDeviceSchema())
+		ctx.JSON(http.StatusOK, model.GetDeviceSchema())
 	})
 
 	mux.GET(schemaPoint, func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, rubixmodel.GetPointSchema())
+		ctx.JSON(http.StatusOK, model.GetPointSchema())
 	})
 
 	mux.GET("/edge/ping", func(ctx *gin.Context) {

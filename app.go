@@ -39,6 +39,9 @@ func intHandler(db *database.GormDatabase) {
 
 	j := new(jobs.Jobs)
 	j.InitCron()
+	if err := j.RefreshTokenJobAdd(); err != nil {
+		panic(err)
+	}
 }
 
 func main() {

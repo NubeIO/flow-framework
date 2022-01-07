@@ -4,7 +4,9 @@ import (
 	"errors"
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bools"
+	"gorm.io/gorm"
 	"math/bits"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -254,10 +256,31 @@ type Message struct {
 }
 
 func responseHandler(body interface{}, err error, ctx *gin.Context) {
-	if err != nil {
-		ctx.JSON(404, Message{Message: err.Error()})
+	if err == nil {
+		ctx.JSON(http.StatusOK, body)
 	} else {
-		ctx.JSON(200, body)
+		switch err {
+		case gorm.ErrRecordNotFound:
+			ctx.JSON(http.StatusNotFound, Message{Message: err.Error()})
+		case gorm.ErrInvalidTransaction,
+			gorm.ErrNotImplemented,
+			gorm.ErrMissingWhereClause,
+			gorm.ErrUnsupportedRelation,
+			gorm.ErrPrimaryKeyRequired,
+			gorm.ErrModelValueRequired,
+			gorm.ErrInvalidData,
+			gorm.ErrUnsupportedDriver,
+			gorm.ErrRegistered,
+			gorm.ErrInvalidField,
+			gorm.ErrEmptySlice,
+			gorm.ErrDryRunModeUnsupported,
+			gorm.ErrInvalidDB,
+			gorm.ErrInvalidValue,
+			gorm.ErrInvalidValueOfLength:
+			ctx.JSON(http.StatusInternalServerError, Message{Message: err.Error()})
+		default:
+			ctx.JSON(http.StatusBadRequest, Message{Message: err.Error()})
+		}
 	}
 }
 
@@ -270,11 +293,6 @@ func withID(ctx *gin.Context, name string, f func(id uint)) {
 }
 
 func getBODYSchedule(ctx *gin.Context) (dto *model.Schedule, err error) {
-	err = ctx.ShouldBindJSON(&dto)
-	return dto, err
-}
-
-func getBODYSchedules(ctx *gin.Context) (dto *model.Schedules, err error) {
 	err = ctx.ShouldBindJSON(&dto)
 	return dto, err
 }

@@ -9,6 +9,7 @@ import (
 type ProducerHistoryDatabase interface {
 	GetProducerHistories(args Args) ([]*model.ProducerHistory, error)
 	GetProducerHistoriesByProducerUUID(pUuid string, args Args) ([]*model.ProducerHistory, int64, error)
+	GetLatestProducerHistoryByProducerName(name string) (*model.ProducerHistory, error)
 	GetLatestProducerHistoryByProducerUUID(pUuid string) (*model.ProducerHistory, error)
 	GetProducerHistoriesPoints(args Args) ([]*model.History, error)
 	CreateBulkProducerHistory(histories []*model.ProducerHistory) (bool, error)
@@ -30,6 +31,12 @@ func (a *HistoriesAPI) GetProducerHistoriesByProducerUUID(ctx *gin.Context) {
 	pUuid := resolveProducerUUID(ctx)
 	args := buildProducerHistoryArgs(ctx)
 	q, _, err := a.DB.GetProducerHistoriesByProducerUUID(pUuid, args)
+	responseHandler(q, err, ctx)
+}
+
+func (a *HistoriesAPI) GetLatestProducerHistoryByProducerName(ctx *gin.Context) {
+	name := resolveName(ctx)
+	q, err := a.DB.GetLatestProducerHistoryByProducerName(name)
 	responseHandler(q, err, ctx)
 }
 

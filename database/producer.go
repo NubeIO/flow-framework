@@ -54,7 +54,7 @@ func (d *GormDatabase) CreateProducer(body *model.Producer) (*model.Producer, er
 	case model.ThingClass.Schedule:
 		sch, err := d.GetSchedule(body.ProducerThingUUID)
 		if err != nil {
-			return nil, errors.New("point not found, please supply a valid point producer_thing_uuid")
+			return nil, errors.New("schedule not found, please supply a valid point producer_thing_uuid")
 		}
 		producerThingName = sch.Name
 	default:

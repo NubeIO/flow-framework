@@ -29,6 +29,20 @@ func (d *GormDatabase) GetProducerHistoriesByProducerUUID(pUuid string, args api
 	return historiesModel, count, nil
 }
 
+// GetLatestProducerHistoryByProducerName returns the latest history for the given producer_name or nil.
+func (d *GormDatabase) GetLatestProducerHistoryByProducerName(name string) (*model.ProducerHistory, error) {
+	var historyModel *model.ProducerHistory
+	p, err := d.GetProducerByField("name", name)
+	if err != nil {
+		return nil, err
+	}
+	query := d.DB.Where("producer_uuid = ? ", p.UUID).Order("timestamp desc").First(&historyModel)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+	return historyModel, nil
+}
+
 // GetLatestProducerHistoryByProducerUUID returns the latest history for the given producer_uuid or nil.
 func (d *GormDatabase) GetLatestProducerHistoryByProducerUUID(pUuid string) (*model.ProducerHistory, error) {
 	var historyModel *model.ProducerHistory

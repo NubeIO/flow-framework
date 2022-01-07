@@ -5,15 +5,15 @@ import (
 	"time"
 )
 
-//Schedule model
 type Schedule struct {
 	CommonUUID
 	CommonNameUnique
 	CommonEnable
 	CommonThingClass
 	CommonThingType
+	IsActive  *bool          `json:"is_active"`
 	IsGlobal  *bool          `json:"is_global"`
-	Schedules datatypes.JSON `json:"schedule"`
+	Schedules datatypes.JSON `json:"schedules"`
 	CommonCreated
 }
 

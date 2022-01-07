@@ -1,70 +1,89 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
 )
 
-// GetSchedules returns all things.
 func (d *GormDatabase) GetSchedules() ([]*model.Schedule, error) {
-	var schModel []*model.Schedule
-	query := d.DB.Find(&schModel)
+	var scheduleModel []*model.Schedule
+	query := d.DB.Find(&scheduleModel)
 	if query.Error != nil {
 		return nil, query.Error
 	}
-	return schModel, nil
+	return scheduleModel, nil
 }
 
-// GetSchedule returns the thing for the given id or nil.
 func (d *GormDatabase) GetSchedule(uuid string) (*model.Schedule, error) {
-	var schModel *model.Schedule
-	query := d.DB.Where("uuid = ? ", uuid).First(&schModel)
+	var scheduleModel *model.Schedule
+	query := d.DB.Where("uuid = ? ", uuid).First(&scheduleModel)
 	if query.Error != nil {
 		return nil, query.Error
 	}
-	return schModel, nil
+	return scheduleModel, nil
 }
 
-// GetScheduleByField returns the sch for the given field ie name or nil.
 func (d *GormDatabase) GetScheduleByField(field string, value string) (*model.Schedule, error) {
-	var schModel *model.Schedule
+	var scheduleModel *model.Schedule
 	f := fmt.Sprintf("%s = ? ", field)
-	query := d.DB.Where(f, value).First(&schModel)
+	query := d.DB.Where(f, value).First(&scheduleModel)
 	if query.Error != nil {
 		return nil, query.Error
 	}
-	return schModel, nil
+	return scheduleModel, nil
 }
 
-// CreateSchedule creates a thing.
 func (d *GormDatabase) CreateSchedule(body *model.Schedule) (*model.Schedule, error) {
 	body.UUID = utils.MakeTopicUUID(model.ThingClass.Schedule)
 	body.Name = nameIsNil(body.Name)
 	body.ThingClass = model.ThingClass.Schedule
 	body.ThingType = model.ThingClass.Schedule
+	validSchedule, err := d.validateSchedule(body)
+	if err != nil {
+		return nil, err
+	}
+	body.Schedules = validSchedule
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, err
 	}
 	return body, nil
 }
 
-// UpdateSchedule  update it
-func (d *GormDatabase) UpdateSchedule(uuid string, body *model.Schedule) (*model.Schedule, error) {
-	var schModel *model.Schedule
-	query := d.DB.Where("uuid = ?", uuid).Find(&schModel)
-	if query.Error != nil {
-		return nil, query.Error
+func (d *GormDatabase) validateSchedule(schedule *model.Schedule) ([]byte, error) {
+	scheduleModel := new(model.Schedules)
+	err := json.Unmarshal(schedule.Schedules, &scheduleModel)
+	if err != nil {
+		return nil, err
 	}
-	query = d.DB.Model(&schModel).Updates(body)
-	if query.Error != nil {
-		return nil, query.Error
+	validSchedule, err := json.Marshal(scheduleModel)
+	if err != nil {
+		return nil, err
 	}
-	return schModel, nil
-
+	return validSchedule, nil
 }
 
-// DeleteSchedule delete a thing.
+func (d *GormDatabase) UpdateSchedule(uuid string, body *model.Schedule) (*model.Schedule, error) {
+	var scheduleModel *model.Schedule
+	validSchedule, err := d.validateSchedule(body)
+	if err != nil {
+		return nil, err
+	}
+	body.Schedules = validSchedule
+	body.ThingClass = model.ThingClass.Schedule
+	body.ThingType = model.ThingClass.Schedule
+	query := d.DB.Where("uuid = ?", uuid).Find(&scheduleModel)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+	query = d.DB.Model(&scheduleModel).Updates(body)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+	return scheduleModel, nil
+}
+
 func (d *GormDatabase) DeleteSchedule(uuid string) (bool, error) {
 	var schModel *model.Schedule
 	query := d.DB.Where("uuid = ? ", uuid).Delete(&schModel)
@@ -80,7 +99,6 @@ func (d *GormDatabase) DeleteSchedule(uuid string) (bool, error) {
 
 }
 
-// DropSchedules delete all things.
 func (d *GormDatabase) DropSchedules() (bool, error) {
 	var schModel *model.Schedule
 	query := d.DB.Where("1 = 1").Delete(&schModel)

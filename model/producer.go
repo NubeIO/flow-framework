@@ -7,7 +7,7 @@ from edge to cloud or wires over rest(peer to peer)
 */
 type Producer struct {
 	CommonUUID
-	CommonName
+	CommonNameUnique
 	CommonDescription
 	CommonEnable
 	CommonSyncUUID

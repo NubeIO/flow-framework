@@ -12,3 +12,7 @@ func (h *Handler) GetFlowNetworkClones() ([]*model.FlowNetworkClone, error) {
 	}
 	return q, nil
 }
+
+func (h *Handler) RefreshFlowNetworkClonesConnections() (*bool, error) {
+	return getDb().RefreshFlowNetworkClonesConnections()
+}

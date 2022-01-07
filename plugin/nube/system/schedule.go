@@ -1,89 +1,149 @@
 package main
 
-/*
+import (
+	"fmt"
+	"github.com/NubeIO/flow-framework/model"
+	"github.com/NubeIO/flow-framework/src/schedule"
+	"github.com/NubeIO/flow-framework/utils"
+	log "github.com/sirupsen/logrus"
+)
+
 func (i *Instance) run() {
-	class, err := i.db.GetWriters(api.Args{WriterThingClass: utils.NewStringAddress("schedule")})
+
+	class, err := i.db.GetLatestProducerHistoryByProducerName("HVAC")
 	if err != nil {
+		log.Errorf("system-plugin-schedule: issue on GetLatestProducerHistoryByProducerName %v\n", err)
 		return
 	}
-	for _, v := range class {
-		decodeSchedule, err := schedule.DecodeSchedule(v.DataStore)
-		if err != nil {
-			log.Errorf("system-plugin-schedule: issue on DecodeSchedule %v\n", err)
-		}
-		scheduleNameToCheck := "HVAC" //TODO: we need a way to specify the schedule name that is being checked for.
+	decodeSchedule, err := schedule.DecodeSchedule(class.DataStore)
+	if err != nil {
+		log.Errorf("system-plugin-schedule: issue on DecodeSchedule %v\n", err)
+	}
+	schUUID := class.CurrentWriterUUID
+	log.Printf("system-plugin-schedule: sch %v\n", class)
+	for _, v := range decodeSchedule.Weekly {
 
-		// CHECK WEEKLY SCHEDULES
-		//result, err := schedule.WeeklyCheck(decodeSchedule.Weekly, "ANY")  //This will check for any active schedules with any name
+		scheduleNameToCheck := v.Name //TODO: we need a way to specify the schedule name that is being checked for.
+		getSch, err := i.db.GetSchedule(schUUID)
+		if err != nil {
+			log.Errorf("system-plugin-schedule: issue on GetSchedule %v\n", err)
+		}
 		weeklyResult, err := schedule.WeeklyCheck(decodeSchedule.Weekly, scheduleNameToCheck) //This will check for any active schedules with defined name.
 		if err != nil {
 			log.Errorf("system-plugin-schedule: issue on WeeklyCheck %v\n", err)
 		}
-
 		// CHECK EVENT SCHEDULES
-		//eventResult, err := schedule.EventCheck(decodeSchedule.Events, "ANY")  //This will check for any active schedules with any name
 		eventResult, err := schedule.EventCheck(decodeSchedule.Events, scheduleNameToCheck) //This will check for any active schedules with defined name.
 		if err != nil {
 			log.Errorf("system-plugin-schedule: issue on EventCheck %v\n", err)
 		}
-
 		//Combine Event and Weekly schedule results.
 		weeklyAndEventResult, err := schedule.CombineScheduleCheckerResults(weeklyResult, eventResult)
-
 		// CHECK EXCEPTION SCHEDULES
-		//exceptionResult, err := schedule.ExceptionCheck(decodeSchedule.Exceptions, "ANY")  //This will check for any active schedules with any name
 		exceptionResult, err := schedule.ExceptionCheck(decodeSchedule.Exceptions, scheduleNameToCheck) //This will check for any active schedules with defined name.
 		if err != nil {
 			log.Errorf("system-plugin-schedule: issue on ExceptionCheck %v\n", err)
 		}
-
-		for schKey, week := range decodeSchedule.Weekly {
-			result, err := schedule.WeeklyCheck(decodeSchedule.Weekly, week.Name)
-			if err != nil {
-				log.Errorf("system-plugin-schedule: issue on WeeklyCheck %v\n", err)
-			}
-			if sch.IsActive {
-				i.store.Set(week.Name, sch, -1)
-			}
-			log.Infof("system-plugin-schedule: schedule schKey %v\n", schKey)
-			log.Infof("system-plugin-schedule: schedule Name %v\n", week.Name)
-			log.Infof("system-plugin-schedule: schedule NextStart %v\n", time.Unix(sch.NextStart, 0))
-			log.Infof("system-plugin-schedule: schedule NextStop %v\n", time.Unix(sch.NextStop, 0))
-			log.Infof("system-plugin-schedule: schedule is IsActive %v\n", sch.IsActive)
-			log.Infof("system-plugin-schedule: schedule Payload %v\n", sch.Payload)
+		if exceptionResult.CheckIfEmpty() {
+			log.Println("Exception schedule is empty")
 		}
 
+		finalResult, err := schedule.ApplyExceptionSchedule(weeklyAndEventResult, exceptionResult) //This applies the exception schedule to mask the combined weekly and event schedules.
+		if err != nil {
+			log.Errorf("system-plugin-schedule: issue on ApplyExceptionSchedule %v\n", err)
+		}
+		log.Println("finalResult")
+		log.Printf("%+v\n", finalResult.IsActive)
+		i.store.Set(finalResult.Name, finalResult, -1)
+		s := new(model.Schedule)
+		if finalResult.IsActive {
+			s.IsActive = utils.NewTrue()
+		} else {
+			s.IsActive = utils.NewFalse()
+		}
+		if getSch != nil {
+			fmt.Println(utils.IsTrue(s.IsActive), utils.IsTrue(getSch.IsActive))
+			if utils.IsTrue(s.IsActive) != utils.IsTrue(getSch.IsActive) {
+				log.Printf("system-plugin-schedule: UPDATE SCHEDULE IN DB %v\n", getSch.Name)
+				_, err = i.db.UpdateSchedule(getSch.UUID, s)
+				if err != nil {
+					log.Errorf("system-plugin-schedule: issue on UpdateSchedule %v\n", getSch.UUID)
+				}
+			}
+
+		}
 	}
 
 }
 
-*/
-
-//func (i *Instance) runScheduleAPI() {
-//	schedules, err := i.db.GetSchedules()
+//
+//func (i *Instance) run() {
+//	class, err := i.db.GetWriters(api.Args{WriterThingClass: utils.NewStringAddress("schedule")})
 //	if err != nil {
-//		log.Infof("system-plugin-schedule: db get scheudles %v\n", err)
+//		log.Errorf("system-plugin-schedule: issue on GetWriters %v\n", err)
 //	}
-//	for _, s := range schedules {
-//		decodeSchedule, err := schedule.DecodeSchedule(s.Schedules)
+//
+//	//class, err := i.db.GetLatestProducerHistoryByProducerName("aa")
+//	//if err != nil {
+//	//	log.Errorf("system-plugin-schedule: issue on GetWriters %v\n", err)
+//	//}
+//	for _, v := range class {
+//		decodeSchedule, err := schedule.DecodeSchedule(v.DataStore)
 //		if err != nil {
 //			log.Errorf("system-plugin-schedule: issue on DecodeSchedule %v\n", err)
 //		}
-//		for schKey, week := range decodeSchedule.Weekly {
-//			sch, err := schedule.WeeklyCheck(decodeSchedule.Weekly, week.Name)
+//		schUUID := v.WriterThingUUID
+//		for _, v := range decodeSchedule.Weekly {
+//
+//			scheduleNameToCheck := v.Name //TODO: we need a way to specify the schedule name that is being checked for.
+//			getSch, err := i.db.GetSchedule(schUUID)
+//			if err != nil {
+//				log.Errorf("system-plugin-schedule: issue on GetSchedule %v\n", err)
+//			}
+//			weeklyResult, err := schedule.WeeklyCheck(decodeSchedule.Weekly, scheduleNameToCheck) //This will check for any active schedules with defined name.
 //			if err != nil {
 //				log.Errorf("system-plugin-schedule: issue on WeeklyCheck %v\n", err)
 //			}
-//
-//			if sch.IsActive {
-//				i.store.Set(week.Name, sch, -1)
+//			// CHECK EVENT SCHEDULES
+//			eventResult, err := schedule.EventCheck(decodeSchedule.Events, scheduleNameToCheck) //This will check for any active schedules with defined name.
+//			if err != nil {
+//				log.Errorf("system-plugin-schedule: issue on EventCheck %v\n", err)
 //			}
-//			log.Infof("system-plugin-schedule: schedule schKey %v\n", schKey)
-//			log.Infof("system-plugin-schedule: schedule Name %v\n", week.Name)
-//			log.Infof("system-plugin-schedule: schedule NextStart %v\n", time.Unix(sch.NextStart, 0))
-//			log.Infof("system-plugin-schedule: schedule NextStop %v\n", time.Unix(sch.NextStop, 0))
-//			log.Infof("system-plugin-schedule: schedule is IsActive %v\n", sch.IsActive)
-//			log.Infof("system-plugin-schedule: schedule Payload %v\n", sch.Payload)
+//			//Combine Event and Weekly schedule results.
+//			weeklyAndEventResult, err := schedule.CombineScheduleCheckerResults(weeklyResult, eventResult)
+//			// CHECK EXCEPTION SCHEDULES
+//			exceptionResult, err := schedule.ExceptionCheck(decodeSchedule.Exceptions, scheduleNameToCheck) //This will check for any active schedules with defined name.
+//			if err != nil {
+//				log.Errorf("system-plugin-schedule: issue on ExceptionCheck %v\n", err)
+//			}
+//			if exceptionResult.CheckIfEmpty() {
+//				log.Println("Exception schedule is empty")
+//			}
+//
+//			finalResult, err := schedule.ApplyExceptionSchedule(weeklyAndEventResult, exceptionResult) //This applies the exception schedule to mask the combined weekly and event schedules.
+//			if err != nil {
+//				log.Errorf("system-plugin-schedule: issue on ApplyExceptionSchedule %v\n", err)
+//			}
+//			log.Println("finalResult")
+//			log.Printf("%+v\n", finalResult.IsActive)
+//			i.store.Set(finalResult.Name, finalResult, -1)
+//			s := new(model.Schedule)
+//			if finalResult.IsActive {
+//				s.IsActive = utils.NewTrue()
+//			} else {
+//				s.IsActive = utils.NewFalse()
+//			}
+//			if getSch != nil {
+//				fmt.Println(utils.IsTrue(s.IsActive), utils.IsTrue(getSch.IsActive))
+//				if utils.IsTrue(s.IsActive) != utils.IsTrue(getSch.IsActive) {
+//					log.Printf("system-plugin-schedule: UPDATE SCHEDULE IN DB %v\n", getSch.Name)
+//					_, err = i.db.UpdateSchedule(getSch.UUID, s)
+//					if err != nil {
+//						log.Errorf("system-plugin-schedule: issue on UpdateSchedule %v\n", getSch.UUID)
+//					}
+//				}
+//
+//			}
 //		}
 //	}
 //}

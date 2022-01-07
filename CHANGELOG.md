@@ -1,4 +1,14 @@
 # CHANGELOG
+## [v0.2.2](https://github.com/NubeIO/flow-framework/tree/v0.2.2) (2021-12-23)
+- Improvement on schedule APIs
+- Add scheduler for refreshing token
+
+## [v0.2.1](https://github.com/NubeIO/flow-framework/tree/v0.2.1) (2021-12-18)
+- Update: update to schedules
+
+## [v0.2.0](https://github.com/NubeIO/flow-framework/tree/v0.2.0) (2021-12-18)
+- Update: update to schedules
+
 ## [v0.1.9](https://github.com/NubeIO/flow-framework/tree/v0.1.9) (2021-12-16)
 - Remove: rubix plugins
 

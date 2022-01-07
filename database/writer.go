@@ -277,7 +277,8 @@ func (d *GormDatabase) WriterAction(uuid string, body *model.WriterBody) (*model
 					"present_value":  highestPriorityValue,
 					"original_value": highestPriorityValue,
 				})
-		} else {
+		} else if writer.WriterThingClass == model.ThingClass.Schedule {
+			log.Println("IS SCH", writer.WriterThingUUID)
 			// TODO: for schedule and others
 		}
 		d.DB.Model(&writer).Updates(writer)

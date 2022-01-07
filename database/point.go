@@ -364,19 +364,19 @@ func (d *GormDatabase) UpdatePointValue(uuid string, body *model.Point, fromPlug
 	}
 	ov := utils.Float64IsNil(presentValue)
 	body.OriginalValue = &ov
-	if scaleInMin != nil {
+	if presentValue != nil {
 		log.Debug("UpdatePointValue() - *presentValue1: ", *presentValue)
 	}
 	if scaleInMin != nil {
 		log.Debug("UpdatePointValue() - *scaleInMin: ", *scaleInMin)
 	}
-	if scaleInMin != nil {
+	if scaleInMax != nil {
 		log.Debug("UpdatePointValue() - *scaleInMax: ", *scaleInMax)
 	}
-	if scaleInMin != nil {
+	if scaleOutMin != nil {
 		log.Debug("UpdatePointValue() - *scaleOutMin: ", *scaleOutMin)
 	}
-	if scaleInMin != nil {
+	if scaleOutMax != nil {
 		log.Debug("UpdatePointValue() - *scaleOutMax:", *scaleOutMax)
 	}
 	presentValue = pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax)

@@ -32,7 +32,6 @@ func (d *GormDatabase) SyncFlowNetwork(body *model.FlowNetwork) (*model.FlowNetw
 	if err = json.Unmarshal(mfn, &fnc); err != nil {
 		return nil, err
 	}
-	fnc.UUID = utils.MakeTopicUUID(model.CommonNaming.FlowNetworkClone)
 	fnc.SourceUUID = body.UUID
 	fnc.SyncUUID, _ = utils.MakeUUID()
 	deviceInfo, err := d.GetDeviceInfo()
@@ -44,6 +43,7 @@ func (d *GormDatabase) SyncFlowNetwork(body *model.FlowNetwork) (*model.FlowNetw
 		return nil, err
 	}
 	if len(flowNetworkClonesModel) == 0 {
+		fnc.UUID = utils.MakeTopicUUID(model.CommonNaming.FlowNetworkClone)
 		if err = d.DB.Create(fnc).Error; err != nil {
 			return nil, err
 		}

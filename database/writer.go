@@ -3,7 +3,6 @@ package database
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/src/client"
 	log "github.com/sirupsen/logrus"
@@ -35,7 +34,6 @@ func (d *GormDatabase) CreateWriter(body *model.Writer) (*model.Writer, error) {
 		}
 		name = point.Name
 	case model.ThingClass.Schedule:
-		fmt.Println(body.WriterThingUUID)
 		schedule, err := d.GetSchedule(body.WriterThingUUID)
 		if err != nil {
 			return nil, errors.New("schedule not found, please supply a valid point writer_thing_uuid")
@@ -52,19 +50,7 @@ func (d *GormDatabase) CreateWriter(body *model.Writer) (*model.Writer, error) {
 	if query.Error != nil {
 		return nil, query.Error
 	}
-	// ignore err coz CASCADE delete is there, so there must be data
-	consumer, _ := d.GetConsumer(body.ConsumerUUID, api.Args{})
-	streamClone, _ := d.GetStreamClone(consumer.StreamCloneUUID, api.Args{})
-	fn, _ := d.GetFlowNetworkClone(streamClone.FlowNetworkCloneUUID, api.Args{})
-	cli := client.NewFlowClientCli(fn.FlowIP, fn.FlowPort, fn.FlowToken, fn.IsMasterSlave, fn.GlobalUUID, model.IsFNCreator(fn))
-	syncWriterBody := model.SyncWriter{
-		Writer:       *body,
-		ProducerUUID: consumer.ProducerUUID,
-	}
-	_, err := cli.SyncWriter(&syncWriterBody)
-	if err != nil {
-		log.Error(err)
-	}
+	d.syncAfterCreateUpdateWriter(body)
 	return body, nil
 }
 
@@ -114,6 +100,7 @@ func (d *GormDatabase) UpdateWriter(uuid string, body *model.Writer) (*model.Wri
 	if query.Error != nil {
 		return nil, query.Error
 	}
+	d.syncAfterCreateUpdateWriter(writerModel)
 	return writerModel, nil
 
 }
@@ -341,4 +328,19 @@ func (d *GormDatabase) validateWriterBody(thingClass string, body *model.WriterB
 		}
 	}
 	return nil, body.Action, errors.New("error: invalid data type on writer body, i.e. type could be a point")
+}
+
+func (d *GormDatabase) syncAfterCreateUpdateWriter(body *model.Writer) {
+	consumer, _ := d.GetConsumer(body.ConsumerUUID, api.Args{})
+	streamClone, _ := d.GetStreamClone(consumer.StreamCloneUUID, api.Args{})
+	fn, _ := d.GetFlowNetworkClone(streamClone.FlowNetworkCloneUUID, api.Args{})
+	cli := client.NewFlowClientCli(fn.FlowIP, fn.FlowPort, fn.FlowToken, fn.IsMasterSlave, fn.GlobalUUID, model.IsFNCreator(fn))
+	syncWriterBody := model.SyncWriter{
+		Writer:       *body,
+		ProducerUUID: consumer.ProducerUUID,
+	}
+	_, err := cli.SyncWriter(&syncWriterBody)
+	if err != nil {
+		log.Error(err)
+	}
 }

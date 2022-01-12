@@ -111,7 +111,6 @@ func (d *GormDatabase) CreateFlowNetwork(body *model.FlowNetwork) (*model.FlowNe
 	if tx = d.DB; isRemote {
 		tx = d.DB.Begin()
 	}
-	cli := client.NewFlowClientCli(body.FlowIP, body.FlowPort, body.FlowToken, body.IsMasterSlave, body.GlobalUUID, model.IsFNCreator(body))
 	if err := tx.Create(&body).Error; err != nil {
 		if isRemote {
 			tx.Rollback()
@@ -146,8 +145,7 @@ func (d *GormDatabase) CreateFlowNetwork(body *model.FlowNetwork) (*model.FlowNe
 	fnb.SiteName = deviceInfo.SiteName
 	fnb.DeviceId = deviceInfo.DeviceId
 	fnb.DeviceName = deviceInfo.DeviceName
-	res, err := cli.SyncFlowNetwork(&fnb)
-	if err != nil {
+	if err := d.syncAfterCreateUpdateFlowNetwork(&fnb); err != nil {
 		if isRemote {
 			tx.Rollback()
 		}
@@ -156,15 +154,6 @@ func (d *GormDatabase) CreateFlowNetwork(body *model.FlowNetwork) (*model.FlowNe
 	if isRemote {
 		tx.Commit()
 	}
-	body.SyncUUID = res.SyncUUID
-	body.GlobalUUID = res.GlobalUUID
-	body.ClientId = res.ClientId
-	body.ClientName = res.ClientName
-	body.SiteId = res.SiteId
-	body.SiteName = res.SiteName
-	body.DeviceId = res.DeviceId
-	body.DeviceName = res.DeviceName
-	d.DB.Model(&body).Updates(body)
 	return body, nil
 }
 
@@ -179,6 +168,9 @@ func (d *GormDatabase) UpdateFlowNetwork(uuid string, body *model.FlowNetwork) (
 		}
 	}
 	if err := d.DB.Model(&flowNetworkModel).Updates(body).Error; err != nil {
+		return nil, err
+	}
+	if err := d.syncAfterCreateUpdateFlowNetwork(flowNetworkModel); err != nil {
 		return nil, err
 	}
 	return flowNetworkModel, nil
@@ -233,4 +225,24 @@ func (d *GormDatabase) RefreshFlowNetworksConnections() (*bool, error) {
 		}
 	}
 	return utils.NewTrue(), nil
+}
+
+func (d *GormDatabase) syncAfterCreateUpdateFlowNetwork(body *model.FlowNetwork) error {
+	cli := client.NewFlowClientCli(body.FlowIP, body.FlowPort, body.FlowToken, body.IsMasterSlave, body.GlobalUUID, model.IsFNCreator(body))
+	res, err := cli.SyncFlowNetwork(body)
+	if err != nil {
+		return err
+	}
+	body.SyncUUID = res.SyncUUID
+	body.GlobalUUID = res.GlobalUUID
+	body.ClientId = res.ClientId
+	body.ClientName = res.ClientName
+	body.SiteId = res.SiteId
+	body.SiteName = res.SiteName
+	body.DeviceId = res.DeviceId
+	body.DeviceName = res.DeviceName
+	if err := d.DB.Model(&body).Updates(body).Error; err != nil {
+		return err
+	}
+	return nil
 }

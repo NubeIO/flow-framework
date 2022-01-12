@@ -36,28 +36,7 @@ func (d *GormDatabase) CreateStream(body *model.Stream) (*model.Stream, error) {
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, err
 	}
-	flowNetworks, err := d.GetFlowNetworksFromStreamUUID(body.UUID)
-	if err != nil {
-		return nil, err
-	}
-	deviceInfo, err := d.GetDeviceInfo()
-	if err != nil {
-		return nil, err
-	}
-	if flowNetworks == nil {
-		return body, nil
-	}
-	for _, fn := range *flowNetworks {
-		cli := client.NewFlowClientCli(fn.FlowIP, fn.FlowPort, fn.FlowToken, fn.IsMasterSlave, fn.GlobalUUID, model.IsFNCreator(fn))
-		syncStreamBody := model.SyncStream{
-			GlobalUUID: deviceInfo.GlobalUUID,
-			Stream:     body,
-		}
-		_, err = cli.SyncStream(&syncStreamBody)
-		if err != nil {
-			log.Error(err)
-		}
-	}
+	d.syncAfterCreateUpdateStream(body)
 	return body, nil
 }
 
@@ -104,6 +83,7 @@ func (d *GormDatabase) UpdateStream(uuid string, body *model.Stream) (*model.Str
 	if err := d.DB.Model(&streamModel).Updates(body).Error; err != nil {
 		return nil, err
 	}
+	d.syncAfterCreateUpdateStream(streamModel)
 	return streamModel, nil
 }
 
@@ -148,4 +128,29 @@ func (d *GormDatabase) GetStreamByField(field string, value string, args api.Arg
 		return nil, query.Error
 	}
 	return streamModel, nil
+}
+
+func (d *GormDatabase) syncAfterCreateUpdateStream(body *model.Stream) {
+	flowNetworks, err := d.GetFlowNetworksFromStreamUUID(body.UUID)
+	if err != nil {
+		return
+	}
+	deviceInfo, err := d.GetDeviceInfo()
+	if err != nil {
+		return
+	}
+	if flowNetworks == nil {
+		return
+	}
+	for _, fn := range *flowNetworks {
+		cli := client.NewFlowClientCli(fn.FlowIP, fn.FlowPort, fn.FlowToken, fn.IsMasterSlave, fn.GlobalUUID, model.IsFNCreator(fn))
+		syncStreamBody := model.SyncStream{
+			GlobalUUID: deviceInfo.GlobalUUID,
+			Stream:     body,
+		}
+		_, err = cli.SyncStream(&syncStreamBody)
+		if err != nil {
+			log.Error(err)
+		}
+	}
 }

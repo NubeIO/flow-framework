@@ -21,7 +21,6 @@ func (d *GormDatabase) SyncWriter(body *model.SyncWriter) (*model.WriterClone, e
 	if err != nil {
 		return nil, errors.New("producer does not exist")
 	}
-	writerClone.UUID = utils.MakeTopicUUID(model.CommonNaming.WriterClone)
 	writerClone.ProducerUUID = body.ProducerUUID
 	writerClone.SourceUUID = body.Writer.UUID
 	var writerCloneModel []*model.WriterClone
@@ -29,10 +28,12 @@ func (d *GormDatabase) SyncWriter(body *model.SyncWriter) (*model.WriterClone, e
 		return nil, err
 	}
 	if len(writerCloneModel) == 0 {
+		writerClone.UUID = utils.MakeTopicUUID(model.CommonNaming.WriterClone)
 		if err = d.DB.Create(writerClone).Error; err != nil {
 			return nil, err
 		}
 	} else {
+		writerClone.UUID = writerCloneModel[0].UUID
 		if err = d.DB.Model(&writerCloneModel[0]).Updates(writerClone).Error; err != nil {
 			return nil, err
 		}

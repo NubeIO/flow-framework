@@ -197,19 +197,19 @@ func networkRequest(client *modbus.ModbusClient, o Operation) (response interfac
 		var res []uint32
 		if o.IsHoldingReg {
 			res, err = client.ReadUint32s(o.Addr, o.Length, modbus.HOLDING_REGISTER)
-			return res, 0, err
+			return res, 0, err // @AIDAN WHY????
 		} else {
 			res, err = client.ReadUint32s(o.Addr, o.Length, modbus.INPUT_REGISTER)
 		}
 		if err != nil {
 			log.Errorf("modbus: failed to read holding/input registers: %v\n", err)
 		} else {
-			return res, 0, err
+			return res, 0, err // @AIDAN WHY????
 		}
-	case readFloat32:
+	case readFloat32: // @AIDAN  I DONT UNDERSTAND THIS NEXT SECTION
 		var res []float32
 		if model.ObjectType(o.ObjectType) == model.ObjTypeReadSingleFloat32 {
-			o.Length = 1
+			o.Length = 1 // @AIDAN WHY NOT LENGTH = 2?
 		}
 		if o.IsHoldingReg {
 			res, err = client.ReadFloat32s(o.Addr, o.Length, modbus.HOLDING_REGISTER)

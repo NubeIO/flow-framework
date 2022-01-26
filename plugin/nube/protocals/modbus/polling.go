@@ -136,16 +136,14 @@ func (i *Instance) PollingTCP(p polling) error {
 								ops.Length = uint16(l)
 								ops.ObjectType = pnt.ObjectType
 								ops.Encoding = pnt.ObjectEncoding
-								ops.IsHoldingReg = utils.BoolIsNil(pnt.IsOutput)
+								ops.IsHoldingReg = utils.BoolIsNil(pnt.IsOutput) // @AIDAN  WHY????
 								ops.ZeroMode = utils.BoolIsNil(dev.ZeroMode)
 								_isWrite := isWrite(ops.ObjectType)
 								var _pnt model.Point
 								if _isWrite && !utils.BoolIsNil(pnt.WriteValueOnceSync) || counter == 1 { //IS WRITE
-									if pnt.Priority != nil {
-										if (*pnt.Priority).P16 != nil {
-											ops.WriteValue = *pnt.Priority.P16
-											log.Infof("modbus: WRITE ObjectType: %s  Addr: %d WriteValue: %v\n", ops.ObjectType, ops.Addr, ops.WriteValue)
-										}
+									if pnt.PresentValue != nil {
+										ops.WriteValue = *pnt.PresentValue
+										log.Infof("modbus: WRITE ObjectType: %s  Addr: %d WriteValue: %v\n", ops.ObjectType, ops.Addr, ops.WriteValue)
 									}
 									request, err := parseRequest(ops)
 									if err != nil {
@@ -154,7 +152,7 @@ func (i *Instance) PollingTCP(p polling) error {
 									responseRaw, responseValue, err := networkRequest(cli, request)
 									log.Infof("modbus: ObjectType: %s  Addr: %d ARRAY: %v\n", ops.ObjectType, ops.Addr, responseRaw)
 									_pnt.UUID = pnt.UUID
-									_pnt.PresentValue = &ops.WriteValue //update point value
+									_pnt.PresentValue = &ops.WriteValue //update point value      // TODO: WriteValue should be updated from a READ operation
 									cov := utils.Float64IsNil(pnt.COV)
 									covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
 									if covEvent {

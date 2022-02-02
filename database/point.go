@@ -143,6 +143,7 @@ func (d *GormDatabase) CreatePoint(body *model.Point, streamUUID string) (*model
 	body.CommonFault.LastFail = time.Now().UTC()
 	body.CommonFault.LastOk = time.Now().UTC()
 	body.InSync = utils.NewFalse()
+	body.WriteMode = "read_only"
 	body.WriteValueOnceSync = utils.NewFalse()
 	if body.Priority == nil {
 		body.Priority = &model.Priority{}

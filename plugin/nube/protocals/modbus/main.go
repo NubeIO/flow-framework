@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/NubeIO/flow-framework/eventbus"
+	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/plugin/plugin-api"
 	"github.com/NubeIO/flow-framework/src/cachestore"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
@@ -32,8 +33,9 @@ type Instance struct {
 	store          cachestore.Handler
 	bus            eventbus.BusService
 	pluginUUID     string
-	networkUUID    string
+	networks       []*model.Network
 	pollingEnabled bool
+	pollingCancel  func()
 }
 
 // GetFlowPluginInfo returns plugin info.

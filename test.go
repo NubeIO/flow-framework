@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/src/schedule"
 	"github.com/NubeIO/flow-framework/src/utilstime"
 )
@@ -14,6 +15,8 @@ func main() {
 	}
 	fmt.Println(tz, err)
 
-	//schedule.ScheduleTest()
-	schedule.ModbusScheduleTest()
+	schedule.ScheduleTest()
+	//schedule.ModbusScheduleTest()
+
+	poller.PollQueueTest()
 }

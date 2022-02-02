@@ -7,6 +7,7 @@ import (
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/plugin/compat"
+	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
 	"time"
 )
@@ -139,6 +140,7 @@ func (d *GormDatabase) CreateNetwork(body *model.Network) (*model.Network, error
 	} else {
 		return nil, errors.New("provide a plugin name ie: system, lora, modbus, lorawan, bacnet")
 	}
+	body.PollManager = poller.NewPollManager(body.UUID, body.PluginConfId)
 
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, err

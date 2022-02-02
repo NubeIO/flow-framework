@@ -2,6 +2,7 @@ package poller
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -39,6 +40,38 @@ func (p Poller) Poll(ctx context.Context, f func() (bool, error)) error {
 	}
 	if res {
 		return nil
+	}
+	timer := time.NewTicker(p.interval)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			res, err := f()
+			if err != nil {
+				return err
+			}
+			if res {
+				return nil
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+	}
+}
+
+// GoPoll executes f with interval until it returns true or error. It returns
+// error if f returns error or ctx is cancelled.
+func (p Poller) GoPoll(ctx context.Context, f func() (bool, error)) {
+	if p.interval == 0 {
+		p.interval = defaultInterval
+	}
+	res, err := f()
+	if err != nil {
+		log.Error(err)
+	}
+	if res {
+		log.Error("Polling Resulted in Non-Zero Return Value")
 	}
 	timer := time.NewTicker(p.interval)
 	defer timer.Stop()

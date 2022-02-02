@@ -23,7 +23,10 @@ type Device struct {
 	CommonThingRef
 	CommonThingType
 	CommonDevice
-	NetworkUUID string   `json:"network_uuid,omitempty" gorm:"TYPE:varchar(255) REFERENCES networks;not null;default:null"`
-	Points      []*Point `json:"points,omitempty" gorm:"constraint:OnDelete:CASCADE"`
-	Tags        []*Tag   `json:"tags,omitempty" gorm:"many2many:devices_tags;constraint:OnDelete:CASCADE"`
+	NetworkUUID    string         `json:"network_uuid,omitempty" gorm:"TYPE:varchar(255) REFERENCES networks;not null;default:null"`
+	Points         []*Point       `json:"points,omitempty" gorm:"constraint:OnDelete:CASCADE"`
+	Tags           []*Tag         `json:"tags,omitempty" gorm:"many2many:devices_tags;constraint:OnDelete:CASCADE"`
+	FastPollRate   *time.Duration `json:"fast_poll_rate"`
+	NormalPollRate *time.Duration `json:"normal_poll_rate"`
+	SlowPollRate   *time.Duration `json:"slow_poll_rate"`
 }

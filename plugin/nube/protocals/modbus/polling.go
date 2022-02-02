@@ -32,7 +32,7 @@ func valueRaw(responseRaw interface{}) []byte {
 }
 
 //TODO: currently Polling loops through each network, grabs one point, and polls it.  Could be improved by having a seperate client/go routine for each of the networks.
-func (i *Instance) PollingTCP() error {
+func (i *Instance) ModbusPolling() error {
 	var poll poller.Poller
 	var counter int
 	f := func() (bool, error) {
@@ -50,7 +50,7 @@ func (i *Instance) PollingTCP() error {
 				log.Infof("modbus: LOOP COUNT: %v\n", counter)
 				counter++
 
-				pp := net.PollManager.GetNextPollingPoint()
+				pp, callback := net.PollManager.GetNextPollingPoint() //TODO: once polling completes, callback should be called
 				if pp == nil {
 					log.Infof("modbus: No PollingPoint available in Network %s]n", net.UUID)
 					continue
@@ -129,45 +129,60 @@ func (i *Instance) PollingTCP() error {
 
 				//WRITE OPERATION
 				//if _isWrite && (pnt.WritePollRequired {    //WRITE ON FIRST PLUGIN ENABLE
-				if _isWrite && (pnt.WritePollRequired || counter == 1) {
+				writeSuccess := false
+				readSuccess := false
+				if _isWrite && utils.BoolIsNil(pnt.WritePollRequired) {
 					//WE GET THE WRITE VALUE FROM THE HIGHEST PRIORITY VALUE.  THE PRESENT VALUE IS ONLY SET BY READ OPERATIONS FOR PROTOCOL POINTS
 					if pnt.Priority.GetHighestPriorityValue() != nil {
 						ops.WriteValue = utils.Float64IsNil(pnt.Priority.GetHighestPriorityValue())
 						log.Infof("modbus: WRITE ObjectType: %s  Addr: %d WriteValue: %v\n", ops.ObjectType, ops.Addr, ops.WriteValue)
 						request, err := parseRequest(ops)
 						if err != nil {
-							log.Errorf("modbus: failed to read holding/input registers: %v\n", err)
+							log.Errorf("modbus parseRequest (WRITE): failed to read holding/input registers: %v\n", err)
 						}
 						responseRaw, responseValue, err := networkRequest(cli, request)
 						log.Infof("modbus: WRITE POLL RESPONSE: ObjectType: %s  Addr: %d  Value:%d  ARRAY: %v\n", ops.ObjectType, ops.Addr, responseValue, responseRaw)
+						if err != nil {
+							log.Errorf("modbus networkRequest (WRITE): failed to read holding/input registers: %v\n", err)
+						}
 						if responseValue == ops.WriteValue {
 							_pnt.PresentValue = utils.NewFloat64(responseValue)
 							_pnt.InSync = utils.NewTrue()
+							writeSuccess = true
+							readSuccess = true
 							_, err = i.pointUpdate(pnt.UUID, &_pnt)
-						}
-						cov := utils.Float64IsNil(pnt.COV)
-						covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
-						if covEvent {
+							cov := utils.Float64IsNil(pnt.COV)
+							covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
+							if covEvent {
+							}
 						}
 					} else {
 						log.Errorf("modbus: no values in priority array to write\n")
 					}
-				} else if pnt.ReadPollRequired || counter == 1 {
+				}
+				if utils.BoolIsNil(pnt.ReadPollRequired) && !writeSuccess {
 					request, err := parseRequest(ops)
 					if err != nil {
-						log.Errorf("modbus: failed to read holding/input registers: %v\n", err)
+						log.Errorf("modbus parseRequest (READ): failed to read holding/input registers: %v\n", err)
 					}
 					responseRaw, responseValue, err := networkRequest(cli, request)
 					log.Infof("modbus: WRITE POLL RESPONSE: ObjectType: %s  Addr: %d  Value:%d  ARRAY: %v\n", ops.ObjectType, ops.Addr, responseValue, responseRaw)
-					_pnt.PresentValue = utils.NewFloat64(responseValue)
-					_pnt.InSync = utils.NewTrue()
-					_, err = i.pointUpdate(pnt.UUID, &_pnt)
-					cov := utils.Float64IsNil(pnt.COV)
-					covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
-					if covEvent {
+					if err != nil {
+						log.Errorf("modbus networkRequest (READ): failed to read holding/input registers: %v\n", err)
+					} else {
+						readSuccess = true
+						_pnt.PresentValue = utils.NewFloat64(responseValue)
+						_pnt.InSync = utils.NewTrue()
+						_, err = i.pointUpdate(pnt.UUID, &_pnt)
+						cov := utils.Float64IsNil(pnt.COV)
+						covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
+						if covEvent {
+						}
+						i.store.Set(pnt.UUID, _pnt, -1) //store point in cache
 					}
-					i.store.Set(pnt.UUID, _pnt, -1) //store point in cache
 				}
+				// This callback function triggers the PollManager to evaluate whether the point should be re-added to the PollQueue (Never, Immediately, or after the Poll Rate Delay)
+				callback(pp, writeSuccess, readSuccess)
 			}
 		}
 		return false, nil

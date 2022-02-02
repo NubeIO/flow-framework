@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // LOOK AT USING:
@@ -14,7 +13,6 @@ import (
 
 //Priority Polling Summary:
 //  - Diagram Summary: https://docs.google.com/drawings/d/1priwsaQ6EryRBx1kLQd91REJvHzFyxz7cOHYYXyBNFE/edit?usp=sharing
-//                    https://docs.google.com/drawings/d/1DPltaxg1Pm-xguK36QUbHyKNFauBbuO9G07GtQ9rFYs/edit?usp=sharing
 //  - Protocol client runs as a worker go routine, pulls jobs from the ProtocolPriorityPollQueue.  Rate is dictated by the availability of the protocol client.
 //  - ProtocolPriorityPollQueue is fed by the (multiple) NetworkPriorityPollQueue. One feeder queue for each network, should respect the network polling delays (etc).
 //  - Network priority queues are fed by device priority queues.
@@ -31,13 +29,13 @@ import (
 //     - Can I store a Timer as a new property in FF Points?
 //     - Can I store a PollRate and PollPriority in FF Points?
 
+// TODO: Add in special PollPoints that are for bundled operations.  Should support multiple protocols (maybe the bundle properties are dependent on the plugin?)
 //There should be a function in Modbus(or other protocols) that submits the polling point to the protocol client, then when the poll is completed, it starts a timeout to add the polling point to the queue again.
 // NEXT FETCH THE FF POINT AND use time.AfterFunc(DURATION, )
 //dbhandler.GormDatabase.GetPoint(pp.FFPointUUID)
 
 type NetworkPriorityPollQueue struct {
-	PriorityQueue PriorityPollQueue
-	MaxPollRate   time.Duration
+	PriorityQueue *PriorityPollQueue
 	FFNetworkUUID string
 }
 
@@ -78,140 +76,24 @@ func (nq *NetworkPriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error)
 		pp, err := nq.PriorityQueue.GetNextPollingPoint()
 		if err != nil {
 			log.Errorf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue. FFNetworkUUID: %s \n", nq.FFNetworkUUID)
+			return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue"))
 		}
 		return pp, nil
 	}
 	return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue %s is not enabled.", nq.FFNetworkUUID))
 }
-func (nq *NetworkPriorityPollQueue) Start() { nq.PriorityQueue.Start() } //TODO: add queue startup code
-func (nq *NetworkPriorityPollQueue) Stop()  { nq.PriorityQueue.Stop() }  //TODO: add queue stop code
+func (nq *NetworkPriorityPollQueue) Start() {
+	nq.PriorityQueue.Start()
+}
+func (nq *NetworkPriorityPollQueue) Stop() {
+	nq.PriorityQueue.Stop()
+	nq.EmptyQueue()
+}
 func (nq *NetworkPriorityPollQueue) EmptyQueue() {
 	nq.PriorityQueue.EmptyQueue()
 }
 
-type DevicePriorityPollQueue struct {
-	PriorityQueue      *PriorityPollQueue
-	NetworkQueue       *NetworkPriorityPollQueue
-	NetworkQueueLoader *QueueLoader
-	FastPollRate       time.Duration
-	NormalPollRate     time.Duration
-	SlowPollRate       time.Duration
-	FFDeviceUUID       string
-}
-
-func (dq *DevicePriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
-	if pp.FFDeviceUUID != dq.FFDeviceUUID {
-		log.Errorf("DevicePriorityPollQueue.AddPollingPoint: PollingPoint FFDeviceUUID does not match the queue FFDeviceUUID. FFDeviceUUID: %s  FFPointUUID: %s \n", dq.FFDeviceUUID, pp.FFPointUUID)
-		return false
-	}
-	success := dq.PriorityQueue.AddPollingPoint(pp)
-	if !success {
-		log.Errorf("DevicePriorityPollQueue.AddPollingPoint: point already exists in poll queue. FFDeviceUUID: %s  FFPointUUID: %s \n", dq.FFDeviceUUID, pp.FFPointUUID)
-		return false
-	}
-	return true
-}
-func (dq *DevicePriorityPollQueue) RemovePollingPointByPointUUID(pointUUID string) bool {
-	success := dq.PriorityQueue.RemovePollingPointByPointUUID(pointUUID)
-	if !success {
-		log.Errorf("DevicePriorityPollQueue.RemovePollingPointByPointUUID: point does not exists in poll queue. FFDeviceUUID: %s  FFPointUUID: %s \n", dq.FFDeviceUUID, pointUUID)
-		return false
-	}
-	return true
-}
-func (dq *DevicePriorityPollQueue) UpdatePollingPointByPointUUID(pointUUID string, newPriority PollPriority) bool {
-	success := dq.PriorityQueue.UpdatePollingPointByPointUUID(pointUUID, newPriority)
-	if !success {
-		log.Errorf("DevicePriorityPollQueue.UpdatePollingPointByPointUUID: point does not exists in poll queue. FFDeviceUUID: %s  FFPointUUID: %s \n", dq.FFDeviceUUID, pointUUID)
-		return false
-	}
-	return true
-}
-func (dq *DevicePriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error) {
-	if dq.PriorityQueue.Enable {
-		pp, err := dq.PriorityQueue.GetNextPollingPoint()
-		if err != nil {
-			log.Errorf("DevicePriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue. FFDeviceUUID: %s \n", dq.FFDeviceUUID)
-		}
-		return pp, nil
-	}
-	return nil, errors.New(fmt.Sprintf("DevicePriorityPollQueue %s is not enabled.", dq.FFDeviceUUID))
-}
-func (dq *DevicePriorityPollQueue) Start() { //TODO: find how to get FFNetwork, use it to get the *NetworkPriorityPollQueue
-	dq.PriorityQueue.Start()
-	// GET FF NETWORK, THEN GET THE *NetworkPriorityPollQueue
-	//nq := GET FFNETWORK.PollingQueue
-	dq.NetworkQueueLoader = dq.NewQueueLoader()
-	go dq.NetworkQueueLoader.Worker(dq, np, dq.NetworkQueueLoader.CancelChan)
-}
-func (dq *DevicePriorityPollQueue) Stop() { //TODO: find how to get FFNetwork, use it to get the *NetworkPriorityPollQueue
-	dq.PriorityQueue.Stop()
-	close(dq.NetworkQueueLoader.CancelChan)
-	dq.NetworkQueueLoader = nil
-	dq.EmptyQueue()
-}
-func (dq *DevicePriorityPollQueue) EmptyQueue() {
-	dq.PriorityQueue.EmptyQueue()
-}
-func (*DevicePriorityPollQueue) NewQueueLoader() *QueueLoader {
-	cancelChan := make(chan struct{})
-	f := func(dq *DevicePriorityPollQueue, nq *NetworkPriorityPollQueue, cancelChan <-chan struct{}) {
-		for {
-			select {
-			case <-cancelChan:
-				return
-
-			default:
-				if dq.PriorityQueue.Enable && dq.PriorityQueue.Len() > 0 {
-					pp, err := dq.GetNextPollingPoint()
-					if err == nil {
-						if nq.PriorityQueue.Enable {
-							nq.AddPollingPoint(pp)
-						}
-					}
-				}
-			}
-		}
-	}
-	ql := &QueueLoader{f, cancelChan}
-	return ql
-}
-
-/*
-func NewQueueLoader(dq *DevicePriorityPollQueue, nq *NetworkPriorityPollQueue) *QueueLoader {
-	pointChan := make(chan *PollingPoint)
-	cancelChan := make(chan struct{})
-	//f := func(pointChan <-chan *PollingPoint, cancelChan <-chan struct{}) {
-	f := func(dq *DevicePriorityPollQueue, nq *NetworkPriorityPollQueue, pointChan <-chan *PollingPoint, cancelChan <-chan struct{}) {
-		for {
-			select {
-			case <-cancelChan:
-				return
-
-			case point := <-pointChan:
-				if dq.PriorityQueue.Enable && dq.PriorityQueue.Len() > 0 {
-					pp, err := dq.GetNextPollingPoint()
-					if err != nil {
-					} else {
-						if nq.PriorityQueue.Enable {
-							nq.AddPollingPoint(pp)
-						}
-					}
-				}
-			}
-		}
-	}
-	ql := &QueueLoader{f, pointChan, cancelChan}
-	return ql
-}
-*/
-
-type QueueLoader struct {
-	Worker func(dq *DevicePriorityPollQueue, nq *NetworkPriorityPollQueue, cancelChan <-chan struct{})
-	//PointChan		chan *PollingPoint
-	CancelChan chan struct{}
-}
-
+// THIS IS THE BASE PriorityPollQueue Type and defines the base methods used to implement the `heap` library.  https://pkg.go.dev/container/heap
 type PriorityPollQueue struct {
 	Enable        bool
 	PriorityQueue []*PollingPoint
@@ -310,9 +192,12 @@ type PollingPoint struct {
 
 func NewPollingPoint(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string) *PollingPoint {
 	pp := &PollingPoint{PRIORITY_NORMAL, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID}
-	// FIND THE FUNCTION TO GET THE FF POINT BY UUID
-	// If we are storing the PollPriority and PollRate in the FF Point, get and set those values.
-	// SET THE PollRateTime based on Device Poll Rates
+	//WHATEVER FUNCTION CALLS NewPollingPoint NEEDS TO SET THE PRIORITY
+	return pp
+}
+
+func NewPollingPointWithPriority(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string, priority PollPriority) *PollingPoint {
+	pp := &PollingPoint{priority, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID}
 	return pp
 }
 

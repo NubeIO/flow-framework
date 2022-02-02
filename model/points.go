@@ -1,5 +1,10 @@
 package model
 
+import (
+	"github.com/NubeIO/flow-framework/src/poller"
+	"time"
+)
+
 // TimeOverride TODO add in later
 //TimeOverride where a point value can be overridden for a duration of time
 type TimeOverride struct {
@@ -124,43 +129,49 @@ type Point struct {
 	CommonThingRef
 	CommonThingType
 	CommonFault
-	PresentValue         *float64  `json:"present_value"` //point value, read only
-	OriginalValue        *float64  `json:"original_value"`
-	CurrentPriority      *int      `json:"current_priority,omitempty"`
-	InSync               *bool     `json:"in_sync"`                    //if user edits the point it will disable the COV for one time
-	WriteValueOnce       *bool     `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
-	WriteValueOnceSync   *bool     `json:"write_value_once_sync,omitempty"`
-	Fallback             *float64  `json:"fallback"`
-	DeviceUUID           string    `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
-	EnableWriteable      *bool     `json:"writeable,omitempty"`
-	IsOutput             *bool     `json:"is_output,omitempty"`
-	EvalMode             string    `json:"eval_mode,omitempty"`
-	Eval                 string    `json:"eval_expression,omitempty"`
-	EvalExample          string    `json:"eval_example,omitempty"`
-	COV                  *float64  `json:"cov"`
-	ObjectType           string    `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
-	ObjectEncoding       string    `json:"object_encoding,omitempty"` //BEB_LEW bebLew
-	IoID                 string    `json:"io_id,omitempty"`           //DI1,UI1,AO1, temp, pulse, motion
-	IoType               string    `json:"io_type,omitempty"`         //0-10dc, 0-40ma, thermistor
-	AddressID            *int      `json:"address_id"`                // for example a modbus address or bacnet address
-	AddressLength        *int      `json:"address_length"`            // for example a modbus address offset
-	AddressUUID          string    `json:"address_uuid,omitempty"`    // for example a droplet id (so a string)
-	NextAvailableAddress *bool     `json:"use_next_available_address,omitempty"`
-	Decimal              *uint32   `json:"decimal,omitempty"`
-	LimitMin             *float64  `json:"limit_min"`
-	LimitMax             *float64  `json:"limit_max"`
-	ScaleInMin           *float64  `json:"scale_in_min"`
-	ScaleInMax           *float64  `json:"scale_in_max"`
-	ScaleOutMin          *float64  `json:"scale_out_min"`
-	ScaleOutMax          *float64  `json:"scale_out_max"`
-	UnitType             string    `json:"unit_type,omitempty"` //temperature
-	Unit                 string    `json:"unit,omitempty"`
-	UnitTo               string    `json:"unit_to,omitempty"` //with take the unit and convert to, this would affect the presentValue and the original value will be stored in the raw
-	IsProducer           *bool     `json:"is_producer,omitempty"`
-	IsConsumer           *bool     `json:"is_consumer,omitempty"`
-	ValueRaw             string    `json:"value_raw,omitempty"`
-	Priority             *Priority `json:"priority,omitempty" gorm:"constraint:OnDelete:CASCADE"`
-	Tags                 []*Tag    `json:"tags,omitempty" gorm:"many2many:points_tags;constraint:OnDelete:CASCADE"`
+	PresentValue         *float64             `json:"present_value"` //point value, read only
+	OriginalValue        *float64             `json:"original_value"`
+	CurrentPriority      *int                 `json:"current_priority,omitempty"`
+	InSync               *bool                `json:"in_sync"`                    //if user edits the point it will disable the COV for one time
+	WriteValueOnce       *bool                `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
+	WriteValueOnceSync   *bool                `json:"write_value_once_sync,omitempty"`
+	Fallback             *float64             `json:"fallback"`
+	DeviceUUID           string               `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
+	EnableWriteable      *bool                `json:"writeable,omitempty"`
+	IsOutput             *bool                `json:"is_output,omitempty"`
+	EvalMode             string               `json:"eval_mode,omitempty"`
+	Eval                 string               `json:"eval_expression,omitempty"`
+	EvalExample          string               `json:"eval_example,omitempty"`
+	COV                  *float64             `json:"cov"`
+	ObjectType           string               `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
+	ObjectEncoding       string               `json:"object_encoding,omitempty"` //BEB_LEW bebLew
+	IoID                 string               `json:"io_id,omitempty"`           //DI1,UI1,AO1, temp, pulse, motion
+	IoType               string               `json:"io_type,omitempty"`         //0-10dc, 0-40ma, thermistor
+	AddressID            *int                 `json:"address_id"`                // for example a modbus address or bacnet address
+	AddressLength        *int                 `json:"address_length"`            // for example a modbus address offset
+	AddressUUID          string               `json:"address_uuid,omitempty"`    // for example a droplet id (so a string)
+	NextAvailableAddress *bool                `json:"use_next_available_address,omitempty"`
+	Decimal              *uint32              `json:"decimal,omitempty"`
+	LimitMin             *float64             `json:"limit_min"`
+	LimitMax             *float64             `json:"limit_max"`
+	ScaleInMin           *float64             `json:"scale_in_min"`
+	ScaleInMax           *float64             `json:"scale_in_max"`
+	ScaleOutMin          *float64             `json:"scale_out_min"`
+	ScaleOutMax          *float64             `json:"scale_out_max"`
+	UnitType             string               `json:"unit_type,omitempty"` //temperature
+	Unit                 string               `json:"unit,omitempty"`
+	UnitTo               string               `json:"unit_to,omitempty"` //with take the unit and convert to, this would affect the presentValue and the original value will be stored in the raw
+	IsProducer           *bool                `json:"is_producer,omitempty"`
+	IsConsumer           *bool                `json:"is_consumer,omitempty"`
+	ValueRaw             string               `json:"value_raw,omitempty"`
+	Priority             *Priority            `json:"priority,omitempty" gorm:"constraint:OnDelete:CASCADE"`
+	Tags                 []*Tag               `json:"tags,omitempty" gorm:"many2many:points_tags;constraint:OnDelete:CASCADE"`
+	WriteMode            *poller.WriteMode    `json:"write_mode"`
+	WritePollRequired    *bool                `json:"write_required"`
+	ReadPollRequired     *bool                `json:"read_required"`
+	PollPriority         *poller.PollPriority `json:"poll_priority"`
+	PollRate             *poller.PollRate     `json:"poll_rate"`
+	PollTimer            *time.Timer          `json:"poll_timer"`
 }
 
 type Priority struct {

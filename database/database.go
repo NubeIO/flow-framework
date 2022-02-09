@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NubeIO/flow-framework/config"
 	"github.com/NubeIO/flow-framework/eventbus"
+	"github.com/NubeIO/flow-framework/migration"
 	"github.com/NubeIO/flow-framework/src/cachestore"
 	"github.com/NubeIO/flow-framework/utils"
 	"os"
@@ -34,84 +35,9 @@ func New(dialect, connection, logLevel string) (*GormDatabase, error) {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	var localStorageFlowNetwork []model.LocalStorageFlowNetwork
-	var alerts []model.Alert
-	var message []model.Message
-	var pluginConf []model.PluginConf
-	var network []model.Network
-	var device []model.Device
-	var point []model.Point
-	var priority []model.Priority
-	var producerHistory []model.ProducerHistory
-	var consumerHistory []model.ConsumerHistory
-	var flowNetwork []model.FlowNetwork
-	var flowNetworkClone []model.FlowNetworkClone
-	var job []model.Job
-	var stream []model.Stream
-	var streamClone []model.StreamClone
-	var commandGroup []model.CommandGroup
-	var producer []model.Producer
-	var consumer []model.Consumer
-	var writer []model.Writer
-	var writerClone []model.WriterClone
-	var integration []model.Integration
-	var mqttConnection []model.MqttConnection
-	var schedule []model.Schedule
-	var tags []model.Tag
-	var blocks []model.Block
-	var connections []model.Connection
-	var blockRoutes []model.BlockStaticRoute
-	var blockRouteValueNumbers []model.BlockRouteValueNumber
-	var blockRouteValueString []model.BlockRouteValueString
-	var blockRouteValueBool []model.BlockRouteValueBool
-	var sourceParams []model.SourceParameter
-	var links []model.Link
-	var history []model.History
-	var historyLog []model.HistoryLog
-	var historyInfluxLog []model.HistoryInfluxLog
-	var models = []interface{}{
-		&localStorageFlowNetwork,
-		&alerts,
-		&message,
-		&pluginConf,
-		&network,
-		&device,
-		&point,
-		&flowNetwork,
-		&flowNetworkClone,
-		&priority,
-		&producerHistory,
-		&consumerHistory,
-		&job,
-		&stream,
-		&streamClone,
-		&commandGroup,
-		&producer,
-		&consumer,
-		&writer,
-		&writerClone,
-		&integration,
-		&mqttConnection,
-		&schedule,
-		&tags,
-		&blocks,
-		&connections,
-		&blockRoutes,
-		&blockRouteValueNumbers,
-		&blockRouteValueString,
-		&blockRouteValueBool,
-		&sourceParams,
-		&links,
-		&history,
-		&historyLog,
-		&historyInfluxLog,
-	}
 
-	for _, v := range models {
-		err = db.AutoMigrate(v)
-		if err != nil {
-			panic("failed to AutoMigrate")
-		}
+	if err := migration.Upgrade(db); err != nil {
+		panic("failed to AutoMigrate")
 	}
 
 	var lsFlowNetworkCount int64 = 0

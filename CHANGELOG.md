@@ -1,4 +1,9 @@
 # CHANGELOG
+## [v0.3.4](https://github.com/NubeIO/flow-framework/tree/v0.3.4) (2022-02-10)
+- Sync value on COV of point
+- Fix: point.present_value comparison issue
+- Fix: database lock issue
+
 ## [v0.3.3](https://github.com/NubeIO/flow-framework/tree/v0.3.3) (2022-02-10)
 - Fix: schedule
 

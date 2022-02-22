@@ -1,4 +1,13 @@
 # CHANGELOG
+## [v0.3.6](https://github.com/NubeIO/flow-framework/tree/v0.3.6) (2022-02-22)
+- Merge pull request #358 from NubeIO/bac-master-1
+- Fix: edit flow-network issue
+- Fix: issue on P2P openvpn connected devices
+  - SyncFlowNetwork: Post "10.8.1.1:1616/ff/api/sync/flow_network";: EOF
+- updates to modbus plugin
+- Add writers write, read, sync action
+- Fix: writer action support for old deployments
+
 ## [v0.3.5](https://github.com/NubeIO/flow-framework/tree/v0.3.5) (2022-02-16)
 - Improvement: support multiple producers on a single point
 - Improvement on producer history

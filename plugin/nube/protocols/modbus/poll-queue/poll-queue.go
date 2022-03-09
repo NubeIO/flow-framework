@@ -36,10 +36,10 @@ import (
 //dbhandler.GormDatabase.GetPoint(pp.FFPointUUID)
 
 type NetworkPriorityPollQueue struct {
-	PriorityQueue *PriorityPollQueue //This is the queue that is polling points are drawn from
-	PointsOnHold  *PriorityPollQueue //This is a slice that contains polling points that are not in the active polling queue, it is mostly a reference so that we can periodically find out if any points have been dropped from polling.
-	FFPluginUUID  string
-	FFNetworkUUID string
+	PriorityQueue        *PriorityPollQueue //This is the queue that is polling points are drawn from
+	StandbyPollingPoints *PriorityPollQueue //This is a slice that contains polling points that are not in the active polling queue, it is mostly a reference so that we can periodically find out if any points have been dropped from polling.
+	FFPluginUUID         string
+	FFNetworkUUID        string
 }
 
 func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {

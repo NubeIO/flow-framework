@@ -67,7 +67,7 @@ func (pm *NetworkPollManager) StopPolling() {
 
 	pm.StopQueueUnloader()
 	//TODO: STOP ANY QUEUE LOADERS
-	for _, pp := range pm.PollQueue.PointsOnHold.PriorityQueue {
+	for _, pp := range pm.PollQueue.StandbyPollingPoints.PriorityQueue {
 		pp.RepollTimer.Stop()
 	}
 	pm.PollQueue.EmptyQueue()

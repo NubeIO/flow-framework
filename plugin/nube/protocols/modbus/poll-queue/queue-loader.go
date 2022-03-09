@@ -71,7 +71,7 @@ func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
 	if pm.PluginQueueUnloader.NextPollPoint != nil {
 		hasNextPollPoint = 1
 	}
-	fmt.Println("PrintPollQueuePointUUIDs TOTAL COUNT = ", hasNextPollPoint+pm.PollQueue.PriorityQueue.Len()+pm.PollQueue.PointsOnHold.Len())
+	fmt.Println("PrintPollQueuePointUUIDs TOTAL COUNT = ", hasNextPollPoint+pm.PollQueue.PriorityQueue.Len()+pm.PollQueue.StandbyPollingPoints.Len())
 	fmt.Print("NextPollPoint: ")
 	fmt.Printf("%+v\n", pm.PluginQueueUnloader.NextPollPoint)
 	fmt.Print("PollQueue: COUNT = ", pm.PollQueue.PriorityQueue.Len(), ": ")
@@ -79,8 +79,8 @@ func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
 		fmt.Print(pp.FFPointUUID, ", ", pp.PollPriority, "; ")
 	}
 	fmt.Println("")
-	fmt.Print("PointsOnHold COUNT = ", pm.PollQueue.PointsOnHold.Len(), ": ")
-	for _, pp := range pm.PollQueue.PointsOnHold.PriorityQueue {
+	fmt.Print("StandbyPollingPoints COUNT = ", pm.PollQueue.StandbyPollingPoints.Len(), ": ")
+	for _, pp := range pm.PollQueue.StandbyPollingPoints.PriorityQueue {
 		fmt.Print(pp.FFPointUUID, ", ", pp.PollPriority, ", repoll timer:", pp.RepollTimer != nil, "; ")
 	}
 	fmt.Println("\n \n")
@@ -120,9 +120,9 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp))
 			fmt.Println("Modbus PollingPointCompleteNotification(): pp")
 			fmt.Printf("%+v\n", pp)
-			addSuccess := pm.PollQueue.PointsOnHold.AddPollingPoint(pp)
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
 			if !addSuccess {
-				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to PointsOnHold slice.  (%s)", pp.FFPointUUID))
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
 			}
 		} else {
 			point.ReadPollRequired = utils.NewTrue()
@@ -194,9 +194,9 @@ func (pm *NetworkPollManager) MakePollingPointRepollCallback(pp *PollingPoint) f
 		log.Info("CALL PollingPointRepollCallback func() pp:")
 		fmt.Printf("%+v\n", pp)
 		pp.RepollTimer = nil
-		removeSuccess := pm.PollQueue.PointsOnHold.RemovePollingPointByPointUUID(pp.FFPointUUID)
+		removeSuccess := pm.PollQueue.StandbyPollingPoints.RemovePollingPointByPointUUID(pp.FFPointUUID)
 		if !removeSuccess {
-			log.Error(fmt.Sprintf("Modbus MakePollingPointRepollCallback(): polling point could not be found in PointsOnHold.  (%s)", pp.FFPointUUID))
+			log.Error(fmt.Sprintf("Modbus MakePollingPointRepollCallback(): polling point could not be found in StandbyPollingPoints.  (%s)", pp.FFPointUUID))
 		}
 		pm.PollQueue.AddPollingPoint(pp)
 	}

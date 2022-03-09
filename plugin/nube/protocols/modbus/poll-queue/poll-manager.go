@@ -63,9 +63,14 @@ func (pm *NetworkPollManager) StartPolling() {
 
 func (pm *NetworkPollManager) StopPolling() {
 	pm.Enable = false
-	//TODO: STOP ANY QUEUE LOADERS
-	pm.EmptyQueue()
+	//pm.EmptyQueue()
+
 	pm.StopQueueUnloader()
+	//TODO: STOP ANY QUEUE LOADERS
+	for _, pp := range pm.PollQueue.PointsOnHold.PriorityQueue {
+		pp.RepollTimer.Stop()
+	}
+	pm.PollQueue.EmptyQueue()
 }
 
 func (pm *NetworkPollManager) PausePolling() { //POLLING SHOULD NOT BE PAUSED FOR LONG OR THE QUEUE WILL BECOME TOO LONG
@@ -89,10 +94,14 @@ func (pm *NetworkPollManager) EmptyQueue() {
 }
 
 func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID string) *NetworkPollManager {
+	// Make the main priority polling queue
 	queue := make([]*PollingPoint, 0)
 	pq := &PriorityPollQueue{queue}
-	heap.Init(pq)
-	npq := &NetworkPriorityPollQueue{pq, FFPluginUUID, FFNetworkUUID}
+	heap.Init(pq) //Init needs to be called on the main PriorityQueue so that it is maintained by PollingPriority.
+	// Make the reference slice that contains points that are not in the current polling queue.
+	refQueue := make([]*PollingPoint, 0)
+	rq := &PriorityPollQueue{refQueue}
+	npq := &NetworkPriorityPollQueue{pq, rq, FFPluginUUID, FFNetworkUUID}
 	pqu := &QueueUnloader{nil, nil, nil}
 	pm := new(NetworkPollManager)
 	pm.PollQueue = npq
@@ -106,7 +115,7 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 }
 
 func (pm *NetworkPollManager) GetPollRateDuration(rate poller.PollRate, deviceUUID string) time.Duration {
-	fmt.Println("GetPollRateDuration()")
+	//fmt.Println("GetPollRateDuration()")
 	var arg api.Args
 	device, err := pm.DBHandlerRef.GetDevice(deviceUUID, arg)
 	if err != nil {

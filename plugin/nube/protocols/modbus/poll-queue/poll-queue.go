@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/NubeIO/flow-framework/src/poller"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 // LOOK AT USING:
@@ -35,7 +36,8 @@ import (
 //dbhandler.GormDatabase.GetPoint(pp.FFPointUUID)
 
 type NetworkPriorityPollQueue struct {
-	PriorityQueue *PriorityPollQueue
+	PriorityQueue *PriorityPollQueue //This is the queue that is polling points are drawn from
+	PointsOnHold  *PriorityPollQueue //This is a slice that contains polling points that are not in the active polling queue, it is mostly a reference so that we can periodically find out if any points have been dropped from polling.
 	FFPluginUUID  string
 	FFNetworkUUID string
 }
@@ -81,8 +83,8 @@ func (nq *NetworkPriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error)
 	}
 	return pp, nil
 	//}
-	fmt.Println("(nq *NetworkPriorityPollQueue) GetNextPollingPoint(): nq.PriorityQueue.Enable is false ")
-	return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue %s is not enabled.", nq.FFNetworkUUID))
+	//fmt.Println("(nq *NetworkPriorityPollQueue) GetNextPollingPoint(): nq.PriorityQueue.Enable is false ")
+	//return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue %s is not enabled.", nq.FFNetworkUUID))
 }
 func (nq *NetworkPriorityPollQueue) Start() {
 	//nq.PriorityQueue.Start()
@@ -191,15 +193,16 @@ type PollingPoint struct {
 	FFDeviceUUID  string
 	FFNetworkUUID string
 	FFPluginUUID  string
+	RepollTimer   *time.Timer
 }
 
 func NewPollingPoint(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string) *PollingPoint {
-	pp := &PollingPoint{poller.PRIORITY_NORMAL, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID}
+	pp := &PollingPoint{poller.PRIORITY_NORMAL, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil}
 	//WHATEVER FUNCTION CALLS NewPollingPoint NEEDS TO SET THE PRIORITY
 	return pp
 }
 
 func NewPollingPointWithPriority(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string, priority poller.PollPriority) *PollingPoint {
-	pp := &PollingPoint{priority, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID}
+	pp := &PollingPoint{priority, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil}
 	return pp
 }

@@ -36,7 +36,7 @@ func (pm *NetworkPollManager) StartQueueUnloader() {
 	ql := &QueueUnloader{nil, nil, nil}
 	pm.PluginQueueUnloader = ql
 	if pm.PluginQueueUnloader.NextPollPoint == nil {
-		fmt.Println("StartQueueUnloader() pm.PluginQueueUnloader.NextPollPoint == nil")
+		//fmt.Println("StartQueueUnloader() pm.PluginQueueUnloader.NextPollPoint == nil")
 		pp, err := pm.PollQueue.GetNextPollingPoint()
 		if pp != nil && err == nil {
 			pm.PluginQueueUnloader.NextPollPoint = pp

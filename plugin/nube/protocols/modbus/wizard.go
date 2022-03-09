@@ -129,6 +129,58 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 			}
 		}
 		return "modbus wizard 1: added networks, devices, and points", err
+
+	case 3:
+		var net model.Network
+		net.Name = "Modbus Net"
+		net.TransportType = model.TransType.IP
+		net.PluginPath = "modbus"
+
+		net.PluginConfId = i.pluginUUID
+		_, err := i.db.CreateNetwork(&net, false)
+		if err != nil {
+			fmt.Errorf("network creation failure: %s", err)
+		}
+		log.Info("Created a Network")
+
+		for j := 1; j < 4; j++ {
+			var dev model.Device
+			dev.Name = "Modbus Dev " + strconv.Itoa(j)
+			dev.CommonIP.Host = "0.0.0.0"
+			dev.CommonIP.Port = p
+			dev.AddressId = j
+			dev.ZeroMode = utils.NewTrue()
+			dev.PollDelayPointsMS = 5000
+			dev.NetworkUUID = net.UUID
+			_, err := i.db.CreateDevice(&dev)
+			if err != nil {
+				fmt.Errorf("device creation failure: %s", err)
+			}
+			log.Info("Created a Device: ", dev)
+			for l := 1; l < 6; l++ {
+				var pnt model.Point
+				pnt.Name = "Modbus Pnt " + strconv.Itoa(l)
+				pnt.Description = "modbus"
+				pnt.AddressID = utils.NewInt(l) //TODO check conversion
+				pnt.ObjectType = string(model.ObjTypeWriteFloat32)
+				pnt.DeviceUUID = dev.UUID
+				pnt.PollPriority = poller.PRIORITY_NORMAL
+				pnt.PollRate = poller.RATE_NORMAL
+				if l == 1 {
+					pnt.PollPriority = poller.PRIORITY_LOW
+				} else if l == 3 {
+					pnt.PollPriority = poller.PRIORITY_HIGH
+				}
+				pnt.WriteMode = poller.ReadOnly
+				_, err = i.db.CreatePoint(&pnt, false, true)
+				if err != nil {
+					fmt.Errorf("consumer point creation failure: %s", err)
+				}
+				log.Info("Created a Point for Consumer", pnt)
+			}
+		}
+		return "modbus wizard 3: added a network, 3 devices, and 3 points per device", err
+
 	}
 	return "modbus wizard error: unknown wizard version", err
 }

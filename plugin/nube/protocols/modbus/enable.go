@@ -19,8 +19,8 @@ func (i *Instance) Enable() error {
 	} else if nets == nil || err != nil {
 		i.networks = nil
 	}
-	fmt.Println("Instance")
-	fmt.Printf("%+v\n", i)
+	//fmt.Println("Instance")
+	//fmt.Printf("%+v\n", i)
 	if i.config.EnablePolling {
 		if !i.pollingEnabled {
 			var arg polling
@@ -29,10 +29,10 @@ func (i *Instance) Enable() error {
 			i.NetworkPollManagers = make([]*pollqueue.NetworkPollManager, 0) //This will delete any existing NetworkPollManagers (if enable is called multiple times, it will rebuild the queues).
 			for _, net := range nets {                                       //Create a new Poll Manager for each network in the plugin.
 				pollManager := pollqueue.NewPollManager(&i.db, net.UUID, i.pluginUUID)
-				fmt.Println("net")
-				fmt.Printf("%+v\n", net)
-				fmt.Println("pollManager")
-				fmt.Printf("%+v\n", pollManager)
+				//fmt.Println("net")
+				//fmt.Printf("%+v\n", net)
+				//fmt.Println("pollManager")
+				//fmt.Printf("%+v\n", pollManager)
 				pollManager.StartPolling()
 				i.NetworkPollManagers = append(i.NetworkPollManagers, pollManager)
 			}

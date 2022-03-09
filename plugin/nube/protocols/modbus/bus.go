@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/eventbus"
+	pollqueue "github.com/NubeIO/flow-framework/plugin/nube/protocols/modbus/poll-queue"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/mustafaturan/bus/v3"
 	log "github.com/sirupsen/logrus"
@@ -161,4 +163,143 @@ func (i *Instance) BusServ() {
 	key = fmt.Sprintf("key_%s", u)
 	eventbus.GetBus().RegisterHandler(key, handlerDeleted)
 
+}
+
+func (i *Instance) OnNetworkAdded(networkUUID *string) {
+	net, err := i.db.GetNetwork(*networkUUID, api.Args{})
+	if net == nil || err != nil {
+		log.Error("Modbus: OnNetworkAdded(): cannot find network ", *networkUUID)
+		return
+	}
+	if *net.Enable == false {
+		return
+	}
+
+	pollManager := pollqueue.NewPollManager(&i.db, *networkUUID, i.pluginUUID)
+	pollManager.StartPolling()
+	i.NetworkPollManagers = append(i.NetworkPollManagers, pollManager)
+}
+
+func (i *Instance) OnDeviceAdded(deviceUUID *string) {
+	dev, err := i.db.GetDevice(*deviceUUID, api.Args{})
+	if dev == nil || err != nil {
+		log.Error("Modbus: OnDeviceAdded(): cannot find network ", *deviceUUID)
+		return
+	}
+	if *dev.Enable == false {
+		return
+	}
+
+	//DO ADD DEVICE POLL QUEUE OPERATIONS
+
+}
+
+func (i *Instance) OnPointAdded(pointUUID *string) {
+	pnt, err := i.db.GetPoint(*pointUUID)
+	if pnt == nil || err != nil {
+		log.Error("Modbus: OnPointAdded(): cannot find network ", *pointUUID)
+		return
+	}
+	if *pnt.Enable == false {
+		return
+	}
+
+	//DO ADD POINT POLL QUEUE OPERATIONS
+
+}
+
+func (i *Instance) OnNetworkUpdated(networkUUID *string) {
+	net, err := i.db.GetNetwork(*networkUUID, api.Args{})
+	if net == nil || err != nil {
+		log.Error("Modbus: OnNetworkUpdated(): cannot find network ", *networkUUID)
+		return
+	}
+	if *net.Enable == false {
+		return
+	}
+
+	pollManager := pollqueue.NewPollManager(&i.db, *networkUUID, i.pluginUUID)
+	pollManager.StartPolling()
+	i.NetworkPollManagers = append(i.NetworkPollManagers, pollManager)
+}
+
+func (i *Instance) OnDeviceUpdated(deviceUUID *string) {
+	dev, err := i.db.GetDevice(*deviceUUID, api.Args{})
+	if dev == nil || err != nil {
+		log.Error("Modbus: OnDeviceUpdated(): cannot find network ", *deviceUUID)
+		return
+	}
+	if *dev.Enable == false {
+		return
+	}
+
+	//DO ADD DEVICE POLL QUEUE OPERATIONS
+
+}
+
+func (i *Instance) OnPointUpdated(pointUUID *string) {
+	pnt, err := i.db.GetDevice(*pointUUID, api.Args{})
+	if pnt == nil || err != nil {
+		log.Error("Modbus: OnPointUpdated(): cannot find network ", *pointUUID)
+		return
+	}
+	if *pnt.Enable == false {
+		return
+	}
+
+	//DO ADD POINT POLL QUEUE OPERATIONS
+
+}
+
+func (i *Instance) OnNetworkDeleted(networkUUID *string) {
+	net, err := i.db.GetNetwork(*networkUUID, api.Args{})
+	if net == nil || err != nil {
+		log.Error("Modbus: OnNetworkDeleted(): cannot find network ", *networkUUID)
+		return
+	}
+	if *net.Enable == false {
+		return
+	}
+
+	pollManager := pollqueue.NewPollManager(&i.db, *networkUUID, i.pluginUUID)
+	pollManager.StartPolling()
+	i.NetworkPollManagers = append(i.NetworkPollManagers, pollManager)
+}
+
+func (i *Instance) OnDeviceDeleted(deviceUUID *string) {
+	dev, err := i.db.GetDevice(*deviceUUID, api.Args{})
+	if dev == nil || err != nil {
+		log.Error("Modbus: OnDeviceDeleted(): cannot find network ", *deviceUUID)
+		return
+	}
+	if *dev.Enable == false {
+		return
+	}
+
+	//DO ADD DEVICE POLL QUEUE OPERATIONS
+
+}
+
+func (i *Instance) OnPointDeleted(pointUUID *string) {
+	pnt, err := i.db.GetPoint(*pointUUID)
+	if pnt == nil || err != nil {
+		log.Error("Modbus: OnPointDeleted(): cannot find network ", *pointUUID)
+		return
+	}
+	if *pnt.Enable == false {
+		return
+	}
+	/*
+		RemovePollingPointByPointUUID
+		pnt, err := i.db.GetDevice(*pointUUID, api.Args{})
+		if pnt == nil || err != nil {
+			log.Error("Modbus: OnPointDeleted(): cannot find network ", *pointUUID)
+			return
+		}
+		if *pnt.Enable == false {
+			return
+		}
+
+		//DO ADD POINT POLL QUEUE OPERATIONS
+	*/
 }

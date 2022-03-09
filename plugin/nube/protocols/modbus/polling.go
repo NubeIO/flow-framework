@@ -45,6 +45,7 @@ func (i *Instance) ModbusPolling() error {
 	var counter = 0
 	f := func() (bool, error) {
 		counter++
+		fmt.Println("\n \n")
 		log.Infof("modbus: LOOP COUNT: %v\n", counter)
 		var netArg api.Args
 		/*
@@ -58,32 +59,32 @@ func (i *Instance) ModbusPolling() error {
 			//time.Sleep(15000 * time.Millisecond) //WHAT DOES THIS LINE DO?
 			log.Info("modbus: NO MODBUS NETWORKS FOUND\n")
 		}
-		fmt.Println("i.NetworkPollManagers")
-		fmt.Printf("%+v\n", i.NetworkPollManagers)
+		//fmt.Println("i.NetworkPollManagers")
+		//fmt.Printf("%+v\n", i.NetworkPollManagers)
 		for _, netPollMan := range i.NetworkPollManagers { //LOOP THROUGH AND POLL NEXT POINTS IN EACH NETWORK QUEUE
 
 			//Check that network exists
-			fmt.Println("netPollMan")
-			fmt.Printf("%+v\n", netPollMan)
+			//fmt.Println("netPollMan")
+			//fmt.Printf("%+v\n", netPollMan)
 			net, err := i.db.GetNetwork(netPollMan.FFNetworkUUID, netArg)
-			fmt.Println("net")
-			fmt.Printf("%+v\n", net)
-			fmt.Println("err")
-			fmt.Printf("%+v\n", err)
+			//fmt.Println("net")
+			//fmt.Printf("%+v\n", net)
+			//fmt.Println("err")
+			//fmt.Printf("%+v\n", err)
 			if err != nil || net == nil || net.PluginConfId != i.pluginUUID {
-				log.Info("modbus: MODBUS NETWORK NOT FOUND\n")
+				log.Error("modbus: MODBUS NETWORK NOT FOUND\n")
 				continue
 			}
-			log.Infof("modbus-poll: POLL START: NAME: %s\n", net.Name)
+			//log.Infof("modbus-poll: POLL START: NAME: %s\n", net.Name)
 
 			if !utils.BoolIsNil(net.Enable) {
 				log.Infof("modbus: NETWORK DISABLED: COUNT %v NAME: %s\n", counter, net.Name)
 				continue
 			}
 			netPollMan.PrintPollQueuePointUUIDs()
-			fmt.Println("ModbusPolling() current QueueUnloader")
-			fmt.Printf("%+v\n", netPollMan.PluginQueueUnloader.NextPollPoint)
-			pp, callback := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
+			//fmt.Println("ModbusPolling() current QueueUnloader")
+			//fmt.Printf("%+v\n", netPollMan.PluginQueueUnloader.NextPollPoint)
+			pp, callback := netPollMan.GetNextPollingPoint() //callback function is called once polling is completed.
 			//pp, _ := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
 			if pp == nil {
 				log.Infof("modbus: No PollingPoint available in Network %s]n", net.UUID)
@@ -93,8 +94,8 @@ func (i *Instance) ModbusPolling() error {
 				log.Info("modbus: PollingPoint FFNetworkUUID does not match the Network UUID\n")
 				continue
 			}
-			fmt.Println("ModbusPolling() pp")
-			fmt.Printf("%+v\n", pp)
+			//fmt.Println("ModbusPolling() pp")
+			//fmt.Printf("%+v\n", pp)
 
 			var devArg api.Args
 			dev, err := i.db.GetDevice(pp.FFDeviceUUID, devArg)
@@ -113,10 +114,10 @@ func (i *Instance) ModbusPolling() error {
 				continue
 			}
 
-			log.Infof("MODBUS POLL! : Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s \n", net.UUID, dev.UUID, pnt.UUID, dev.AddressId, pnt.AddressID, pnt.ObjectType)
+			log.Infof("MODBUS POLL! : Priority: %d, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s \n", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, pnt.AddressID, pnt.ObjectType)
 
-			fmt.Println("POLLING COMPLETE CALLBACK")
-			callback(pp, true, true)
+			//fmt.Println("POLLING COMPLETE CALLBACK")
+			callback(pp, true, true) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
 
 			/*
 				var client Client

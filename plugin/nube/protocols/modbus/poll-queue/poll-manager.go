@@ -42,13 +42,20 @@ type NetworkPollManager struct {
 	//Statistics
 	AveragePollTime               time.Duration
 	TotalPollQueueLength          int
+	TotalStandbyPointsLength      int
 	HighPriorityPollQueueLength   int
 	NormalPriorityPollQueueLength int
-	SlowPriorityPollQueueLength   int
-	HighPriorityPollsPerMinute    int
-	NormalPriorityPollsPerMinute  int
-	SlowPriorityPollsPerMinute    int
+	LowPriorityPollQueueLength    int
+	HighPriorityAveragePollTime   int
+	NormalPriorityAveragePollTime int
+	LowPriorityAveragePollTime    int
 	BusyTime                      int //percent
+	HighPriorityMaxCycleTime      time.Duration
+	NormalPriorityMaxCycleTime    time.Duration
+	LowPriorityMaxCycleTime       time.Duration
+	HighPriorityLockupAlert       bool
+	NormalPriorityLockupAlert     bool
+	LowPriorityLockupAlert        bool
 }
 
 func (pm *NetworkPollManager) StartPolling() {

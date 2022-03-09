@@ -47,6 +47,7 @@ func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
 		log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: PollingPoint FFNetworkUUID does not match the queue FFNetworkUUID. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID)
 		return false
 	}
+	pp.QueueEntryTime = time.Now().Unix()
 	success := nq.PriorityQueue.AddPollingPoint(pp)
 	if !success {
 		log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: point already exists in poll queue. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID)
@@ -188,21 +189,22 @@ func (q *PriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error) {
 }
 
 type PollingPoint struct {
-	PollPriority  poller.PollPriority
-	FFPointUUID   string
-	FFDeviceUUID  string
-	FFNetworkUUID string
-	FFPluginUUID  string
-	RepollTimer   *time.Timer
+	PollPriority   poller.PollPriority
+	FFPointUUID    string
+	FFDeviceUUID   string
+	FFNetworkUUID  string
+	FFPluginUUID   string
+	RepollTimer    *time.Timer
+	QueueEntryTime int64
 }
 
 func NewPollingPoint(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string) *PollingPoint {
-	pp := &PollingPoint{poller.PRIORITY_NORMAL, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil}
+	pp := &PollingPoint{poller.PRIORITY_NORMAL, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil, 0}
 	//WHATEVER FUNCTION CALLS NewPollingPoint NEEDS TO SET THE PRIORITY
 	return pp
 }
 
 func NewPollingPointWithPriority(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string, priority poller.PollPriority) *PollingPoint {
-	pp := &PollingPoint{priority, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil}
+	pp := &PollingPoint{priority, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil, 0}
 	return pp
 }

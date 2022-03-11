@@ -90,12 +90,17 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 	log.Infof("modbus-poll: PollingPointCompleteNotification Point UUID: %s, writeSuccess: %t, readSuccess: %t", pp.FFPointUUID, writeSuccess, readSuccess)
 
 	point, err := pm.DBHandlerRef.GetPoint(pp.FFPointUUID)
-	if err != nil {
+	if point == nil || err != nil {
 		fmt.Printf("NetworkPollManager.PollingPointCompleteNotification(): couldn't find point %s /n", pp.FFPointUUID)
 	}
+
+	//If the device was deleted while this point was being polled, discard the PollingPoint
+	if !pm.PollQueue.CheckIfActiveDevicesListIncludes(point.DeviceUUID) {
+		return
+	}
+
 	//fmt.Printf("NetworkPollManager.PollingPointCompleteNotification(): writeMode: %s", point.WriteMode)
 	//fmt.Println("")
-
 	switch point.WriteMode {
 	case poller.ReadOnce: //ReadOnce          If read_successful then don't re-add.
 		point.WritePollRequired = utils.NewFalse()

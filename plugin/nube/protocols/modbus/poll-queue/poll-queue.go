@@ -64,11 +64,9 @@ func (nq *NetworkPriorityPollQueue) RemovePollingPointByPointUUID(pointUUID stri
 	return true
 }
 func (nq *NetworkPriorityPollQueue) RemovePollingPointByDeviceUUID(deviceUUID string) bool {
-	fmt.Println("RemovePollingPointByDeviceUUID() 1 : ", deviceUUID)
+	fmt.Println("RemovePollingPointByDeviceUUID(): ", deviceUUID)
 	nq.PriorityQueue.RemovePollingPointByDeviceUUID(deviceUUID)
-	fmt.Println("RemovePollingPointByDeviceUUID() 2 : ")
 	nq.StandbyPollingPoints.RemovePollingPointByDeviceUUID(deviceUUID)
-	fmt.Println("RemovePollingPointByDeviceUUID() 3 : ")
 	nq.RemoveDeviceFromActiveDevicesList(deviceUUID)
 	return true
 }
@@ -186,21 +184,28 @@ func (q *PriorityPollQueue) RemovePollingPointByPointUUID(pointUUID string) bool
 	return false
 }
 func (q *PriorityPollQueue) RemovePollingPointByDeviceUUID(deviceUUID string) bool {
-	fmt.Println("MODBUS RemovePollingPointByDeviceUUID(): q.Len(): ", q.Len())
-	fmt.Printf("%+v\n", q)
-	for index, pp := range q.PriorityQueue {
-		fmt.Println("pp ", index)
-		fmt.Printf("%+v\n", pp)
+	index := 0
+	for index < q.Len() {
+		pp := q.PriorityQueue[index]
 		if pp.FFDeviceUUID == deviceUUID {
+			if pp.RepollTimer != nil {
+				pp.RepollTimer.Stop()
+			}
 			heap.Remove(q, index)
+		} else {
+			index++
 		}
 	}
 	return true
 }
 func (q *PriorityPollQueue) RemovePollingPointByNetworkUUID(networkUUID string) bool {
-	for index, pp := range q.PriorityQueue {
+	index := 0
+	for index < q.Len() {
+		pp := q.PriorityQueue[index]
 		if pp.FFNetworkUUID == networkUUID {
 			heap.Remove(q, index)
+		} else {
+			index++
 		}
 	}
 	return true

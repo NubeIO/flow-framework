@@ -37,6 +37,7 @@ func (d *GormDatabase) GetOneDeviceByArgs(args api.Args) (*model.Device, error) 
 	return deviceModel, nil
 }
 
+//TODO: this function doesn't do what it says it does
 // GetPluginIDFromDevice returns the pluginUUID by using the deviceUUID to query the network.
 func (d *GormDatabase) GetPluginIDFromDevice(uuid string) (*model.Network, error) {
 	device, err := d.GetDevice(uuid, api.Args{})
@@ -135,6 +136,7 @@ func (d *GormDatabase) UpdateDevice(uuid string, body *model.Device, fromPlugin 
 // DeleteDevice delete a Device.
 func (d *GormDatabase) DeleteDevice(uuid string) (bool, error) {
 	var deviceModel *model.Device
+	network, err := d.GetPluginIDFromDevice(uuid)
 	query := d.DB.Where("uuid = ? ", uuid).Delete(&deviceModel)
 	if query.Error != nil {
 		return false, query.Error
@@ -143,6 +145,12 @@ func (d *GormDatabase) DeleteDevice(uuid string) (bool, error) {
 	if r == 0 {
 		return false, nil
 	} else {
+		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsDeleted, network.UUID, uuid) //TODO: second argument in other instances is pluginUUID, but i didn't have access in this case
+		d.Bus.RegisterTopic(t)
+		err = d.Bus.Emit(eventbus.CTX(), t, deviceModel)
+		if err != nil {
+			return false, errors.New("error on device delete eventbus")
+		}
 		return true, nil
 	}
 }
@@ -155,6 +163,12 @@ func (d *GormDatabase) DropDevices() (bool, error) {
 		return false, query.Error
 	}
 	r := query.RowsAffected
+	t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsDeleted, "ALL", "ALL") //TODO: second argument in other instances is pluginUUID, but i didn't have access in this case
+	d.Bus.RegisterTopic(t)
+	err := d.Bus.Emit(eventbus.CTX(), t, deviceModel)
+	if err != nil {
+		return false, errors.New("error on device eventbus")
+	}
 	if r == 0 {
 		return false, nil
 	} else {

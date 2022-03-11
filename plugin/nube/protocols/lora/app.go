@@ -156,6 +156,7 @@ func (inst *Instance) addPointsFromStruct(deviceBody *model.Device, pointsRefl r
 
 func (inst *Instance) setnewPointFields(deviceBody *model.Device, pointBody *model.Point, name string) {
 	pointBody.DeviceUUID = deviceBody.UUID
+	pointBody.NetworkUUID = deviceBody.NetworkUUID
 	pointBody.AddressUUID = deviceBody.AddressUUID
 	pointBody.IsProducer = utils.NewFalse()
 	pointBody.IsConsumer = utils.NewFalse()

@@ -6,6 +6,7 @@ import (
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/NubeIO/flow-framework/src/poller"
+	"github.com/NubeIO/flow-framework/utils"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -100,6 +101,24 @@ func (pm *NetworkPollManager) EmptyQueue() {
 	pm.PollQueue.EmptyQueue()
 }
 
+func (pm *NetworkPollManager) ReAddDevicePoints(devUUID string) { //This is triggered by a user who wants to update the device poll times for standby points
+	var arg api.Args
+	arg.WithPoints = true
+	dev, err := pm.DBHandlerRef.GetDevice(devUUID, arg)
+	if dev == nil || err != nil {
+		log.Error("Modbus: ReAddDevicePoints(): cannot find device ", devUUID)
+		return
+	}
+	pm.PollQueue.RemovePollingPointByDeviceUUID(devUUID)
+	for _, pnt := range dev.Points {
+		if utils.BoolIsNil(pnt.Enable) {
+			pp := NewPollingPoint(pnt.UUID, pnt.DeviceUUID, dev.NetworkUUID, pm.FFPluginUUID)
+			pp.PollPriority = pnt.PollPriority
+			pm.PollQueue.AddPollingPoint(pp)
+		}
+	}
+}
+
 func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID string) *NetworkPollManager {
 	// Make the main priority polling queue
 	queue := make([]*PollingPoint, 0)
@@ -108,7 +127,8 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 	// Make the reference slice that contains points that are not in the current polling queue.
 	refQueue := make([]*PollingPoint, 0)
 	rq := &PriorityPollQueue{refQueue}
-	npq := &NetworkPriorityPollQueue{pq, rq, FFPluginUUID, FFNetworkUUID}
+	adl := make([]string, 0)
+	npq := &NetworkPriorityPollQueue{pq, rq, FFPluginUUID, FFNetworkUUID, adl}
 	pqu := &QueueUnloader{nil, nil, nil}
 	pm := new(NetworkPollManager)
 	pm.PollQueue = npq

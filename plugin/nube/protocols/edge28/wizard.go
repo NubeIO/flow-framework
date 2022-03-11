@@ -56,6 +56,7 @@ func (i *Instance) wizard(body wizard) (string, error) {
 
 	var pnt model.Point
 	pnt.DeviceUUID = device.UUID
+	pnt.NetworkUUID = device.NetworkUUID
 
 	for _, e := range pointsAll() {
 		pName := fmt.Sprintf("edge28_%s", e)

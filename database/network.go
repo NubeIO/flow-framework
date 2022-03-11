@@ -190,6 +190,12 @@ func (d *GormDatabase) DeleteNetwork(uuid string) (bool, error) {
 	if r == 0 {
 		return false, nil
 	} else {
+		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsDeleted, networkModel.PluginConfId, uuid)
+		d.Bus.RegisterTopic(t)
+		err := d.Bus.Emit(eventbus.CTX(), t, networkModel)
+		if err != nil {
+			return false, errors.New("error on network delete eventbus")
+		}
 		return true, nil
 	}
 }

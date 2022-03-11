@@ -135,6 +135,7 @@ func (i *Instance) addPoint(bacPoint *Point) (*model.Point, error) {
 		return nil, err
 	}
 	ffPoint.DeviceUUID = getDev.UUID
+	ffPoint.NetworkUUID = getDev.NetworkUUID
 	pnt, err := i.db.CreatePoint(&ffPoint, false, false)
 	if err != nil || pnt.UUID == "" {
 		log.Error("bacnet-master-plugin: ERROR added device: err", err)

@@ -40,6 +40,7 @@ func (i *Instance) wizard() (string, error) {
 
 	var pnt model.Point
 	pnt.DeviceUUID = device.UUID
+	pnt.NetworkUUID = device.NetworkUUID
 	pName := utils.NameIsNil()
 	pnt.Name = pName
 	pnt.Description = pName

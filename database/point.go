@@ -44,7 +44,6 @@ func (d *GormDatabase) GetOnePointByArgs(args api.Args) (*model.Point, error) {
 func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.Point, error) {
 	var deviceModel *model.Device
 	body.UUID = utils.MakeTopicUUID(model.ThingClass.Point)
-	deviceUUID := body.DeviceUUID
 	body.Name = nameIsNil(body.Name)
 	existingAddrID := false
 	existingName, _ := d.pointNameExists(body)
@@ -68,7 +67,7 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 		return nil, err
 	}
 	body.ObjectType = string(obj)
-	query := d.DB.Where("uuid = ? ", deviceUUID).First(&deviceModel)
+	query := d.DB.Where("uuid = ? ", body.DeviceUUID).First(&deviceModel)
 	if query.Error != nil {
 		return nil, query.Error
 	}
@@ -91,12 +90,19 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, query.Error
 	}
-	plug, err := d.GetPluginIDFromDevice(deviceUUID)
+	var devArg api.Args
+	dev, err := d.GetDevice(body.DeviceUUID, devArg)
 	if err != nil {
-		return nil, errors.New("ERROR failed to get plugin uuid")
+		return nil, errors.New("ERROR failed to get device (for references)")
 	}
-	if !fromPlugin {
-		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsCreated, plug.PluginConfId, body.UUID)
+	body.NetworkUUID = dev.NetworkUUID
+	var netArg api.Args
+	net, err := d.GetNetwork(dev.NetworkUUID, netArg)
+	if err != nil {
+		return nil, errors.New("ERROR failed to get network (for references)")
+	}
+	if !fromPlugin { //TODO: This looks like it should be reversed
+		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsCreated, net.PluginConfId, body.UUID)
 		d.Bus.RegisterTopic(t)
 		err = d.Bus.Emit(eventbus.CTX(), t, body)
 		if err != nil {
@@ -271,6 +277,9 @@ func (d *GormDatabase) parsePriority(priority *model.Priority) (map[string]inter
 func (d *GormDatabase) DeletePoint(uuid string) (bool, error) {
 	var pointModel *model.Point
 	point, err := d.GetPoint(uuid, api.Args{})
+	pntUUID := point.UUID
+	devUUID := point.DeviceUUID
+	netUUID := point.NetworkUUID
 	if err != nil {
 		return false, errors.New("point not exist")
 	}
@@ -282,15 +291,14 @@ func (d *GormDatabase) DeletePoint(uuid string) (bool, error) {
 	if r == 0 {
 		return false, nil
 	} else {
-		plug, err := d.GetPluginIDFromDevice(point.DeviceUUID)
 		if err != nil {
 			return false, errors.New("ERROR failed to get plugin uuid")
 		}
-		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsDeleted, plug.PluginConfId, point.UUID)
+		t := fmt.Sprintf("%s.%s.%s.%s", eventbus.PluginsDeleted, netUUID, pntUUID, devUUID)
 		d.Bus.RegisterTopic(t)
 		err = d.Bus.Emit(eventbus.CTX(), t, point)
 		if err != nil {
-			return false, errors.New("ERROR on device eventbus")
+			return false, errors.New("ERROR on point delete eventbus")
 		}
 		return true, nil
 	}

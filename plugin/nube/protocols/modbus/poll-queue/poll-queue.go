@@ -40,6 +40,7 @@ type NetworkPriorityPollQueue struct {
 	StandbyPollingPoints *PriorityPollQueue //This is a slice that contains polling points that are not in the active polling queue, it is mostly a reference so that we can periodically find out if any points have been dropped from polling.
 	FFPluginUUID         string
 	FFNetworkUUID        string
+	ActiveDevicesList    []string //UUIDs of devices that have points in the queue
 }
 
 func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
@@ -50,29 +51,30 @@ func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
 	pp.QueueEntryTime = time.Now().Unix()
 	success := nq.PriorityQueue.AddPollingPoint(pp)
 	if !success {
-		log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: point already exists in poll queue. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID)
+		//log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: point already exists in poll queue. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID)
 		return false
 	}
+	nq.AddDeviceToActiveDevicesList(pp.FFDeviceUUID)
 	return true
 }
 func (nq *NetworkPriorityPollQueue) RemovePollingPointByPointUUID(pointUUID string) bool {
-	success := nq.PriorityQueue.RemovePollingPointByPointUUID(pointUUID)
-	if !success {
-		log.Errorf("NetworkPriorityPollQueue.RemovePollingPointByPointUUID: point does not exists in poll queue. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pointUUID)
-		return false
-	}
+	fmt.Println("RemovePollingPointByPointUUID(): ", pointUUID)
+	nq.PriorityQueue.RemovePollingPointByPointUUID(pointUUID)
+	nq.StandbyPollingPoints.RemovePollingPointByPointUUID(pointUUID)
 	return true
 }
 func (nq *NetworkPriorityPollQueue) RemovePollingPointByDeviceUUID(deviceUUID string) bool {
+	fmt.Println("RemovePollingPointByDeviceUUID() 1 : ", deviceUUID)
 	nq.PriorityQueue.RemovePollingPointByDeviceUUID(deviceUUID)
+	fmt.Println("RemovePollingPointByDeviceUUID() 2 : ")
+	nq.StandbyPollingPoints.RemovePollingPointByDeviceUUID(deviceUUID)
+	fmt.Println("RemovePollingPointByDeviceUUID() 3 : ")
+	nq.RemoveDeviceFromActiveDevicesList(deviceUUID)
 	return true
 }
 func (nq *NetworkPriorityPollQueue) UpdatePollingPointByPointUUID(pointUUID string, newPriority poller.PollPriority) bool {
-	success := nq.PriorityQueue.UpdatePollingPointByPointUUID(pointUUID, newPriority)
-	if !success {
-		log.Errorf("NetworkPriorityPollQueue.UpdatePollingPointByPointUUID: point does not exists in poll queue. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pointUUID)
-		return false
-	}
+	nq.PriorityQueue.UpdatePollingPointByPointUUID(pointUUID, newPriority)
+	nq.StandbyPollingPoints.UpdatePollingPointByPointUUID(pointUUID, newPriority)
 	return true
 }
 func (nq *NetworkPriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error) {
@@ -96,6 +98,50 @@ func (nq *NetworkPriorityPollQueue) Stop() {
 }
 func (nq *NetworkPriorityPollQueue) EmptyQueue() {
 	nq.PriorityQueue.EmptyQueue()
+	refQueue := make([]*PollingPoint, 0)
+	rq := &PriorityPollQueue{refQueue}
+	nq.StandbyPollingPoints = rq
+}
+func (nq *NetworkPriorityPollQueue) CheckIfActiveDevicesListIncludes(devUUID string) bool {
+	for _, dev := range nq.ActiveDevicesList {
+		if dev == devUUID {
+			return true
+		}
+	}
+	return false
+}
+func (nq *NetworkPriorityPollQueue) AddDeviceToActiveDevicesList(devUUID string) bool {
+	for _, dev := range nq.ActiveDevicesList {
+		if dev == devUUID {
+			return false
+		}
+	}
+	nq.ActiveDevicesList = append(nq.ActiveDevicesList, devUUID)
+	return true
+}
+func (nq *NetworkPriorityPollQueue) RemoveDeviceFromActiveDevicesList(devUUID string) bool {
+	for index, dev := range nq.ActiveDevicesList {
+		if dev == devUUID {
+			//remove the devUUID from ActiveDevicesList
+			nq.ActiveDevicesList[index] = nq.ActiveDevicesList[len(nq.ActiveDevicesList)-1]
+			nq.ActiveDevicesList = nq.ActiveDevicesList[:len(nq.ActiveDevicesList)-1]
+			return true
+		}
+	}
+	return false
+}
+func (nq *NetworkPriorityPollQueue) CheckPollingQueueForDevUUID(devUUID string) bool {
+	for _, pp := range nq.PriorityQueue.PriorityQueue {
+		if pp.FFDeviceUUID == devUUID {
+			return true
+		}
+	}
+	for _, pp := range nq.StandbyPollingPoints.PriorityQueue {
+		if pp.FFDeviceUUID == devUUID {
+			return true
+		}
+	}
+	return false
 }
 
 // THIS IS THE BASE PriorityPollQueue Type and defines the base methods used to implement the `heap` library.  https://pkg.go.dev/container/heap
@@ -140,7 +186,11 @@ func (q *PriorityPollQueue) RemovePollingPointByPointUUID(pointUUID string) bool
 	return false
 }
 func (q *PriorityPollQueue) RemovePollingPointByDeviceUUID(deviceUUID string) bool {
+	fmt.Println("MODBUS RemovePollingPointByDeviceUUID(): q.Len(): ", q.Len())
+	fmt.Printf("%+v\n", q)
 	for index, pp := range q.PriorityQueue {
+		fmt.Println("pp ", index)
+		fmt.Printf("%+v\n", pp)
 		if pp.FFDeviceUUID == deviceUUID {
 			heap.Remove(q, index)
 		}

@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/model"
+	pollqueue "github.com/NubeIO/flow-framework/plugin/nube/protocols/modbus/poll-queue"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocols/modbus/smod"
 	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
@@ -35,6 +37,15 @@ func delays(networkType string) (deviceDelay, pointDelay time.Duration) {
 		pointDelay = 6000 * time.Millisecond
 	}
 	return
+}
+
+func (i *Instance) getNetworkPollManagerByUUID(netUUID string) (*pollqueue.NetworkPollManager, error) {
+	for _, netPollMan := range i.NetworkPollManagers {
+		if netPollMan.FFNetworkUUID == netUUID {
+			return netPollMan, nil
+		}
+	}
+	return nil, errors.New("modbus getNetworkPollManagerByUUID(): couldn't find NetworkPollManager")
 }
 
 var poll poller.Poller

@@ -151,6 +151,7 @@ type Point struct {
 	WriteValueOnceSync   *bool               `json:"write_value_once_sync,omitempty"`
 	Fallback             *float64            `json:"fallback"`
 	DeviceUUID           string              `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
+	NetworkUUID          string              `json:"network_uuid,omitempty" gorm:"TYPE:string REFERENCES networks;not null;default:null"`
 	EnableWriteable      *bool               `json:"writeable,omitempty"`
 	IsOutput             *bool               `json:"is_output,omitempty"`
 	EvalMode             string              `json:"eval_mode,omitempty"`

@@ -90,6 +90,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 			pnt.AddressID = utils.NewInt(j) //TODO check conversion
 			pnt.ObjectType = string(model.ObjTypeWriteFloat32)
 			pnt.DeviceUUID = dev.UUID
+			pnt.NetworkUUID = dev.NetworkUUID
 			pnt.PollPriority = poller.PRIORITY_NORMAL
 			pnt.PollRate = poller.RATE_NORMAL
 			pnt.WriteMode = poller.ReadOnly
@@ -164,6 +165,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 				pnt.AddressID = utils.NewInt(l) //TODO check conversion
 				pnt.ObjectType = string(model.ObjTypeWriteFloat32)
 				pnt.DeviceUUID = dev.UUID
+				pnt.NetworkUUID = dev.NetworkUUID
 				pnt.PollPriority = poller.PRIORITY_NORMAL
 				pnt.PollRate = poller.RATE_NORMAL
 				if l == 1 {

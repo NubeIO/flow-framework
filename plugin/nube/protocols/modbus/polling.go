@@ -73,7 +73,7 @@ func (i *Instance) ModbusPolling() error {
 		//fmt.Println("i.NetworkPollManagers")
 		//fmt.Printf("%+v\n", i.NetworkPollManagers)
 		for _, netPollMan := range i.NetworkPollManagers { //LOOP THROUGH AND POLL NEXT POINTS IN EACH NETWORK QUEUE
-
+			pollStartTime := time.Now()
 			//Check that network exists
 			//fmt.Println("netPollMan")
 			//fmt.Printf("%+v\n", netPollMan)
@@ -128,7 +128,10 @@ func (i *Instance) ModbusPolling() error {
 			log.Infof("MODBUS POLL! : Priority: %d, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s \n", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, pnt.AddressID, pnt.ObjectType)
 
 			//fmt.Println("POLLING COMPLETE CALLBACK")
-			callback(pp, true, true) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
+			pollEndTime := time.Now()
+			pollDuration := pollEndTime.Sub(pollStartTime)
+			pollTimeSecs := pollDuration.Seconds()
+			callback(pp, true, true, pollTimeSecs) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
 
 			/*
 				var client Client

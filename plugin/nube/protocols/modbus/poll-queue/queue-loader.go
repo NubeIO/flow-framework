@@ -47,6 +47,7 @@ func (pm *NetworkPollManager) RebuildPollingQueue() error {
 					pp.PollPriority = pnt.PollPriority
 					//fmt.Println("RebuildPollingQueue() pp:")
 					//fmt.Printf("%+v\n", pp)
+					pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
 					pm.PollQueue.AddPollingPoint(pp)
 				} else {
 					log.Info(fmt.Sprintf("NetworkPollManager.RebuildPollingQueue: Point (%s) is not enabled./n", pnt.UUID))
@@ -86,8 +87,59 @@ func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
 	fmt.Println("\n \n")
 }
 
-func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool) {
+func (pm *NetworkPollManager) PollCompleteStatsUpdate(pp *PollingPoint, pollTimeSecs float64) {
+	fmt.Println("PollCompleteStatsUpdate()")
+
+	pm.AveragePollExecuteTimeSecs = ((pm.AveragePollExecuteTimeSecs * float64(pm.TotalPollCount)) + pollTimeSecs) / (float64(pm.TotalPollCount) + 1)
+	pm.TotalPollCount++
+	enabledTime := time.Since(time.Unix(pm.PollingStartTimeUnix, 0)) * time.Second
+	pm.BusyTime = (pm.AveragePollExecuteTimeSecs * float64(pm.TotalPollCount)) / enabledTime.Seconds()
+
+	switch pp.PollPriority {
+	case poller.PRIORITY_ASAP:
+		pm.ASAPPriorityPollCount++
+		if pp.QueueEntryTime <= 0 {
+			return
+		}
+		pollTime := float64(time.Now().Unix() - pp.QueueEntryTime)
+		pm.ASAPPriorityAveragePollTime = ((pm.ASAPPriorityAveragePollTime * float64(pm.ASAPPriorityPollCountForAvg)) + pollTime) / (float64(pm.ASAPPriorityPollCountForAvg) + 1)
+		pm.ASAPPriorityPollCountForAvg++
+
+	case poller.PRIORITY_HIGH:
+		pm.HighPriorityPollCount++
+		if pp.QueueEntryTime <= 0 {
+			return
+		}
+		pollTime := float64(time.Now().Unix() - pp.QueueEntryTime)
+		pm.HighPriorityAveragePollTime = ((pm.HighPriorityAveragePollTime * float64(pm.HighPriorityPollCountForAvg)) + pollTime) / (float64(pm.HighPriorityPollCountForAvg) + 1)
+		pm.HighPriorityPollCountForAvg++
+
+	case poller.PRIORITY_NORMAL:
+		pm.NormalPriorityPollCount++
+		if pp.QueueEntryTime <= 0 {
+			return
+		}
+		pollTime := float64(time.Now().Unix() - pp.QueueEntryTime)
+		pm.NormalPriorityAveragePollTime = ((pm.NormalPriorityAveragePollTime * float64(pm.NormalPriorityPollCountForAvg)) + pollTime) / (float64(pm.NormalPriorityPollCountForAvg) + 1)
+		pm.NormalPriorityPollCountForAvg++
+
+	case poller.PRIORITY_LOW:
+		pm.LowPriorityPollCount++
+		if pp.QueueEntryTime <= 0 {
+			return
+		}
+		pollTime := float64(time.Now().Unix() - pp.QueueEntryTime)
+		pm.LowPriorityAveragePollTime = ((pm.LowPriorityAveragePollTime * float64(pm.LowPriorityPollCountForAvg)) + pollTime) / (float64(pm.LowPriorityPollCountForAvg) + 1)
+		pm.LowPriorityPollCountForAvg++
+
+	}
+
+}
+
+func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool, pollTimeSecs float64) {
 	log.Infof("modbus-poll: PollingPointCompleteNotification Point UUID: %s, writeSuccess: %t, readSuccess: %t", pp.FFPointUUID, writeSuccess, readSuccess)
+
+	pm.PollCompleteStatsUpdate(pp, pollTimeSecs) // This will update the relevant PollManager statistics.
 
 	point, err := pm.DBHandlerRef.GetPoint(pp.FFPointUUID)
 	if point == nil || err != nil {
@@ -106,22 +158,26 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 		point.WritePollRequired = utils.NewFalse()
 		if readSuccess {
 			point.ReadPollRequired = utils.NewFalse()
+			pp.RepollTimer = nil
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
 		} else {
 			point.ReadPollRequired = utils.NewTrue()
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
 			pm.PollQueue.AddPollingPoint(pp)
 		}
+
 	case poller.ReadOnly: //ReadOnly          Re-add with ReadPollRequired true, WritePollRequired false.
 		point.WritePollRequired = utils.NewFalse()
 		//fmt.Println("ReadOnly: point")
 		//fmt.Printf("%+v\n", point)
 		if readSuccess {
 			point.ReadPollRequired = utils.NewFalse()
-			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
-			//TODO: point.PollTimer PROPERTY CAUSES FF TO CRASH ON START REMOVED FOR TESTING
-			//point.PollTimer = time.AfterFunc(pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID), pm.MakePollingPointRepollCallback(pp))
 			duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
 			//log.Info("duration: ", duration)
-			//time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp))
+			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
 			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp))
 			fmt.Println("Modbus PollingPointCompleteNotification(): pp")
 			fmt.Printf("%+v\n", pp)
@@ -131,66 +187,118 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 			}
 		} else {
 			point.ReadPollRequired = utils.NewTrue()
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		}
+
 	case poller.WriteOnce: //WriteOnce         If write_successful then don't re-add.
 		point.ReadPollRequired = utils.NewFalse()
 		if writeSuccess {
 			point.WritePollRequired = utils.NewFalse()
+			pp.RepollTimer = nil
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
 		} else {
 			point.WritePollRequired = utils.NewTrue()
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		}
+
 	case poller.WriteOnceReadOnce: //WriteOnceReadOnce     If write_successful and read_success then don't re-add.
-		if writeSuccess {
+		if utils.BoolIsNil(point.WritePollRequired) && writeSuccess {
 			point.WritePollRequired = utils.NewFalse()
-		} else {
+			pp.RepollTimer = nil
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
+		} else if utils.BoolIsNil(point.WritePollRequired) && !writeSuccess {
 			point.WritePollRequired = utils.NewTrue()
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
+			return
 		}
 		if readSuccess {
 			point.ReadPollRequired = utils.NewFalse()
-		} else {
+			pp.RepollTimer = nil
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
+		} else if utils.BoolIsNil(point.ReadPollRequired) && !readSuccess {
 			point.ReadPollRequired = utils.NewTrue()
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		}
+
 	case poller.WriteAlways: //WriteAlways       Re-add with ReadPollRequired false, WritePollRequired true. confirm that a successful write ensures the value is set to the write value.
 		point.ReadPollRequired = utils.NewFalse()
 		point.WritePollRequired = utils.NewTrue()
 		if writeSuccess {
+			duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
+			//log.Info("duration: ", duration)
 			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
-			//point.PollTimer = time.AfterFunc(pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID), pm.MakePollingPointRepollCallback(pp))
+			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp))
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
 		} else {
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		}
+
 	case poller.WriteOnceThenRead: //WriteOnceThenRead     If write_successful: Re-add with ReadPollRequired true, WritePollRequired false.
 		point.ReadPollRequired = utils.NewTrue()
-		if writeSuccess {
+		if utils.BoolIsNil(point.WritePollRequired) && writeSuccess {
 			point.WritePollRequired = utils.NewFalse()
-		} else {
+			pp.RepollTimer = nil
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
+			return
+		} else if utils.BoolIsNil(point.WritePollRequired) && !writeSuccess {
 			point.WritePollRequired = utils.NewTrue()
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		}
 		if readSuccess {
+			duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
+			//log.Info("duration: ", duration)
 			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
-			//point.PollTimer = time.AfterFunc(pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID), pm.MakePollingPointRepollCallback(pp))
+			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp))
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
 		} else {
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		}
+
 	case poller.WriteAndMaintain: //WriteAndMaintain    If write_successful: Re-add with ReadPollRequired true, WritePollRequired false.  Need to check that write value matches present value after each read poll.
 		point.ReadPollRequired = utils.NewTrue()
 		writeValue := *point.Priority.GetHighestPriorityValue()
 		presentValue := *point.PresentValue
 		if presentValue != writeValue {
 			point.WritePollRequired = utils.NewTrue()
-			pm.PollQueue.AddPollingPoint(pp) //re-add to poll queue immediately
+			pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
+			pm.PollQueue.AddPollingPoint(pp)                              //re-add to poll queue immediately
 		} else {
 			point.WritePollRequired = utils.NewFalse()
+			duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
+			//log.Info("duration: ", duration)
 			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
-			//point.PollTimer = time.AfterFunc(pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID), pm.MakePollingPointRepollCallback(pp))
+			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp))
+			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
+			if !addSuccess {
+				log.Error(fmt.Sprintf("Modbus PollingPointCompleteNotification(): polling point could not be added to StandbyPollingPoints slice.  (%s)", pp.FFPointUUID))
+			}
 		}
 	}
-
 }
 
 func (pm *NetworkPollManager) MakePollingPointRepollCallback(pp *PollingPoint) func() {
@@ -203,7 +311,49 @@ func (pm *NetworkPollManager) MakePollingPointRepollCallback(pp *PollingPoint) f
 		if !removeSuccess {
 			log.Error(fmt.Sprintf("Modbus MakePollingPointRepollCallback(): polling point could not be found in StandbyPollingPoints.  (%s)", pp.FFPointUUID))
 		}
+
+		//Now add the polling point back to the polling queue
+		pp.LockupAlertTimer = pm.MakeLockupTimerFunc(pp.PollPriority) //starts a countdown for queue lockup alerts.
 		pm.PollQueue.AddPollingPoint(pp)
 	}
 	return f
+}
+
+func (pm *NetworkPollManager) MakeLockupTimerFunc(priority poller.PollPriority) *time.Timer {
+	timeoutDuration := 5 * time.Minute
+
+	switch priority {
+	case poller.PRIORITY_ASAP:
+		timeoutDuration = pm.ASAPPriorityMaxCycleTime
+
+	case poller.PRIORITY_HIGH:
+		timeoutDuration = pm.HighPriorityMaxCycleTime
+
+	case poller.PRIORITY_NORMAL:
+		timeoutDuration = pm.NormalPriorityMaxCycleTime
+
+	case poller.PRIORITY_LOW:
+		timeoutDuration = pm.LowPriorityMaxCycleTime
+
+	}
+
+	f := func() {
+		log.Infof("Polling Lockout Timer Expired! Polling Priority: %d,  Polling Network: %s", priority, pm.FFNetworkUUID)
+		switch priority {
+		case poller.PRIORITY_ASAP:
+			pm.ASAPPriorityLockupAlert = true
+
+		case poller.PRIORITY_HIGH:
+			pm.HighPriorityLockupAlert = true
+
+		case poller.PRIORITY_NORMAL:
+			pm.NormalPriorityLockupAlert = true
+
+		case poller.PRIORITY_LOW:
+			pm.LowPriorityLockupAlert = true
+
+		}
+	}
+
+	return time.AfterFunc(timeoutDuration, f)
 }

@@ -103,6 +103,7 @@ func (i *Instance) ModbusPolling() error {
 			}
 			if pp.FFNetworkUUID != net.UUID {
 				log.Info("modbus: PollingPoint FFNetworkUUID does not match the Network UUID\n")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 			//fmt.Println("ModbusPolling() pp")
@@ -112,144 +113,108 @@ func (i *Instance) ModbusPolling() error {
 			dev, err := i.db.GetDevice(pp.FFDeviceUUID, devArg)
 			if dev == nil || err != nil {
 				log.Errorf("modbus: could not find deviceID: %s\n", pp.FFDeviceUUID)
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+			if !utils.BoolIsNil(dev.Enable) {
+				log.Errorf("modbus: device is disabled.\n")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 			if dev.AddressId <= 0 || dev.AddressId >= 255 {
 				log.Errorf("modbus: address is not valid.  modbus addresses must be between 1 and 254\n")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 
 			pnt, err := i.db.GetPoint(pp.FFPointUUID)
 			if pnt == nil || err != nil {
 				log.Errorf("modbus: could not find pointID: %s\n", pp.FFPointUUID)
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+			//fmt.Println("ModbusPolling: point")
+			//fmt.Printf("%+v\n", pnt)
+			if !utils.BoolIsNil(pnt.Enable) {
+				log.Errorf("modbus: point is disabled.\n")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 
-			log.Infof("MODBUS POLL! : Priority: %d, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s \n", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, pnt.AddressID, pnt.ObjectType)
+			log.Infof("MODBUS POLL! : Priority: %d, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s, WriteRequired: %t, ReadRequired: %t \n", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, *pnt.AddressID, pnt.ObjectType, utils.BoolIsNil(pnt.WritePollRequired), utils.BoolIsNil(pnt.ReadPollRequired))
 
-			//fmt.Println("POLLING COMPLETE CALLBACK")
-			pollEndTime := time.Now()
-			pollDuration := pollEndTime.Sub(pollStartTime)
-			pollTimeSecs := pollDuration.Seconds()
-			callback(pp, true, true, pollTimeSecs) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
+			if !utils.BoolIsNil(pnt.WritePollRequired) && !utils.BoolIsNil(pnt.ReadPollRequired) {
+				fmt.Println("polling not required on this point")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
 
-			/*
-				var client Client
-				//Setup modbus client with Network and Device details
-				if net.TransportType == model.TransType.Serial {
-					if net.SerialPort != nil || net.SerialBaudRate != nil || net.SerialDataBits != nil || net.SerialStopBits != nil {
-						log.Error("modbus: missing serial connection details\n")
-						continue
-					}
-					client.SerialPort = *net.SerialPort
-					client.BaudRate = *net.SerialBaudRate
-					client.DataBits = *net.SerialDataBits
-					client.StopBits = *net.SerialStopBits
-					client.Timeout = time.Duration(*net.SerialTimeout) * time.Second
-					err = i.setClient(client, net.UUID, true, true)
-					if err != nil {
-						log.Errorf("modbus: failed to set client %v %s\n", err, dev.CommonIP.Host)
-						continue
-					}
-				} else {
-					client.Host = dev.CommonIP.Host
-					client.Port = utils.PortAsString(dev.CommonIP.Port)
-					client.Timeout = time.Duration(*net.SerialTimeout) * time.Second
-					err = i.setClient(client, net.UUID, true, false)
-					if err != nil {
-						log.Errorf("modbus: failed to set client %v %s\n", err, dev.CommonIP.Host)
-						continue
-					}
+			// SETUP MODBUS CLIENT CONNECTION
+			var mbClient smod.ModbusClient
+			//var dCheck devCheck
+			//dCheck.devUUID = dev.UUID
+			mbClient, err = i.setClient(net, dev, true)
+			if err != nil {
+				log.Errorf("modbus: failed to set client error: %v network name:%s\n", err, net.Name)
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+			if net.TransportType == model.TransType.Serial || net.TransportType == model.TransType.LoRa {
+				if dev.AddressId >= 1 {
+					mbClient.RTUClientHandler.SlaveID = byte(dev.AddressId)
 				}
-				cli := getClient()
-				address := dev.AddressId
-				err = cli.SetUnitId(uint8(address))
+			} else if dev.TransportType == model.TransType.IP {
+				url, err := uurl.JoinIpPort(dev.Host, dev.Port)
 				if err != nil {
-					log.Errorf("modbus: failed to vaildate SetUnitId %v %d\n", err, dev.AddressId)
+					log.Errorf("modbus: failed to validate device IP %s\n", url)
+					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 					continue
 				}
-				var ops Operation
-				ops.UnitId = uint8(address)
-				pnt, err := i.db.GetPoint(pp.FFPointUUID)
-				if pp.FFPointUUID != pnt.UUID {
-					log.Errorf("modbus: Polling Point FFPointUUID and FF Point UUID don't match\n")
-					continue
-				}
+				mbClient.TCPClientHandler.Address = url
+				mbClient.TCPClientHandler.SlaveID = byte(dev.AddressId)
+			} else {
+				log.Errorf("modbus: failed to validate device and network %v %s\n", err, dev.Name)
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
 
-				if !isConnected() {
+			writeSuccess := false
+			if utils.BoolIsNil(pnt.WritePollRequired) { //DO WRITE IF REQUIRED
+				response, responseValue, err := networkWrite(mbClient, pnt)
+				if err != nil {
+					_, err = i.pointUpdateErr(pnt.UUID, err)
+					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 					continue
 				}
-				a := utils.IntIsNil(pnt.AddressID)
-				ops.Addr = uint16(a)
-				l := utils.IntIsNil(pnt.AddressLength)
-				ops.Length = uint16(l)
-				ops.ObjectType = pnt.ObjectType
-				ops.Encoding = pnt.ObjectEncoding
-				ops.IsHoldingReg = utils.BoolIsNil(pnt.IsOutput) //WHY IS THIS HERE?
-				ops.ZeroMode = utils.BoolIsNil(dev.ZeroMode)
-				_isWrite := isWrite(ops.ObjectType)
-				var _pnt model.Point
-				_pnt.UUID = pnt.UUID
+				_, err = i.pointUpdate(pnt.UUID, responseValue)
+				writeSuccess = true
+				log.Infof("modbus-write response: responseValue %f, point UUID: %s, response: %+v \n", responseValue, pnt.UUID, response)
+			}
 
-				//WRITE OPERATION
-				//if _isWrite && (pnt.WritePollRequired {    //WRITE ON FIRST PLUGIN ENABLE
-				writeSuccess := false
-				readSuccess := false
-				if _isWrite && utils.BoolIsNil(pnt.WritePollRequired) {
-					//WE GET THE WRITE VALUE FROM THE HIGHEST PRIORITY VALUE.  THE PRESENT VALUE IS ONLY SET BY READ OPERATIONS FOR PROTOCOL POINTS
-					if pnt.Priority.GetHighestPriorityValue() != nil {
-						ops.WriteValue = utils.Float64IsNil(pnt.Priority.GetHighestPriorityValue())
-						log.Infof("modbus: WRITE ObjectType: %s  Addr: %d WriteValue: %v\n", ops.ObjectType, ops.Addr, ops.WriteValue)
-						request, err := parseRequest(ops)
-						if err != nil {
-							log.Errorf("modbus parseRequest (WRITE): failed to read holding/input registers: %v\n", err)
-						}
-						responseRaw, responseValue, err := networkRequest(cli, request)
-						log.Infof("modbus: WRITE POLL RESPONSE: ObjectType: %s  Addr: %d  Value:%d  ARRAY: %v\n", ops.ObjectType, ops.Addr, responseValue, responseRaw)
-						if err != nil {
-							log.Errorf("modbus networkRequest (WRITE): failed to read holding/input registers: %v\n", err)
-						}
-						if responseValue == ops.WriteValue {
-							_pnt.PresentValue = utils.NewFloat64(responseValue)
-							_pnt.InSync = utils.NewTrue()
-							writeSuccess = true
-							readSuccess = true
-							_, err = i.pointUpdate(pnt.UUID, &_pnt)
-							cov := utils.Float64IsNil(pnt.COV)
-							covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
-							if covEvent {
-							}
-						}
-					} else {
-						log.Errorf("modbus: no values in priority array to write\n")
+			readSuccess := false
+			if utils.BoolIsNil(pnt.ReadPollRequired) { //DO READ IF REQUIRED
+				response, responseValue, err := networkRead(mbClient, pnt)
+				if err != nil {
+					_, err = i.pointUpdateErr(pnt.UUID, err)
+					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+					continue
+				}
+				//check cov
+				isChange := !utils.CompareFloatPtr(pnt.PresentValue, &responseValue)
+				if isChange {
+					_, err = i.pointUpdate(pnt.UUID, responseValue)
+					if err != nil {
+						netPollMan.PollingFinished(pp, pollStartTime, writeSuccess, readSuccess, callback)
+						continue
 					}
 				}
-				if utils.BoolIsNil(pnt.ReadPollRequired) && !writeSuccess {
-					request, err := parseRequest(ops)
-					if err != nil {
-						log.Errorf("modbus parseRequest (READ): failed to read holding/input registers: %v\n", err)
-					}
-					responseRaw, responseValue, err := networkRequest(cli, request)
-					log.Infof("modbus: WRITE POLL RESPONSE: ObjectType: %s  Addr: %d  Value:%d  ARRAY: %v\n", ops.ObjectType, ops.Addr, responseValue, responseRaw)
-					if err != nil {
-						log.Errorf("modbus networkRequest (READ): failed to read holding/input registers: %v\n", err)
-					} else {
-						readSuccess = true
-						_pnt.PresentValue = utils.NewFloat64(responseValue)
-						_pnt.InSync = utils.NewTrue()
-						_, err = i.pointUpdate(pnt.UUID, &_pnt)
-						cov := utils.Float64IsNil(pnt.COV)
-						covEvent, _ := utils.COV(ops.WriteValue, utils.Float64IsNil(pnt.OriginalValue), cov)
-						if covEvent {
-						}
-						i.store.Set(pnt.UUID, _pnt, -1) //store point in cache
-					}
-				}
-			*/
+				readSuccess = true
+				log.Infof("modbus-read response: responseValue %f, point UUID: %s, response: %+v \n", responseValue, pnt.UUID, response)
+			}
 
 			// This callback function triggers the PollManager to evaluate whether the point should be re-added to the PollQueue (Never, Immediately, or after the Poll Rate Delay)
-			//writeSuccess, readSuccess := true, true
-			//callback(pp, writeSuccess, readSuccess)
+			netPollMan.PollingFinished(pp, pollStartTime, writeSuccess, readSuccess, callback)
+
 		}
 		time.Sleep(2 * time.Second)
 		return false, nil

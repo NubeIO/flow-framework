@@ -7,6 +7,7 @@ import (
 	"github.com/NubeIO/flow-framework/utils"
 	log "github.com/sirupsen/logrus"
 	"strconv"
+	"time"
 )
 
 //wizard make a network/dev/pnt
@@ -134,7 +135,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 	case 3:
 		var net model.Network
 		net.Name = "Modbus Net"
-		net.TransportType = model.TransType.IP
+		net.TransportType = model.TransType.Serial
 		net.PluginPath = "modbus"
 
 		net.PluginConfId = i.pluginUUID
@@ -153,7 +154,13 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 			dev.ZeroMode = utils.NewTrue()
 			dev.PollDelayPointsMS = 5000
 			dev.NetworkUUID = net.UUID
-			_, err := i.db.CreateDevice(&dev)
+			fastDuration, err := time.ParseDuration("5s")
+			dev.FastPollRate = &fastDuration
+			normalDuration, err := time.ParseDuration("30s")
+			dev.NormalPollRate = &normalDuration
+			slowDuration, err := time.ParseDuration("120s")
+			dev.SlowPollRate = &slowDuration
+			_, err = i.db.CreateDevice(&dev)
 			if err != nil {
 				fmt.Errorf("device creation failure: %s", err)
 			}

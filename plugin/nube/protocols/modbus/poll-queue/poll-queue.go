@@ -46,11 +46,16 @@ type NetworkPriorityPollQueue struct {
 func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
 	if pp.FFNetworkUUID != nq.FFNetworkUUID {
 		log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: PollingPoint FFNetworkUUID does not match the queue FFNetworkUUID. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID)
-		pp.LockupAlertTimer.Stop()
+		if pp.LockupAlertTimer != nil {
+			pp.LockupAlertTimer.Stop()
+		}
 		return false
 	}
 	if nq.PriorityQueue.GetPollingPointIndexByPointUUID(pp.FFPointUUID) != -1 {
 		log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: PollingPoint %s already exists in polling queue. \n", pp.FFPointUUID)
+		if pp.LockupAlertTimer != nil {
+			pp.LockupAlertTimer.Stop()
+		}
 		return false
 	}
 	if nq.StandbyPollingPoints.GetPollingPointIndexByPointUUID(pp.FFPointUUID) != -1 {

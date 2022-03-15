@@ -155,6 +155,10 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 	pm.MaxPollRate = maxpollrate //TODO: MaxPollRate should come from a network property,but I can't find it
 	pm.FFNetworkUUID = FFNetworkUUID
 	pm.FFPluginUUID = FFPluginUUID
+	pm.ASAPPriorityMaxCycleTime, _ = time.ParseDuration("2m")
+	pm.HighPriorityMaxCycleTime, _ = time.ParseDuration("5m")
+	pm.NormalPriorityMaxCycleTime, _ = time.ParseDuration("15m")
+	pm.LowPriorityMaxCycleTime, _ = time.ParseDuration("60m")
 	return pm
 }
 
@@ -199,4 +203,11 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate poller.PollRate, deviceUU
 		log.Info("NetworkPollManager.GetPollRateDuration: invalid PollRate duration. Set to 60 seconds/n")
 	}
 	return duration
+}
+
+func (pm *NetworkPollManager) PollingFinished(pp *PollingPoint, pollStartTime time.Time, writeSuccess, readSuccess bool, callback func(pp *PollingPoint, writeSuccess bool, readSuccess bool, pollTimeSecs float64)) {
+	pollEndTime := time.Now()
+	pollDuration := pollEndTime.Sub(pollStartTime)
+	pollTimeSecs := pollDuration.Seconds()
+	callback(pp, writeSuccess, readSuccess, pollTimeSecs) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
 }

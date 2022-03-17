@@ -149,6 +149,8 @@ func (i *Instance) ModbusPolling() error {
 				continue
 			}
 
+			SetPriorityArrayModeBasedOnWriteMode(pnt) //ensures the point PointPriorityArrayMode is set correctly
+
 			// SETUP MODBUS CLIENT CONNECTION
 			var mbClient smod.ModbusClient
 			//var dCheck devCheck
@@ -178,6 +180,7 @@ func (i *Instance) ModbusPolling() error {
 				continue
 			}
 
+			var responseValue float64
 			writeSuccess := false
 			if utils.BoolIsNil(pnt.WritePollRequired) { //DO WRITE IF REQUIRED
 				response, responseValue, err := networkWrite(mbClient, pnt)
@@ -186,7 +189,6 @@ func (i *Instance) ModbusPolling() error {
 					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 					continue
 				}
-				_, err = i.pointUpdate(pnt.UUID, responseValue)
 				writeSuccess = true
 				log.Infof("modbus-write response: responseValue %f, point UUID: %s, response: %+v \n", responseValue, pnt.UUID, response)
 			}
@@ -202,7 +204,6 @@ func (i *Instance) ModbusPolling() error {
 				//check cov
 				isChange := !utils.CompareFloatPtr(pnt.PresentValue, &responseValue)
 				if isChange {
-					_, err = i.pointUpdate(pnt.UUID, responseValue)
 					if err != nil {
 						netPollMan.PollingFinished(pp, pollStartTime, writeSuccess, readSuccess, callback)
 						continue
@@ -210,6 +211,11 @@ func (i *Instance) ModbusPolling() error {
 				}
 				readSuccess = true
 				log.Infof("modbus-read response: responseValue %f, point UUID: %s, response: %+v \n", responseValue, pnt.UUID, response)
+			}
+
+			//update point in DB if required
+			if writeSuccess || readSuccess {
+				_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
 			}
 
 			// This callback function triggers the PollManager to evaluate whether the point should be re-added to the PollQueue (Never, Immediately, or after the Poll Rate Delay)
@@ -296,7 +302,7 @@ func (i *Instance) PollingTCP(p polling) error {
 									_, err = i.pointUpdateErr(pnt.UUID, err)
 									continue
 								}
-								_, err = i.pointUpdate(pnt.UUID, responseValue)
+								_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
 							} else {
 								skipDelay = true
 							}
@@ -309,7 +315,7 @@ func (i *Instance) PollingTCP(p polling) error {
 							//simple cov
 							isChange := !utils.CompareFloatPtr(pnt.PresentValue, &responseValue)
 							if isChange {
-								_, err = i.pointUpdate(pnt.UUID, responseValue)
+								_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
 								if err != nil {
 									continue
 								}

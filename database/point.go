@@ -74,6 +74,9 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	if body.Description == "" {
 		body.Description = "na"
 	}
+	if body.PointPriorityArrayMode == "" {
+		body.PointPriorityArrayMode = model.PriorityArrayToPresentValue
+	}
 	body.ThingClass = model.ThingClass.Point
 	body.CommonEnable.Enable = utils.NewTrue()
 	body.CommonFault.InFault = true
@@ -84,8 +87,11 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	body.CommonFault.LastOk = time.Now().UTC()
 	body.InSync = utils.NewFalse()
 	body.WriteValueOnceSync = utils.NewFalse()
-	if body.Priority == nil {
+	if body.Priority == nil && model.PointPriorityArrayMode(body.PointPriorityArrayMode) != model.ReadOnlyNoPriorityArrayRequired {
 		body.Priority = &model.Priority{}
+	}
+	if model.PointPriorityArrayMode(body.PointPriorityArrayMode) != model.ReadOnlyNoPriorityArrayRequired {
+		body.Priority = nil
 	}
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, query.Error
@@ -96,12 +102,13 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 		return nil, errors.New("ERROR failed to get device (for references)")
 	}
 	body.NetworkUUID = dev.NetworkUUID
-	var netArg api.Args
-	net, err := d.GetNetwork(dev.NetworkUUID, netArg)
-	if err != nil {
-		return nil, errors.New("ERROR failed to get network (for references)")
-	}
+
 	if !fromPlugin { //TODO: This looks like it should be reversed
+		var netArg api.Args
+		net, err := d.GetNetwork(dev.NetworkUUID, netArg)
+		if err != nil {
+			return nil, errors.New("ERROR failed to get network (for references)")
+		}
 		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsCreated, net.PluginConfId, body.UUID)
 		d.Bus.RegisterTopic(t)
 		err = d.Bus.Emit(eventbus.CTX(), t, body)
@@ -114,10 +121,12 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 
 func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {
 	var pointModel *model.Point
+
 	query := d.DB.Where("uuid = ?", uuid).Preload("Priority").First(&pointModel)
 	if query.Error != nil {
 		return nil, query.Error
 	}
+
 	existingName, existingAddrID := d.pointNameExists(body)
 	if existingName {
 		eMsg := fmt.Sprintf("a point with existing name: %s exists", body.Name)
@@ -130,19 +139,24 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 			return nil, errors.New(eMsg)
 		}
 	}
+
 	if len(body.Tags) > 0 {
 		if err := d.updateTags(&pointModel, body.Tags); err != nil {
 			return nil, err
 		}
 	}
+
 	//example modbus: if user changes the data type then do a new read of the point on the modbus network
 	if !fromPlugin {
 		pointModel.InSync = utils.NewFalse()
 	}
 	body.WriteValueOnceSync = utils.NewFalse()
 	query = d.DB.Model(&pointModel).Updates(&body)
+	if query.Error != nil {
+		return nil, query.Error
+	}
 	// Don't update point value if priority array on body is nil
-	if body.Priority == nil {
+	if body.Priority == nil || model.PointPriorityArrayMode(body.PointPriorityArrayMode) == model.ReadOnlyNoPriorityArrayRequired {
 		return pointModel, nil
 	} else {
 		pointModel.Priority = body.Priority
@@ -197,6 +211,7 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 	//example for wires and modbus: if a new value is written from  wires then set this to false so the modbus knows on the next poll to write a new value to the modbus point
 	if !fromPlugin {
 		pointModel.InSync = utils.NewFalse()
+		pointModel.WritePollRequired = utils.NewTrue()
 	}
 	if !utils.Unit32NilCheck(pointModel.Decimal) && presentValue != nil {
 		val := utils.RoundTo(*presentValue, *pointModel.Decimal)
@@ -234,7 +249,7 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 
 func (d *GormDatabase) updatePriority(pointModel *model.Point) (*model.Point, *float64) {
 	var presentValue *float64
-	if pointModel.Priority != nil {
+	if pointModel.Priority != nil && pointModel.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired && pointModel.PointPriorityArrayMode != model.PriorityArrayToWriteValue {
 		priorityMap, highestValue, currentPriority, isPriorityExist := d.parsePriority(pointModel.Priority)
 		if isPriorityExist {
 			pointModel.CurrentPriority = &currentPriority
@@ -245,6 +260,8 @@ func (d *GormDatabase) updatePriority(pointModel *model.Point) (*model.Point, *f
 			presentValue = utils.NewFloat64(*pointModel.Fallback)
 		}
 		d.DB.Model(&model.Priority{}).Where("point_uuid = ?", pointModel.UUID).Updates(&priorityMap)
+	} else {
+		presentValue = pointModel.PresentValue
 	}
 	return pointModel, presentValue
 }

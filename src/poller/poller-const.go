@@ -1,18 +1,18 @@
 package poller
 
-type PollPriority int
+type PollPriority string
 
 const (
-	PRIORITY_ASAP PollPriority = iota //Only Read Point Value.
-	PRIORITY_HIGH
-	PRIORITY_NORMAL
-	PRIORITY_LOW
+	PRIORITY_ASAP   PollPriority = "asap"
+	PRIORITY_HIGH   PollPriority = "high"
+	PRIORITY_NORMAL PollPriority = "normal"
+	PRIORITY_LOW    PollPriority = "low"
 )
 
-type PollRate int
+type PollRate string
 
 const (
-	RATE_FAST   PollRate = iota //Only Read Point Value.
-	RATE_NORMAL                 //Write the value on COV, don't Read.
-	RATE_SLOW                   //Write the value on every poll (poll rate defined by setting).
+	RATE_FAST   PollRate = "fast"
+	RATE_NORMAL PollRate = "normal"
+	RATE_SLOW   PollRate = "slow"
 )

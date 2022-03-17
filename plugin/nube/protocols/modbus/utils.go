@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocols/modbus/smod"
+	"github.com/NubeIO/flow-framework/src/poller"
 
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
@@ -221,11 +222,11 @@ func networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interf
 
 	switch objectType {
 	//WRITE COILS
-	case string(model.ObjTypeWriteCoil):
+	case string(model.ObjTypeWriteCoil), string(model.ObjTypeWriteCoils):
 		return mbClient.WriteCoil(address, writeCoilPayload(writeValue))
 
 	//WRITE HOLDINGS
-	case string(model.ObjTypeWriteHolding):
+	case string(model.ObjTypeWriteHolding), string(model.ObjTypeWriteHoldings):
 		if dataType == string(model.TypeUint16) || dataType == string(model.TypeInt16) {
 			return mbClient.WriteSingleRegister(address, uint16(writeValue))
 		} else if dataType == string(model.TypeUint32) || dataType == string(model.TypeInt32) {
@@ -266,22 +267,35 @@ func networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interfa
 		length = 1
 	}
 
-	writeValue := utils.Float64IsNil(pnt.Priority.GetHighestPriorityValue())
 	if mbClient.Debug {
-		log.Infof("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
+		log.Infof("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
 	}
 
 	switch objectType {
 	//COILS
-	case string(model.ObjTypeReadCoil), string(model.ObjTypeWriteCoil):
+	case string(model.ObjTypeReadCoil), string(model.ObjTypeReadCoils), string(model.ObjTypeWriteCoil), string(model.ObjTypeWriteCoils):
 		return mbClient.ReadCoils(address, uint16(length))
 
 	//READ DISCRETE INPUTS
-	case string(model.ObjTypeReadDiscreteInput):
+	case string(model.ObjTypeReadDiscreteInput), string(model.ObjTypeReadDiscreteInputs):
 		return mbClient.ReadDiscreteInputs(address, uint16(length))
 
+	//READ INPUT REGISTERS
+	case string(model.ObjTypeReadRegister), string(model.ObjTypeReadRegisters):
+		if dataType == string(model.TypeUint16) || dataType == string(model.TypeInt16) {
+			return mbClient.ReadInputRegisters(address, uint16(length))
+		} else if dataType == string(model.TypeUint32) || dataType == string(model.TypeInt32) {
+			return mbClient.ReadInputRegisters(address, uint16(length))
+		} else if dataType == string(model.TypeUint64) || dataType == string(model.TypeInt64) {
+			return mbClient.ReadInputRegisters(address, uint16(length))
+		} else if dataType == string(model.TypeFloat32) {
+			return mbClient.ReadFloat32(address, smod.InputRegister)
+		} else if dataType == string(model.TypeFloat64) {
+			return mbClient.ReadFloat32(address, smod.InputRegister)
+		}
+
 	//READ HOLDINGS
-	case string(model.ObjTypeReadHolding), string(model.ObjTypeWriteHolding):
+	case string(model.ObjTypeReadHolding), string(model.ObjTypeReadHoldings), string(model.ObjTypeWriteHolding), string(model.ObjTypeWriteHoldings):
 		if dataType == string(model.TypeUint16) || dataType == string(model.TypeInt16) {
 			return mbClient.ReadHoldingRegisters(address, uint16(length))
 		} else if dataType == string(model.TypeUint32) || dataType == string(model.TypeInt32) {
@@ -294,21 +308,19 @@ func networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interfa
 			return mbClient.ReadFloat32(address, smod.HoldingRegister)
 		}
 
-	//READ INPUT REGISTERS
-	case string(model.ObjTypeReadRegister):
-		if dataType == string(model.TypeUint16) || dataType == string(model.TypeInt16) {
-			return mbClient.ReadInputRegisters(address, uint16(length))
-		} else if dataType == string(model.TypeUint32) || dataType == string(model.TypeInt32) {
-			return mbClient.ReadInputRegisters(address, uint16(length))
-		} else if dataType == string(model.TypeUint64) || dataType == string(model.TypeInt64) {
-			return mbClient.ReadInputRegisters(address, uint16(length))
-		} else if dataType == string(model.TypeFloat32) {
-			return mbClient.ReadFloat32(address, smod.InputRegister)
-		} else if dataType == string(model.TypeFloat64) {
-			return mbClient.ReadFloat32(address, smod.InputRegister)
-		}
-		//WRITE HOLDINGS
 	}
 
 	return nil, 0, errors.New("modbus-read: dataType is not recognized")
+}
+
+func SetPriorityArrayModeBasedOnWriteMode(pnt *model.Point) bool {
+	switch pnt.WriteMode {
+	case poller.ReadOnce, poller.ReadOnly:
+		pnt.PointPriorityArrayMode = model.ReadOnlyNoPriorityArrayRequired
+		return true
+	case poller.WriteOnce, poller.WriteOnceReadOnce, poller.WriteAlways, poller.WriteOnceThenRead, poller.WriteAndMaintain:
+		pnt.PointPriorityArrayMode = model.PriorityArrayToWriteValue
+		return true
+	}
+	return false
 }

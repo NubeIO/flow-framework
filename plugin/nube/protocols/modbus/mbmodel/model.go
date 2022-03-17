@@ -86,6 +86,12 @@ type Network struct {
 		Options  []int  `json:"options" default:"[1, 2]"`
 		Default  int    `json:"default" default:""`
 	} `json:"serial_stop_bits"`
+	MaxPollRate struct {
+		Type     string `json:"type" default:"int"`
+		Required bool   `json:"required" default:"true"`
+		Options  int    `json:"options" default:"1"`
+		Default  int    `json:"default" default:"1"`
+	} `json:"max_poll_rate"`
 	Enable struct {
 		Type     string `json:"type" default:"bool"`
 		Required bool   `json:"required" default:"true"`
@@ -115,6 +121,24 @@ type Device struct {
 		Options  int    `json:"options" default:"502"`
 		Default  int    `json:"default" default:""`
 	} `json:"port"`
+	FastPollRate struct {
+		Type     string `json:"type" default:"int"`
+		Required bool   `json:"required" default:"true"`
+		Options  int    `json:"options" default:"1"`
+		Default  int    `json:"default" default:"5"`
+	} `json:"fast_poll_rate"`
+	NormalPollRate struct {
+		Type     string `json:"type" default:"int"`
+		Required bool   `json:"required" default:"true"`
+		Options  int    `json:"options" default:"1"`
+		Default  int    `json:"default" default:"30"`
+	} `json:"normal_poll_rate"`
+	SlowPollRate struct {
+		Type     string `json:"type" default:"int"`
+		Required bool   `json:"required" default:"true"`
+		Options  int    `json:"options" default:"1"`
+		Default  int    `json:"default" default:"120"`
+	} `json:"slow_poll_rate"`
 	ZeroMode struct {
 		Type     string `json:"type" default:"bool"`
 		Required bool   `json:"required" default:"true"`
@@ -134,7 +158,7 @@ type Point struct {
 		Type     string `json:"type" default:"array"`
 		Required bool   `json:"required" default:"false"`
 		//Options  []string `json:"options" default:"[\"read_coil\",\"read_coils\",\"read_discrete_input\",\"read_discrete_inputs\",\"write_coil\",\"read_registers\",\"read_holding\",\"read_holdings\",\"write_holding\",\"write_holdings\",\"read_int_16\",\"write_int_16\",\"read_uint_16\",\"write_uint_16\",\"read_int_32\",\"write_int_32\",\"read_uint_32\",\"write_uint_32\",\"read_float_32\",\"write_float_32\",\"read_float_64\",\"write_float_64\"]"`
-		Options []string `json:"options" default:"[\"read_coil\",\"read_discrete_input\",\"write_coil\",\"read_register\",\"read_holding\",\"write_holding\"]"`
+		Options []string `json:"options" default:"[\"read_coil\",\"write_coil\",\"read_discrete_input\",\"read_register\",\"read_holding\",\"write_holding\"]"`
 		Default string   `json:"default" default:"read_coils"`
 	} `json:"object_type"`
 	AddressId struct {
@@ -152,9 +176,27 @@ type Point struct {
 	DataType struct {
 		Type     string   `json:"type" default:"array"`
 		Required bool     `json:"required" default:"true"`
-		Options  []string `json:"options" default:"[\"uint16\",\"int16\",\"uint32\",\"int32\",\"uint64\",\"int64\",\"float32\",\"float64\"]"`
-		Default  string   `json:"default" default:"uint16"`
+		Options  []string `json:"options" default:"[\"digital\",\"uint16\",\"int16\",\"uint32\",\"int32\",\"uint64\",\"int64\",\"float32\",\"float64\"]"`
+		Default  string   `json:"default" default:"digital"`
 	} `json:"data_type"`
+	WriteMode struct {
+		Type     string   `json:"type" default:"array"`
+		Required bool     `json:"required" default:"true"`
+		Options  []string `json:"options" default:"[\"read_once\",\"read_only\",\"write_once\",\"write_once_read_once\",\"write_always\",\"write_once_then_read\",\"write_and_maintain\"]"`
+		Default  string   `json:"default" default:"read_only"`
+	} `json:"write_mode"`
+	PollPriority struct {
+		Type     string   `json:"type" default:"array"`
+		Required bool     `json:"required" default:"true"`
+		Options  []string `json:"options" default:"[\"high\",\"normal\",\"low\"]"`
+		Default  string   `json:"default" default:"normal"`
+	} `json:"poll_priority"`
+	PollRate struct {
+		Type     string   `json:"type" default:"array"`
+		Required bool     `json:"required" default:"true"`
+		Options  []string `json:"options" default:"[\"fast\",\"normal\",\"slow\"]"`
+		Default  string   `json:"default" default:"normal"`
+	} `json:"poll_rate"`
 	ObjectEncoding struct {
 		Type     string   `json:"type" default:"array"`
 		Required bool     `json:"required" default:"false"`

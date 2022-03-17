@@ -190,6 +190,62 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 		}
 		return "modbus wizard 3: added a network, 3 devices, and 3 points per device", err
 
+	case 4:
+		var net model.Network
+		net.Name = "Modbus Net"
+		net.TransportType = model.TransType.Serial
+		net.PluginPath = "modbus"
+
+		net.PluginConfId = i.pluginUUID
+		_, err := i.db.CreateNetwork(&net, false)
+		if err != nil {
+			fmt.Errorf("network creation failure: %s", err)
+		}
+		log.Info("Created a Network")
+
+		for j := 1; j < 2; j++ {
+			var dev model.Device
+			dev.Name = "Modbus Dev " + strconv.Itoa(j)
+			dev.CommonIP.Host = "0.0.0.0"
+			dev.CommonIP.Port = p
+			dev.AddressId = j
+			dev.ZeroMode = utils.NewTrue()
+			dev.PollDelayPointsMS = 5000
+			dev.NetworkUUID = net.UUID
+			fastDuration, err := time.ParseDuration("5s")
+			dev.FastPollRate = &fastDuration
+			normalDuration, err := time.ParseDuration("30s")
+			dev.NormalPollRate = &normalDuration
+			slowDuration, err := time.ParseDuration("120s")
+			dev.SlowPollRate = &slowDuration
+			_, err = i.db.CreateDevice(&dev)
+			if err != nil {
+				fmt.Errorf("device creation failure: %s", err)
+			}
+			log.Info("Created a Device: ", dev)
+			pointsArray := [4]int{401, 403, 405, 407}
+			for _, l := range pointsArray {
+				var pnt model.Point
+				pnt.Name = "Modbus Pnt " + strconv.Itoa(l)
+				pnt.Description = "modbus"
+				pnt.AddressID = utils.NewInt(l) //TODO check conversion
+				pnt.ObjectType = string(model.ObjTypeWriteHolding)
+				pnt.DataType = string(model.TypeFloat32)
+				pnt.DeviceUUID = dev.UUID
+				pnt.NetworkUUID = dev.NetworkUUID
+				pnt.PollPriority = poller.PRIORITY_NORMAL
+				pnt.PollRate = poller.RATE_NORMAL
+				pnt.WriteMode = poller.ReadOnly
+				pnt.PointPriorityArrayMode = model.ReadOnlyNoPriorityArrayRequired
+				_, err = i.db.CreatePoint(&pnt, false, true)
+				if err != nil {
+					fmt.Errorf("consumer point creation failure: %s", err)
+				}
+				log.Info("Created a Point for Consumer", pnt)
+			}
+		}
+		return "modbus wizard 4: added a network, 1 device, and 4 points", err
+
 	}
 	return "modbus wizard error: unknown wizard version", err
 }

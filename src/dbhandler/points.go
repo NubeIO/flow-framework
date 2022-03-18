@@ -1,6 +1,7 @@
 package dbhandler
 
 import (
+	"fmt"
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/model"
 )
@@ -22,15 +23,21 @@ func (h *Handler) GetPoint(uuid string) (*model.Point, error) {
 }
 
 func (h *Handler) CreatePoint(body *model.Point, fromPlugin, updatePoint bool) (*model.Point, error) {
+	fmt.Println("CreatePoint() BEFORE")
 	pnt, err := getDb().CreatePoint(body, fromPlugin)
 	if err != nil {
+		fmt.Println("CreatePoint() ERROR 1")
 		return nil, err
 	}
+	fmt.Println("CreatePoint() updatePoint: ", updatePoint, " fromPlugin: ", fromPlugin)
 	if updatePoint {
-		pnt, err = getDb().UpdatePoint(pnt.UUID, pnt, false) //MARC: UpdatePoint is called here so that the PresentValue and Priority are updated to use the fallback value.  Otherwise they are left as Null and the Edge28 Outputs are left floating.
+		fmt.Println("UpdatePoint() in CreatePoint() BEFORE")
+		pnt, err = getDb().UpdatePoint(pnt.UUID, pnt, fromPlugin) //MARC: UpdatePoint is called here so that the PresentValue and Priority are updated to use the fallback value.  Otherwise they are left as Null and the Edge28 Outputs are left floating.
 		if err != nil {
+			fmt.Println("UpdatePoint() in CreatePoint() ERROR")
 			return nil, err
 		}
+		fmt.Println("UpdatePoint() in CreatePoint() AFTER")
 	}
 	return pnt, nil
 }

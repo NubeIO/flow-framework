@@ -296,8 +296,16 @@ func (pnt *Point) PrintPointValues() {
 	if pnt != nil {
 		fmt.Println("\n \n \n ")
 		fmt.Println("PrintPointValues() for point: ", pnt.UUID, " ", pnt.Name)
-		fmt.Println("PresentValue: ", *pnt.PresentValue)
-		fmt.Println("CurrentPriority: ", *pnt.CurrentPriority)
+		if pnt.PresentValue == nil {
+			fmt.Println("PresentValue: nil")
+		} else {
+			fmt.Println("PresentValue: ", *pnt.PresentValue)
+		}
+		if pnt.CurrentPriority == nil {
+			fmt.Println("CurrentPriority: nil")
+		} else {
+			fmt.Println("CurrentPriority: ", *pnt.CurrentPriority)
+		}
 		if pnt.Priority != nil {
 			fmt.Println("_1: ", *pnt.Priority.P1)
 			fmt.Println("_2: ", *pnt.Priority.P2)

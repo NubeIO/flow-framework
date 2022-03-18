@@ -2,6 +2,7 @@ package pollqueue
 
 import (
 	"fmt"
+	"github.com/NubeIO/flow-framework/api"
 	"time"
 	//log "github.com/sirupsen/logrus"
 )
@@ -42,10 +43,18 @@ func (pm *NetworkPollManager) StartQueueUnloader() {
 			pm.PluginQueueUnloader.NextPollPoint = pp
 		}
 	}
-	refreshRate := 2 * time.Second
-	if pm.MaxPollRate > 0*time.Second {
-		refreshRate = pm.MaxPollRate
+	var netArg api.Args
+	net, err := pm.DBHandlerRef.GetNetwork(pm.FFNetworkUUID, netArg)
+	if err != nil {
+		fmt.Printf("NetworkPollManager.StartQueueUnloader(): couldn't find network %s \n", pm.FFNetworkUUID)
+		return
 	}
+	fmt.Printf("NetworkPollManager.StartQueueUnloader(): net.MaxPollRate %d \n", net.MaxPollRate)
+	refreshRate := net.MaxPollRate
+	if pm.MaxPollRate <= 0*time.Second {
+		refreshRate = 1 * time.Second
+	}
+	pm.MaxPollRate = refreshRate
 	ticker := time.NewTicker(refreshRate)
 	pm.PluginQueueUnloader.NextUnloadTimer = ticker
 	done := make(chan bool)

@@ -110,6 +110,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 			net.Name = "Modbus Net " + strconv.Itoa(j)
 			net.TransportType = model.TransType.IP
 			net.PluginPath = "modbus"
+			time.Sleep(2 * time.Second)
 
 			var dev model.Device
 			dev.Name = "Modbus Dev " + strconv.Itoa(j)
@@ -146,6 +147,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 		log.Info("Created a Network")
 
 		for j := 1; j < 4; j++ {
+			time.Sleep(2 * time.Second)
 			var dev model.Device
 			dev.Name = "Modbus Dev " + strconv.Itoa(j)
 			dev.CommonIP.Host = "0.0.0.0"
@@ -195,6 +197,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 		net.Name = "Modbus Net"
 		net.TransportType = model.TransType.Serial
 		net.PluginPath = "modbus"
+		net.MaxPollRate = 2 * time.Second
 
 		net.PluginConfId = i.pluginUUID
 		_, err := i.db.CreateNetwork(&net, false)
@@ -204,6 +207,7 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 		log.Info("Created a Network")
 
 		for j := 1; j < 2; j++ {
+			time.Sleep(2 * time.Second)
 			var dev model.Device
 			dev.Name = "Modbus Dev " + strconv.Itoa(j)
 			dev.CommonIP.Host = "0.0.0.0"

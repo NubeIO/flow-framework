@@ -73,6 +73,7 @@ func (i *Instance) ModbusPolling() error {
 		//fmt.Println("i.NetworkPollManagers")
 		//fmt.Printf("%+v\n", i.NetworkPollManagers)
 		for _, netPollMan := range i.NetworkPollManagers { //LOOP THROUGH AND POLL NEXT POINTS IN EACH NETWORK QUEUE
+			log.Infof("ModbusPolling: netPollMan %s", netPollMan.FFNetworkUUID)
 			pollStartTime := time.Now()
 			//Check that network exists
 			//fmt.Println("netPollMan")
@@ -98,7 +99,7 @@ func (i *Instance) ModbusPolling() error {
 			pp, callback := netPollMan.GetNextPollingPoint() //callback function is called once polling is completed.
 			//pp, _ := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
 			if pp == nil {
-				log.Infof("modbus: No PollingPoint available in Network %s]n", net.UUID)
+				log.Infof("modbus: No PollingPoint available in Network %s", net.UUID)
 				continue
 			}
 			if pp.FFNetworkUUID != net.UUID {
@@ -181,9 +182,10 @@ func (i *Instance) ModbusPolling() error {
 			}
 
 			var responseValue float64
+			var response interface{}
 			writeSuccess := false
 			if utils.BoolIsNil(pnt.WritePollRequired) { //DO WRITE IF REQUIRED
-				response, responseValue, err := networkWrite(mbClient, pnt)
+				response, responseValue, err = networkWrite(mbClient, pnt)
 				if err != nil {
 					_, err = i.pointUpdateErr(pnt.UUID, err)
 					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
@@ -195,7 +197,7 @@ func (i *Instance) ModbusPolling() error {
 
 			readSuccess := false
 			if utils.BoolIsNil(pnt.ReadPollRequired) { //DO READ IF REQUIRED
-				response, responseValue, err := networkRead(mbClient, pnt)
+				response, responseValue, err = networkRead(mbClient, pnt)
 				if err != nil {
 					_, err = i.pointUpdateErr(pnt.UUID, err)
 					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
@@ -216,6 +218,12 @@ func (i *Instance) ModbusPolling() error {
 			//update point in DB if required
 			if writeSuccess || readSuccess {
 				_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
+			}
+
+			//JUST FOR TESTING
+			pnt, err = i.db.GetPoint(pp.FFPointUUID)
+			if pnt == nil || err != nil {
+				log.Errorf("modbus: AFTER... could not find pointID : %s\n", pp.FFPointUUID)
 			}
 
 			// This callback function triggers the PollManager to evaluate whether the point should be re-added to the PollQueue (Never, Immediately, or after the Poll Rate Delay)

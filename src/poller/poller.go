@@ -64,7 +64,7 @@ func (p Poller) Poll(ctx context.Context, f func() (bool, error)) error {
 // error if f returns error or ctx is cancelled.
 func (p Poller) GoPoll(ctx context.Context, f func() (bool, error)) {
 	if p.interval == 0 {
-		p.interval = defaultInterval
+		p.interval = defaultInterval //TODO: Set polling interval here!
 	}
 	res, err := f()
 	if err != nil {

@@ -150,13 +150,31 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 	if !fromPlugin {
 		pointModel.InSync = utils.NewFalse()
 	}
-	body.WriteValueOnceSync = utils.NewFalse()
+	pointModel.WritePollRequired = body.WritePollRequired
+	pointModel.ReadPollRequired = body.ReadPollRequired
+	pointModel.WriteMode = body.WriteMode
+	pointModel.PollPriority = body.PollPriority
+	pointModel.PollRate = body.PollRate
+	pointModel.WriteValueOnceSync = utils.NewFalse()
+
 	query = d.DB.Model(&pointModel).Updates(&body)
 	if query.Error != nil {
 		return nil, query.Error
 	}
 	// Don't update point value if priority array on body is nil
-	if body.Priority == nil || model.PointPriorityArrayMode(body.PointPriorityArrayMode) == model.ReadOnlyNoPriorityArrayRequired {
+	if body.Priority == nil || body.PointPriorityArrayMode == model.ReadOnlyNoPriorityArrayRequired { // No need to update priority array if it isn't used
+		if !fromPlugin { // stop looping
+			plug, err := d.GetPluginIDFromDevice(pointModel.DeviceUUID)
+			if err != nil {
+				return nil, errors.New("ERROR failed to get plugin uuid")
+			}
+			t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsUpdated, plug.PluginConfId, uuid)
+			d.Bus.RegisterTopic(t)
+			err = d.Bus.Emit(eventbus.CTX(), t, pointModel)
+			if err != nil {
+				return pointModel, errors.New("ERROR on device eventbus")
+			}
+		}
 		return pointModel, nil
 	} else {
 		pointModel.Priority = body.Priority

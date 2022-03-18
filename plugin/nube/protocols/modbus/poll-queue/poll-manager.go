@@ -152,7 +152,7 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 	pm.PluginQueueUnloader = pqu
 	pm.DBHandlerRef = dbHandler
 	maxpollrate := 1000 * time.Millisecond
-	pm.MaxPollRate = maxpollrate //TODO: MaxPollRate should come from a network property,but I can't find it
+	pm.MaxPollRate = maxpollrate //TODO: MaxPollRate should come from a network property,but I can't find it. Also kinda implemented in StartQueueUnloader().
 	pm.FFNetworkUUID = FFNetworkUUID
 	pm.FFPluginUUID = FFPluginUUID
 	pm.ASAPPriorityMaxCycleTime, _ = time.ParseDuration("2m")

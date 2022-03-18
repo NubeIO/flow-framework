@@ -326,6 +326,7 @@ func (i *Instance) OnPointUpdated(pnt *model.Point) {
 		pp := pollqueue.NewPollingPoint(pnt.UUID, pnt.DeviceUUID, pnt.NetworkUUID, netPollMan.FFPluginUUID)
 		pp.PollPriority = pnt.PollPriority
 		netPollMan.PollQueue.AddPollingPoint(pp)
+		netPollMan.SetPointPollRequiredFlagsBasedOnWriteMode(pp)
 	}
 }
 

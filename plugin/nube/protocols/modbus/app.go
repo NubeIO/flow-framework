@@ -20,6 +20,7 @@ func (i *Instance) pointUpdate(uuid string, priorityArrayMode model.PointPriorit
 	point.CommonFault.Message = fmt.Sprintf("last-update: %s", utilstime.TimeStamp())
 	point.CommonFault.LastOk = time.Now().UTC()
 
+	fmt.Println("pointUpdate() value: ", value)
 	point.PresentValue = utils.NewFloat64(value)
 	point.InSync = utils.NewTrue()
 	point.PointPriorityArrayMode = priorityArrayMode
@@ -27,7 +28,8 @@ func (i *Instance) pointUpdate(uuid string, priorityArrayMode model.PointPriorit
 	fmt.Println("pointUpdate(): AFTER READ AND BEFORE DB UPDATE")
 	point.PrintPointValues()
 
-	_, err = i.db.UpdatePointPresentValue(&point, true)
+	//_, err = i.db.UpdatePointPresentValue(&point, true)
+	_, err = i.db.UpdatePoint(uuid, &point, true) //Changed so that Faults will update too
 	if err != nil {
 		log.Error("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
 		return nil, err

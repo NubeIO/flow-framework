@@ -77,12 +77,12 @@ func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
 	fmt.Printf("%+v\n", pm.PluginQueueUnloader.NextPollPoint)
 	fmt.Print("PollQueue: COUNT = ", pm.PollQueue.PriorityQueue.Len(), ": ")
 	for _, pp := range pm.PollQueue.PriorityQueue.PriorityQueue {
-		fmt.Print(pp.FFPointUUID, ", ", pp.PollPriority, "; ")
+		fmt.Print(pp.FFPointUUID, " - ", pp.PollPriority, "; ")
 	}
 	fmt.Println("")
 	fmt.Print("StandbyPollingPoints COUNT = ", pm.PollQueue.StandbyPollingPoints.Len(), ": ")
 	for _, pp := range pm.PollQueue.StandbyPollingPoints.PriorityQueue {
-		fmt.Print(pp.FFPointUUID, ", ", pp.PollPriority, ", repoll timer:", pp.RepollTimer != nil, "; ")
+		fmt.Print(pp.FFPointUUID, " - ", pp.PollPriority, ", repoll timer:", pp.RepollTimer != nil, "; ")
 	}
 	fmt.Println("\n \n")
 }
@@ -392,4 +392,43 @@ func (pm *NetworkPollManager) MakeLockupTimerFunc(priority poller.PollPriority) 
 	}
 
 	return time.AfterFunc(timeoutDuration, f)
+}
+
+func (pm *NetworkPollManager) SetPointPollRequiredFlagsBasedOnWriteMode(pp *PollingPoint) {
+
+	point, err := pm.DBHandlerRef.GetPoint(pp.FFPointUUID)
+	if point == nil || err != nil {
+		fmt.Printf("NetworkPollManager.SetPointPollRequiredFlagsBasedOnWriteMode(): couldn't find point %s /n", pp.FFPointUUID)
+		return
+	}
+
+	switch point.WriteMode {
+	case poller.ReadOnce:
+		return
+
+	case poller.ReadOnly: //ReadOnly          Re-add with ReadPollRequired true, WritePollRequired false.
+		point.ReadPollRequired = utils.NewTrue()
+		point.WritePollRequired = utils.NewFalse()
+
+	case poller.WriteOnce: //WriteOnce         If write_successful then don't re-add.
+		return
+
+	case poller.WriteOnceReadOnce: //WriteOnceReadOnce     If write_successful and read_success then don't re-add.
+		return
+
+	case poller.WriteAlways: //WriteAlways       Re-add with ReadPollRequired false, WritePollRequired true. confirm that a successful write ensures the value is set to the write value.
+		point.ReadPollRequired = utils.NewFalse()
+		point.WritePollRequired = utils.NewTrue()
+
+	case poller.WriteOnceThenRead: //WriteOnceThenRead     If write_successful: Re-add with ReadPollRequired true, WritePollRequired false.
+		point.ReadPollRequired = utils.NewTrue()
+		point.WritePollRequired = utils.NewFalse()
+
+	case poller.WriteAndMaintain: //WriteAndMaintain    If write_successful: Re-add with ReadPollRequired true, WritePollRequired false.  Need to check that write value matches present value after each read poll.
+		point.ReadPollRequired = utils.NewTrue()
+		point.WritePollRequired = utils.NewFalse()
+	}
+
+	pm.DBHandlerRef.UpdatePoint(point.UUID, point, true)
+
 }

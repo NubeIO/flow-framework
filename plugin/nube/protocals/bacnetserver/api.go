@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/NubeIO/flow-framework/plugin/nube/protocols/bacnetserver/bacnet_model"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocols/bacnetserver/plgrest"
+	"github.com/NubeIO/flow-framework/plugin/nube/protocals/bacnetserver/bacnet_model"
+	"github.com/NubeIO/flow-framework/plugin/nube/protocals/bacnetserver/plgrest"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"

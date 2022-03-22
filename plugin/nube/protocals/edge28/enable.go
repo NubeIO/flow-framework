@@ -6,22 +6,22 @@ import (
 )
 
 // Enable implements plugin.Plugin
-func (i *Instance) Enable() error {
-	i.enabled = true
-	i.setUUID()
-	q, err := i.db.GetNetworkByPlugin(i.pluginUUID, api.Args{})
+func (inst *Instance) Enable() error {
+	inst.enabled = true
+	inst.setUUID()
+	q, err := inst.db.GetNetworkByPlugin(inst.pluginUUID, api.Args{})
 	if q != nil {
-		i.networkUUID = q.UUID
+		inst.networkUUID = q.UUID
 	} else {
-		i.networkUUID = "NA"
+		inst.networkUUID = "NA"
 	}
-	if i.config.EnablePolling {
-		if !i.pollingEnabled {
+	if inst.config.EnablePolling {
+		if !inst.pollingEnabled {
 			var arg polling
-			i.pollingEnabled = true
+			inst.pollingEnabled = true
 			arg.enable = true
 			go func() error {
-				err := i.polling(arg)
+				err := inst.polling(arg)
 				if err != nil {
 					log.Errorf("edge28-enable: POLLING ERROR on routine: %v\n", err)
 				}
@@ -36,14 +36,14 @@ func (i *Instance) Enable() error {
 }
 
 // Disable implements plugin.Disable
-func (i *Instance) Disable() error {
-	i.enabled = false
-	if i.pollingEnabled {
+func (inst *Instance) Disable() error {
+	inst.enabled = false
+	if inst.pollingEnabled {
 		var arg polling
-		i.pollingEnabled = false
+		inst.pollingEnabled = false
 		arg.enable = false
 		go func() {
-			err := i.polling(arg)
+			err := inst.polling(arg)
 			if err != nil {
 			}
 		}()

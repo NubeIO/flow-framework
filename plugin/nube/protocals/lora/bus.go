@@ -20,7 +20,7 @@ func (inst *Instance) BusServ() {
 					return
 				}
 				if net != nil {
-					log.Info("LORA BUS PluginsCreated isNetwork", " ", net.UUID)
+					log.Info("lora: PluginsCreated isNetwork", " ", net.UUID)
 					if err != nil {
 						return
 					}
@@ -32,7 +32,7 @@ func (inst *Instance) BusServ() {
 					return
 				}
 				if dev != nil {
-					log.Info("LORA BUS PluginsCreated IsDevice", " ", dev.UUID)
+					log.Info("lora: BUS PluginsCreated IsDevice", " ", dev.UUID)
 					err = inst.addDevicePoints(dev)
 					if err != nil {
 						return
@@ -45,7 +45,7 @@ func (inst *Instance) BusServ() {
 					return
 				}
 				if pnt != nil {
-					log.Info("LORA BUS PluginsCreated IsPoint", " ", pnt.UUID)
+					log.Info("lora: BUS PluginsCreated IsPoint", " ", pnt.UUID)
 					if err != nil {
 						return
 					}
@@ -67,7 +67,7 @@ func (inst *Instance) BusServ() {
 					return
 				}
 				if net != nil {
-					log.Info("LORA BUS PluginsUpdated isNetwork", " ", net.UUID)
+					log.Info("lora: BUS PluginsUpdated isNetwork", " ", net.UUID)
 					if err != nil {
 						return
 					}
@@ -80,7 +80,7 @@ func (inst *Instance) BusServ() {
 				}
 				if dev != nil {
 					err = inst.updateDevicePointsAddress(dev)
-					log.Info("LORA BUS PluginsUpdated IsDevice", " ", dev.UUID)
+					log.Info("lora: BUS PluginsUpdated IsDevice", " ", dev.UUID)
 					if err != nil {
 						return
 					}
@@ -92,7 +92,7 @@ func (inst *Instance) BusServ() {
 					return
 				}
 				if pnt != nil {
-					log.Info("LORA BUS PluginsUpdated IsPoint", " ", pnt.UUID)
+					log.Info("lora: BUS PluginsUpdated IsPoint", " ", pnt.UUID)
 					if err != nil {
 						return
 					}

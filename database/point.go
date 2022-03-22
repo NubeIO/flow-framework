@@ -7,6 +7,7 @@ import (
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/src/poller"
+	"github.com/NubeIO/flow-framework/src/client"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
 	log "github.com/sirupsen/logrus"
@@ -39,6 +40,46 @@ func (d *GormDatabase) GetOnePointByArgs(args api.Args) (*model.Point, error) {
 		return nil, query.Error
 	}
 	return pointModel, nil
+}
+
+func (d *GormDatabase) CreatePointPlugin(body *model.Point) (point *model.Point, err error) {
+
+	device, err := d.GetDevice(body.DeviceUUID, api.Args{})
+	if err != nil {
+		return nil, err
+	}
+	if device == nil {
+		errMsg := fmt.Sprintf("model.points failed to find a device with uuid:%s", body.DeviceUUID)
+		log.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+	network, err := d.GetNetwork(device.NetworkUUID, api.Args{})
+	if network == nil {
+		errMsg := fmt.Sprintf("model.points failed to find a network with uuid:%s", device.NetworkUUID)
+		log.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+	pluginName := network.PluginPath
+	if pluginName == "system" {
+		point, err = d.CreatePoint(body, false)
+		if err != nil {
+			return nil, err
+		}
+		return
+	}
+	body.CommonFault.MessageLevel = model.MessageLevel.NoneCritical
+	body.CommonFault.MessageCode = model.CommonFaultCode.PluginNotEnabled
+	body.CommonFault.Message = model.CommonFaultMessage.PluginNotEnabled
+	body.CommonFault.LastFail = time.Now().UTC()
+	body.CommonFault.LastOk = time.Now().UTC()
+	body.CommonFault.InFault = true
+	//if plugin like bacnet then call the api direct on the plugin as the plugin knows best how to add a point to keep things in sync
+	cli := client.NewLocalClient()
+	point, err = cli.CreatePointPlugin(body, pluginName)
+	if err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.Point, error) {
@@ -99,7 +140,7 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	*/
 
 	if err := d.DB.Create(&body).Error; err != nil {
-		return nil, query.Error
+		return nil, err
 	}
 	var devArg api.Args
 	dev, err := d.GetDevice(body.DeviceUUID, devArg)
@@ -121,7 +162,7 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 			return nil, errors.New("ERROR on device eventbus")
 		}
 	}
-	return body, query.Error
+	return body, err
 }
 
 func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {
@@ -230,9 +271,9 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 
 	presentValue = pointScale(presentValue, pointModel.ScaleInMin, pointModel.ScaleInMax, pointModel.ScaleOutMin, pointModel.ScaleOutMax)
 	presentValue = pointRange(presentValue, pointModel.LimitMin, pointModel.LimitMax)
-	eval, err := pointEval(presentValue, pointModel.OriginalValue, pointModel.EvalMode, pointModel.Eval)
+	eval, err := pointEval(presentValue, pointModel.MathOnPresentValue)
 	if err != nil {
-		log.Errorf("ERROR on point invalid eval")
+		log.Errorln("point.db UpdatePointValue() error on run point MathOnPresentValue error:", err)
 		return nil, err
 	} else {
 		presentValue = eval
@@ -262,6 +303,9 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 	if presentValue == nil {
 		// nil is ignored on GORM, so we are pushing forcefully because isChange comparison will fail on `null` write
 		d.DB.Model(&pointModel).Update("present_value", nil)
+		d.DB.Model(&model.Writer{}).
+			Where("writer_thing_uuid = ?", pointModel.UUID).
+			Update("present_value", nil)
 	}
 	if isChange == true || utils.BoolIsNil(pointModel.ValueUpdatedFlag) {
 		pointModel.ValueUpdatedFlag = utils.NewFalse()
@@ -275,6 +319,9 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 		if err != nil {
 			return nil, err
 		}
+		d.DB.Model(&model.Writer{}).
+			Where("writer_thing_uuid = ?", pointModel.UUID).
+			Update("present_value", pointModel.PresentValue)
 	}
 
 	if !fromPlugin { // stop looping
@@ -296,7 +343,7 @@ func (d *GormDatabase) updatePriority(pointModel *model.Point) (*model.Point, *f
 	var presentValue *float64
 	presentValueFromPriority := pointModel.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired && pointModel.PointPriorityArrayMode != model.PriorityArrayToWriteValue
 	if pointModel.Priority != nil {
-		priorityMap, highestValue, currentPriority, isPriorityExist := d.parsePriority(pointModel.Priority)
+		priorityMap, highestValue, currentPriority, isPriorityExist := d.parsePriority(pointModel.Priority, pointModel)
 		if isPriorityExist {
 			pointModel.CurrentPriority = &currentPriority
 			if presentValueFromPriority {
@@ -317,7 +364,7 @@ func (d *GormDatabase) updatePriority(pointModel *model.Point) (*model.Point, *f
 	return pointModel, presentValue
 }
 
-func (d *GormDatabase) parsePriority(priority *model.Priority) (map[string]interface{}, float64, int, bool) {
+func (d *GormDatabase) parsePriority(priority *model.Priority, pointModel *model.Point) (map[string]interface{}, float64, int, bool) {
 	priorityMap := map[string]interface{}{}
 	priorityValue := reflect.ValueOf(*priority)
 	typeOfPriority := priorityValue.Type()
@@ -333,6 +380,13 @@ func (d *GormDatabase) parsePriority(priority *model.Priority) (map[string]inter
 				if !isPriorityExist {
 					currentPriority = i
 					highestValue = *val
+					writeValue, err := pointEval(val, pointModel.MathOnWriteValue)
+					if err != nil {
+						log.Errorln("point.db parsePriority() error on run point MathOnWriteValue error:", err)
+						//return nil, 0, 0, false
+					}
+					pointModel.WriteValue = writeValue
+					pointModel.WriteValueOriginal = val
 				}
 				priorityMap[typeOfPriority.Field(i).Name] = *val
 				isPriorityExist = true

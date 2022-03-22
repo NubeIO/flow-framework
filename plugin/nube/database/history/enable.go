@@ -1,26 +1,24 @@
 package main
 
-import "fmt"
+import (
+	"github.com/go-co-op/gocron"
+	"time"
+)
 
-// Enable implements plugin.Plugin.Enable
+var cron *gocron.Scheduler
+
 func (i *Instance) Enable() error {
-	fmt.Print("Enable")
 	i.enabled = true
 	i.setUUID()
 	i.BusServ()
-	job, err := i.createJob()
-	if err != nil {
-		return err
-	}
-	err = i.jobs.JobAdd(job)
-	if err != nil {
-		return err
-	}
+	cron = gocron.NewScheduler(time.UTC)
+	_, _ = cron.Every(i.config.Job.Frequency).Tag("SyncHistory").Do(i.syncHistory)
+	cron.StartAsync()
 	return nil
 }
 
-// Disable implements plugin.Plugin.Disable
 func (i *Instance) Disable() error {
 	i.enabled = false
+	cron.Clear()
 	return nil
 }

@@ -27,7 +27,7 @@ type Priority struct {
 type NameStruct struct {
 	Type     string `json:"type" default:"string"`
 	Required bool   `json:"required" default:"true"`
-	Min      int    `json:"min" default:"3"`
+	Min      int    `json:"min" default:"2"`
 	Max      int    `json:"max" default:"20"`
 	Default  string `json:"default" default:"mb"`
 }
@@ -58,7 +58,7 @@ type Network struct {
 	SerialPort    struct {
 		Type     string `json:"type" default:"string"`
 		Required bool   `json:"required" default:"false"`
-		Min      int    `json:"min" default:"3"`
+		Min      int    `json:"min" default:"0"`
 		Max      int    `json:"max" default:"20"`
 		Default  string `json:"default" default:""`
 	} `json:"serial_port"`
@@ -203,6 +203,18 @@ type Point struct {
 		Options  []string `json:"options" default:"[\"leb_lew\",\"leb_bew\",\"beb_lew\",\"beb_bew\"]"`
 		Default  string   `json:"default" default:"beb_lew"`
 	} `json:"object_encoding"`
+	MathOnPresentValue struct {
+		Type        string `json:"type" default:"string"`
+		Required    bool   `json:"required" default:"false"`
+		Default     string `json:"default" default:"(x + 0) + 0"`
+		DisplayName string `json:"display_name" default:"math expression on present value"`
+	} `json:"math_on_present_value"`
+	MathOnWriteValue struct {
+		Type        string `json:"type" default:"string"`
+		Required    bool   `json:"required" default:"false"`
+		Default     string `json:"default" default:"(x + 0) + 0"`
+		DisplayName string `json:"display_name" default:"math expression on write value"`
+	} `json:"math_on_write_value"`
 	Enable struct {
 		Type     string `json:"type" default:"bool"`
 		Required bool   `json:"required" default:"true"`

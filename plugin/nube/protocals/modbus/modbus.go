@@ -21,7 +21,7 @@ type Client struct {
 	Timeout    time.Duration `json:"device_timeout_in_ms"`
 }
 
-func (i *Instance) setClient(network *model.Network, device *model.Device, cacheClient bool) (mbClient smod.ModbusClient, err error) {
+func (inst *Instance) setClient(network *model.Network, device *model.Device, cacheClient bool) (mbClient smod.ModbusClient, err error) {
 	if network.TransportType == model.TransType.Serial || network.TransportType == model.TransType.LoRa {
 		serialPort := "/dev/ttyUSB0"
 		baudRate := 38400

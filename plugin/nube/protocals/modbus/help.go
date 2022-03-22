@@ -7,16 +7,16 @@ import (
 )
 
 // GetDisplay implements public.Displayer
-func (i *Instance) GetDisplay(baseURL *url.URL) plugin.Response {
+func (inst *Instance) GetDisplay(baseURL *url.URL) plugin.Response {
 	loc := &url.URL{
-		Path: i.basePath,
+		Path: inst.basePath,
 	}
 	loc = loc.ResolveReference(&url.URL{
 		Path: "restart",
 	})
 	fmt.Println(loc) //can show the ui the custom endpoints
 
-	baseURL.Path = i.basePath
+	baseURL.Path = inst.basePath
 	m := plugin.Help{
 		Name:               name,
 		PluginType:         pluginType,

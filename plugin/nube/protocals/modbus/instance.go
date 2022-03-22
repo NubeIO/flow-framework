@@ -1,9 +1,9 @@
 package main
 
-func (i *Instance) setUUID() {
-	q, err := i.db.GetPluginByPath(path)
+func (inst *Instance) setUUID() {
+	q, err := inst.db.GetPluginByPath(path)
 	if err != nil {
 		return
 	}
-	i.pluginUUID = q.UUID
+	inst.pluginUUID = q.UUID
 }

@@ -1,4 +1,15 @@
 # CHANGELOG
+## [v0.4.1](https://github.com/NubeIO/flow-framework/tree/v0.4.1) (2022-03-17)
+- Feature: add present_value on writer #405
+- small updates to lora #404
+- Improvement/db plugins #403
+- Improvement/db plugins #402
+- remove on device model AddressUUID unique #401
+- Improvement/history #399
+- Improvement: nullable address_uuid #397
+- fix get networks #396
+- Support OR query on client_id, site_id & device_id #395
+
 ## [v0.4.0](https://github.com/NubeIO/flow-framework/tree/v0.4.0) (2022-02-28)
 - Supporting older schedule deployment
 

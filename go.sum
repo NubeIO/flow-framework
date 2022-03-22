@@ -8,8 +8,8 @@ github.com/NubeDev/configor v0.0.2 h1:DYFf3OMA3LgBmWs4lGTNGu7B6sVvL0BPfalkleccMY
 github.com/NubeDev/configor v0.0.2/go.mod h1:DVm+MnCPzqO2oqCzf27MolZw8qSoK5yqHk1sgG3PFHc=
 github.com/NubeDev/location v0.0.2 h1:EkXOIx6g6i6DRaDPWQzTH+qjgHnJYsUlBASL/p0OPFQ=
 github.com/NubeDev/location v0.0.2/go.mod h1:wvL1deOEefQrsTv+nojlMOKbwpos4xUbEGSHQ4AKERs=
-github.com/NubeIO/nubeio-rubix-lib-helpers-go v0.1.7 h1:E4UZE580rWXOPSTm/aC4RduWeGzbQgrxrBGHNCgts+s=
-github.com/NubeIO/nubeio-rubix-lib-helpers-go v0.1.7/go.mod h1:SUc7u/cp6pgrnCHYik6zD3VP5HfoLaR7xZ+Yp3fv4Yw=
+github.com/NubeIO/nubeio-rubix-lib-helpers-go v0.1.9 h1:h0PKtZo2raaE2YZSggS6ZGspwim7TQUqKX9QoFdqpXg=
+github.com/NubeIO/nubeio-rubix-lib-helpers-go v0.1.9/go.mod h1:vqOYdM+UclydaBGPwyoM8CqkhuOqFW3ttfdlQjdznT0=
 github.com/NubeIO/null v4.0.1+incompatible h1:sOYi+CLi5FWWxfNkoyM/f2D8ikuFINRp8r5RGu5u+Pg=
 github.com/NubeIO/null v4.0.1+incompatible/go.mod h1:hbr3y+tluKsgNfmhBjewLJ4gUEHmn0dR2PdYg9dRBvk=
 github.com/PaesslerAG/gval v1.1.1 h1:4d7pprU9876+m3rc08X33UjGip8oV1kkm8Gh5GBuTss=
@@ -54,6 +54,7 @@ github.com/deepmap/oapi-codegen v1.8.2/go.mod h1:YLgSKSDv/bZQB7N4ws6luhozi3cEdRk
 github.com/denisenkom/go-mssqldb v0.9.0 h1:RSohk2RsiZqLZ0zCjtfn3S4Gp4exhpBWHyQ7D0yGjAk=
 github.com/denisenkom/go-mssqldb v0.9.0/go.mod h1:xbL0rPBG9cCiLr28tMa8zpbdarY27NDyej4t/EjAShU=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
+github.com/dspinhirne/netaddr-go v0.0.0-20211008142535-a4c5bccad224/go.mod h1:j1oDdmBtACJEAQr2T3DQNZQDfSuJzRKHadPABYd/MHo=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/eapache/go-resiliency v1.1.0 h1:1NtRmCAqadE2FN4ZcN6g90TP3uk8cg9rn9eNK2197aU=

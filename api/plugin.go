@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -75,15 +76,14 @@ func (c *PluginAPI) buildUUID(ctx *gin.Context) string {
 		path, err := c.DB.GetPluginByPath(nameOrUUID)
 		if err != nil {
 			responseHandler("err: no plugin with that name was found", nil, ctx)
-			return ""
+		} else {
+			uuid = path.UUID
 		}
-		uuid = path.UUID
 	} else {
 		uuid = resolveID(ctx)
 	}
 	if uuid == "" {
 		responseHandler("err: no valid uuid found", nil, ctx)
-		return ""
 	}
 	return uuid
 }
@@ -216,11 +216,17 @@ func (c *PluginAPI) UpdateConfig(ctx *gin.Context) {
 
 	newConf := instance.DefaultConfig()
 	newConfBytes, err := ioutil.ReadAll(ctx.Request.Body)
+	var jsonConf map[string]string
+	err = json.Unmarshal(newConfBytes, &jsonConf)
+	if err != nil {
+		ctx.AbortWithError(400, errors.New("invalid data"))
+		return
+	}
 	if err != nil {
 		ctx.AbortWithError(500, err)
 		return
 	}
-	if err := yaml.Unmarshal(newConfBytes, newConf); err != nil {
+	if err := yaml.Unmarshal([]byte(jsonConf["data"]), newConf); err != nil {
 		ctx.AbortWithError(400, err)
 		return
 	}
@@ -228,9 +234,9 @@ func (c *PluginAPI) UpdateConfig(ctx *gin.Context) {
 		ctx.AbortWithError(400, err)
 		return
 	}
-	conf.Config = newConfBytes
+	config, _ := yaml.Marshal(instance.GetConfig())
+	conf.Config = config
 	successOrAbort(ctx, 500, c.DB.UpdatePluginConf(conf))
-
 }
 
 func supportOrAbort(ctx *gin.Context, instance compat.PluginInstance, module compat.Capability) (aborted bool) {

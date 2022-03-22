@@ -7,7 +7,7 @@ import (
 type NameStruct struct {
 	Type     string `json:"type" default:"string"`
 	Required bool   `json:"required" default:"true"`
-	Min      int    `json:"min" default:"3"`
+	Min      int    `json:"min" default:"2"`
 	Max      int    `json:"max" default:"20"`
 	Default  string `json:"default" default:"lora"`
 }
@@ -43,7 +43,7 @@ type Network struct {
 	SerialPort    struct {
 		Type     string   `json:"type" default:"array"`
 		Required bool     `json:"required" default:"true"`
-		Options  []string `json:"options" default:"[\"/dev/ttyAMA0\",\"/dev/ttyUSB0\"]"`
+		Options  []string `json:"options" default:"[\"/dev/ttyAMA0\",\"/data/socat/loRa1\",\"/dev/ttyUSB0\",\"/dev/ttyUSB1\",\"/dev/ttyUSB2\",\"/dev/ttyUSB3\",\"/dev/ttyUSB4\"]"`
 		Default  string   `json:"default" default:"/dev/ttyAMA0"`
 	} `json:"serial_port"`
 	SerialBaudRate struct {
@@ -92,6 +92,12 @@ type Point struct {
 		Required bool     `json:"required" default:"false"`
 		Options  []string `json:"options" default:"[\"0-10dc\",\"0-40ma\",\"thermistor\"]"`
 	} `json:"io_type"`
+	Eval struct {
+		Type        string `json:"type" default:"string"`
+		Required    bool   `json:"required" default:"false"`
+		Default     string `json:"default" default:"(x + 0) + 0"`
+		DisplayName string `json:"display_name" default:"math expression"`
+	} `json:"eval_expression"`
 	ThingClass struct {
 		Type     string   `json:"type" default:"array"`
 		Required bool     `json:"required" default:"true"`

@@ -35,7 +35,7 @@ var getUI *edgerest.UI
 var getDI *edgerest.DI
 
 //TODO add COV WriteValueOnceSync and InSync
-func (i *Instance) processWrite(pnt *model.Point, value float64, rest *edgerest.RestClient, pollCount uint64, isUO bool) (float64, error) {
+func (inst *Instance) processWrite(pnt *model.Point, value float64, rest *edgerest.RestClient, pollCount uint64, isUO bool) (float64, error) {
 	rsyncWrite := pollCount % 10
 	//rsyncWrite is just a way to make sure the outputs on the device are not out of sync
 	// and rsync on first poll loop
@@ -49,14 +49,14 @@ func (i *Instance) processWrite(pnt *model.Point, value float64, rest *edgerest.
 		}
 		if isUO {
 			_, err = rest.WriteUO(pnt.IoNumber, value)
-			_, err = i.pointUpdateValue(pnt.UUID, value)
+			_, err = inst.pointUpdateValue(pnt.UUID, value)
 		} else {
 			_, err = rest.WriteDO(pnt.IoNumber, value)
-			_, err = i.pointUpdateValue(pnt.UUID, value)
+			_, err = inst.pointUpdateValue(pnt.UUID, value)
 		}
 		if err != nil {
 			log.Errorf("edge28-polling: failed to write IO %s:  value:%f error:%v\n", pnt.IoNumber, value, err)
-			_, err := i.pointUpdateErr(pnt.UUID, err)
+			_, err := inst.pointUpdateErr(pnt.UUID, err)
 			return 0, err
 		} else {
 			log.Infof("edge28-polling: wrote IO %s: %v\n", pnt.IoNumber, value)
@@ -69,13 +69,13 @@ func (i *Instance) processWrite(pnt *model.Point, value float64, rest *edgerest.
 
 }
 
-func (i *Instance) processRead(pnt *model.Point, readValue float64, pollCount float64) (float64, error) {
+func (inst *Instance) processRead(pnt *model.Point, readValue float64, pollCount float64) (float64, error) {
 	covEvent, _ := utils.COV(readValue, utils.Float64IsNil(pnt.PresentValue), 0) //Remove this as it's done in the main point db file
 	if pollCount == 1 || !utils.BoolIsNil(pnt.InSync) {
-		_, err := i.pointUpdateValue(pnt.UUID, readValue)
+		_, err := inst.pointUpdateValue(pnt.UUID, readValue)
 		if err != nil {
 			log.Errorf("edge28-polling: READ UPDATE POINT %s: %v\n", pnt.IoNumber, readValue)
-			_, err := i.pointUpdateErr(pnt.UUID, err)
+			_, err := inst.pointUpdateErr(pnt.UUID, err)
 			return readValue, err
 		}
 		if utils.BoolIsNil(pnt.InSync) {
@@ -84,10 +84,10 @@ func (i *Instance) processRead(pnt *model.Point, readValue float64, pollCount fl
 			log.Infof("edge28-polling: READ ON START %s: %v\n", pnt.IoNumber, readValue)
 		}
 	} else if covEvent {
-		_, err := i.pointUpdateValue(pnt.UUID, readValue)
+		_, err := inst.pointUpdateValue(pnt.UUID, readValue)
 		if err != nil {
 			log.Errorf("edge28-polling READ UPDATE POINT %s: %v\n", pnt.IoNumber, readValue)
-			_, err := i.pointUpdateErr(pnt.UUID, err)
+			_, err := inst.pointUpdateErr(pnt.UUID, err)
 			return readValue, err
 		} else {
 			log.Infof("edge28-polling: READ ON START %s: %v\n", pnt.IoNumber, readValue)
@@ -96,7 +96,7 @@ func (i *Instance) processRead(pnt *model.Point, readValue float64, pollCount fl
 	return readValue, nil
 }
 
-func (i *Instance) polling(p polling) error {
+func (inst *Instance) polling(p polling) error {
 	if p.delayNetworks <= 0 {
 		p.delayNetworks = defaultInterval
 	}
@@ -114,7 +114,7 @@ func (i *Instance) polling(p polling) error {
 	arg.WithDevices = true
 	arg.WithPoints = true
 	f := func() (bool, error) {
-		nets, err := i.db.GetNetworksByPlugin(i.pluginUUID, arg)
+		nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, arg)
 		if err != nil {
 			return false, err
 		}
@@ -124,7 +124,7 @@ func (i *Instance) polling(p polling) error {
 		}
 		//log.Error(bugs.DebugPrint(name+pollName, i.polling, err, "hey", "whats", "up"))
 		for _, net := range nets { //NETWORKS
-			if net.UUID != "" && net.PluginConfId == i.pluginUUID {
+			if net.UUID != "" && net.PluginConfId == inst.pluginUUID {
 				log.Infof("edge28-polling: LOOP COUNT: %v\n", counter)
 				counter++
 				for _, dev := range net.Devices { //DEVICES
@@ -151,7 +151,7 @@ func (i *Instance) polling(p polling) error {
 									log.Errorf("edge28-polling: invalid input to  DigitalToGPIOValue")
 									continue
 								}
-								_, err = i.processWrite(pnt, wv, rest, uint64(counter), false)
+								_, err = inst.processWrite(pnt, wv, rest, uint64(counter), false)
 							}
 						case pointList.UO1, pointList.UO2, pointList.UO3, pointList.UO4, pointList.UO5, pointList.UO6, pointList.UO7:
 							//_, err := i.db.UpdatePointValue(pnt.UUID, pnt, false) //TODO: This call sets the fallback value, but it ends up being called too often and overrides value changes from API calls
@@ -161,7 +161,7 @@ func (i *Instance) polling(p polling) error {
 									log.Error(err)
 									continue
 								}
-								_, err = i.processWrite(pnt, wv, rest, uint64(counter), true)
+								_, err = inst.processWrite(pnt, wv, rest, uint64(counter), true)
 								if err != nil {
 									log.Error(err)
 									continue
@@ -186,7 +186,7 @@ func (i *Instance) polling(p polling) error {
 								log.Error("edge28-polling: ", err)
 								continue
 							}
-							_, err = i.processRead(pnt, rv, counter)
+							_, err = inst.processRead(pnt, rv, counter)
 
 						case pointList.UI1, pointList.UI2, pointList.UI3, pointList.UI4, pointList.UI5, pointList.UI6, pointList.UI7:
 							if getUI == nil {
@@ -206,7 +206,7 @@ func (i *Instance) polling(p polling) error {
 								log.Error(err)
 								continue
 							}
-							_, err = i.processRead(pnt, rv, counter)
+							_, err = inst.processRead(pnt, rv, counter)
 						}
 					}
 				}

@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (i *Instance) BusServ() {
+func (inst *Instance) BusServ() {
 	handlerCreated := bus.Handler{
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {

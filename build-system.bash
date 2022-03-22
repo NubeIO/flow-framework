@@ -14,6 +14,8 @@ BACNET=false
 BROKER=false
 LORAWAN=false
 BACNET_MASTER=false
+HISTORY=false
+INFLUX=false
 
 help() {
     echo "Service commands:"
@@ -53,6 +55,12 @@ parseCommand() {
           ;;
         --bacnetmaster)
             BACNET_MASTER=true
+          ;;
+        --history)
+            HISTORY=true
+          ;;
+        --influx)
+            INFLUX=true
           ;;
         *)
             echo -e "${RED}Unknown options ${i}  (-h, --help for help)${DEFAULT}"
@@ -119,7 +127,16 @@ if [ ${BACNET_MASTER} == true ]; then
     go build -buildmode=plugin -o bacnetmaster.so *.go  && cp bacnetmaster.so $pluginDir
     echo -e "${GREEN}BUILD BACNET_MASTER"
 fi
-
+if [ ${HISTORY} == true ]; then
+    cd $dir/plugin/nube/database/history
+    go build -buildmode=plugin -o history.so *.go  && cp history.so $pluginDir
+    echo -e "${GREEN}BUILD HISTORY"
+fi
+if [ ${INFLUX} == true ]; then
+    cd $dir/plugin/nube/database/influx
+    go build -buildmode=plugin -o influx.so *.go  && cp influx.so $pluginDir
+    echo -e "${GREEN}BUILD INFLUX"
+fi
 
 cd $dir
 

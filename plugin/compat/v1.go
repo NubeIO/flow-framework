@@ -84,6 +84,13 @@ func (c *PluginV1Instance) DefaultConfig() interface{} {
 	return struct{}{}
 }
 
+func (c *PluginV1Instance) GetConfig() interface{} {
+	if c.configurer != nil {
+		return c.configurer.GetConfig()
+	}
+	return struct{}{}
+}
+
 // ValidateAndSetConfig see papiv1.Configurer.
 func (c *PluginV1Instance) ValidateAndSetConfig(config interface{}) error {
 	if c.configurer != nil {

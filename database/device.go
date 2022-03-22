@@ -6,7 +6,9 @@ import (
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/model"
+	"github.com/NubeIO/flow-framework/src/client"
 	"github.com/NubeIO/flow-framework/utils"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -51,6 +53,37 @@ func (d *GormDatabase) GetPluginIDFromDevice(uuid string) (*model.Network, error
 	return network, err
 }
 
+func (d *GormDatabase) CreateDevicePlugin(body *model.Device) (device *model.Device, err error) {
+	fmt.Println(body, body.NetworkUUID)
+	network, err := d.GetNetwork(body.NetworkUUID, api.Args{})
+	if network == nil {
+		errMsg := fmt.Sprintf("model.device failed to find a network with uuid:%s", body.NetworkUUID)
+		log.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+	pluginName := network.PluginPath
+
+	if pluginName == "system" {
+		device, err = d.CreateDevice(body)
+		if err != nil {
+			return nil, err
+		}
+		return
+	}
+	body.CommonFault.InFault = true
+	body.CommonFault.MessageLevel = model.MessageLevel.NoneCritical
+	body.CommonFault.MessageCode = model.CommonFaultCode.PluginNotEnabled
+	body.CommonFault.Message = model.CommonFaultMessage.PluginNotEnabled
+	body.CommonFault.LastFail = time.Now().UTC()
+	body.CommonFault.LastOk = time.Now().UTC()
+	cli := client.NewLocalClient()
+	device, err = cli.CreateDevicePlugin(body, pluginName)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
 func (d *GormDatabase) CreateDevice(body *model.Device) (*model.Device, error) {
 	var net *model.Network
 	existing := d.deviceNameExists(body, body)
@@ -67,12 +100,6 @@ func (d *GormDatabase) CreateDevice(body *model.Device) (*model.Device, error) {
 	}
 	body.ThingClass = model.ThingClass.Device
 	body.CommonEnable.Enable = utils.NewTrue()
-	body.CommonFault.InFault = true
-	body.CommonFault.MessageLevel = model.MessageLevel.NoneCritical
-	body.CommonFault.MessageCode = model.CommonFaultCode.PluginNotEnabled
-	body.CommonFault.Message = model.CommonFaultMessage.PluginNotEnabled
-	body.CommonFault.LastFail = time.Now().UTC()
-	body.CommonFault.LastOk = time.Now().UTC()
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, query.Error
 	}

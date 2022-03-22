@@ -28,6 +28,16 @@ func GetFlowToken(ip string, port int, username string, password string) (*strin
 	return &token.AccessToken, nil
 }
 
+func NewLocalClient() (cli *FlowClient) {
+	client := resty.New()
+	client.SetDebug(false)
+	url := fmt.Sprintf("%s://%s:%d", getSchema(1660), "0.0.0.0", 1660)
+	client.SetBaseURL(url)
+	client.SetError(&Error{})
+	cli = &FlowClient{client: client}
+	return
+}
+
 func NewFlowClientCli(ip *string, port *int, token *string, isMasterSlave *bool, globalUUD string, isFNCreator bool) *FlowClient {
 	if utils.IsTrue(isMasterSlave) {
 		if isFNCreator {

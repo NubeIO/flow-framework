@@ -11,6 +11,33 @@ import (
 	"go.bug.st/serial"
 )
 
+//addDevice add network
+func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, err error) {
+	network, err = inst.db.CreateNetwork(body, false)
+	if err != nil {
+		return nil, err
+	}
+	return network, nil
+}
+
+//addDevice add device
+func (inst *Instance) addDevice(body *model.Device) (device *model.Device, err error) {
+	device, err = inst.db.CreateDevice(body)
+	if err != nil {
+		return nil, err
+	}
+	return device, nil
+}
+
+//addPoint add point
+func (inst *Instance) addPoint(body *model.Point) (point *model.Point, err error) {
+	point, err = inst.db.CreatePoint(body, false, false)
+	if err != nil {
+		return nil, err
+	}
+	return point, nil
+}
+
 //pointUpdate update point present value
 func (i *Instance) pointUpdate(point *model.Point, value float64, writeSuccess, readSuccess bool) (*model.Point, error) {
 	point.CommonFault.InFault = false

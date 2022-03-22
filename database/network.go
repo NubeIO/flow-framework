@@ -7,6 +7,7 @@ import (
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/plugin/compat"
+	"github.com/NubeIO/flow-framework/src/client"
 	"github.com/NubeIO/flow-framework/utils"
 	"time"
 )
@@ -108,18 +109,36 @@ func (d *GormDatabase) GetNetworkByName(name string, args api.Args) (*model.Netw
 	return networksModel, nil
 }
 
-// CreateNetwork creates a device.
-func (d *GormDatabase) CreateNetwork(body *model.Network, fromPlugin bool) (*model.Network, error) {
-	body.UUID = utils.MakeTopicUUID(model.ThingClass.Network)
-	body.Name = nameIsNil(body.Name)
-	body.ThingClass = model.ThingClass.Network
-	body.CommonEnable.Enable = utils.NewTrue()
+func (d *GormDatabase) CreateNetworkPlugin(body *model.Network) (network *model.Network, err error) {
+	pluginName := body.PluginPath
+	if pluginName == "system" {
+		network, err = d.CreateNetwork(body, false)
+		if err != nil {
+			return nil, err
+		}
+		return
+	}
 	body.CommonFault.InFault = true
 	body.CommonFault.MessageLevel = model.MessageLevel.NoneCritical
 	body.CommonFault.MessageCode = model.CommonFaultCode.PluginNotEnabled
 	body.CommonFault.Message = model.CommonFaultMessage.PluginNotEnabled
 	body.CommonFault.LastFail = time.Now().UTC()
 	body.CommonFault.LastOk = time.Now().UTC()
+	//if plugin like bacnet then call the api direct on the plugin as the plugin knows best how to add a point to keep things in sync
+	cli := client.NewLocalClient()
+	network, err = cli.CreateNetworkPlugin(body, pluginName)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// CreateNetwork creates a device.
+func (d *GormDatabase) CreateNetwork(body *model.Network, fromPlugin bool) (*model.Network, error) {
+	body.UUID = utils.MakeTopicUUID(model.ThingClass.Network)
+	body.Name = nameIsNil(body.Name)
+	body.ThingClass = model.ThingClass.Network
+	body.CommonEnable.Enable = utils.NewTrue()
 	transport, err := checkTransport(body.TransportType) //set to ip by default
 	if err != nil {
 		return nil, err

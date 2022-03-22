@@ -1,12 +1,18 @@
 package main
 
 import (
+	"fmt"
+	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/bacnetserver/bacnet_model"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/bacnetserver/plgrest"
 	"github.com/NubeIO/flow-framework/utils"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube_api"
+	nube_api_bacnetserver "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube_api/bacnetserver"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"time"
 )
 
 const (
@@ -20,9 +26,18 @@ func getBODYNetwork(ctx *gin.Context) (dto *bacnet_model.Server, err error) {
 	return dto, err
 }
 
-func getBODYPoints(ctx *gin.Context) (dto *bacnet_model.BacnetPoint, err error) {
+func getBODYPoints(ctx *gin.Context) (dto *model.Point, err error) {
 	err = ctx.ShouldBindJSON(&dto)
 	return dto, err
+}
+
+func getBODYPointsBacnet(ctx *gin.Context) (dto *bacnet_model.BacnetPoint, err error) {
+	err = ctx.ShouldBindJSON(&dto)
+	return dto, err
+}
+
+func resolveUUID(ctx *gin.Context) string {
+	return ctx.Param("uuid")
 }
 
 func resolveObject(ctx *gin.Context) string {
@@ -34,8 +49,12 @@ func resolveAddress(ctx *gin.Context) string {
 }
 
 // RegisterWebhook implements plugin.Webhooker
-func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
-	i.basePath = basePath
+func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
+	inst.basePath = basePath
+	mux.POST("/points", func(ctx *gin.Context) {
+
+	})
+
 	mux.GET("/bacnet/ping", func(ctx *gin.Context) {
 		cli := plgrest.NewNoAuth(ip, string(port))
 		p, err := cli.PingServer()
@@ -69,58 +88,130 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	})
 	//POINTS
 	mux.GET("/bacnet/points", func(ctx *gin.Context) {
-		cli := plgrest.NewNoAuth(ip, string(port))
-		p, err := cli.GetPoints()
-		if err != nil {
-			log.Error(err, "ERROR ON GetPoints")
-			ctx.JSON(http.StatusBadRequest, err)
-		} else {
-			ctx.JSON(http.StatusOK, p)
+
+		//inc generic reset client
+		rc := &nrest.ReqType{
+			BaseUri: "0.0.0.0",
+			LogPath: "helpers.nrest",
 		}
+
+		//inc nube rest client
+		c := &nube_api.NubeRest{
+			Rest:          rc,
+			RubixPort:     nube_api.DefaultRubixService,
+			RubixUsername: "admin",
+			RubixPassword: "N00BWires",
+			UseRubixProxy: true,
+		}
+
+		//new nube rest client
+		nubeRest := nube_api.New(c)
+		//nubeRest.GetToken()
+
+		//bacnet client
+		options := &nrest.ReqOpt{
+			Timeout:          500 * time.Second,
+			RetryCount:       1,
+			RetryWaitTime:    1 * time.Second,
+			RetryMaxWaitTime: 0,
+			Headers:          map[string]interface{}{"Authorization": nubeRest.RubixToken},
+		}
+		rc.Service = "bacnet-server"
+		rc.LogPath = "helpers.nrest.bacnet.server"
+		rc.Port = nube_api.DefaultPortBacnet
+		c.RubixProxyPath = nube_api.ProxyBacnet
+		bacnetClient := &nube_api_bacnetserver.RestClient{
+			NubeRest: nubeRest,
+			Options:  options,
+		}
+		//get points
+		//_, r := bacnetClient.GetPoint("BhLtrFaNrtBxhVLyjc5CHi")
+		//_, r := bacnetClient.GetPoints()
+
+		body, _ := getBODYPoints(ctx)
+		var bacPoint nube_api_bacnetserver.BacnetPoint
+		if body.Description == "" {
+			bacPoint.Description = "na"
+		}
+		bacPoint.ObjectName = body.Name
+		bacPoint.Enable = true
+		bacPoint.Address = utils.IntIsNil(body.AddressID)
+		bacPoint.ObjectType = body.ObjectType
+		bacPoint.COV = utils.Float64IsNil(body.COV)
+		bacPoint.EventState = "normal"
+		bacPoint.Units = "noUnits"
+		bacPoint.RelinquishDefault = utils.Float64IsNil(body.Fallback)
+		_, r := bacnetClient.AddPoint(bacPoint)
+
+		if r.ApiReply.Err != nil {
+			ctx.JSON(r.Response.StatusCode, r.Response)
+		} else {
+			ctx.JSON(r.Response.StatusCode, r.Response)
+		}
+
 	})
 	mux.POST("/bacnet/points", func(ctx *gin.Context) {
 		body, _ := getBODYPoints(ctx)
-		cli := plgrest.NewNoAuth(ip, string(port))
-		p, err := cli.AddPoint(*body)
-		if err != nil {
-			log.Error(err, "ERROR ON AddPoint")
-			ctx.JSON(http.StatusBadRequest, err)
+		var bacPoint nube_api_bacnetserver.BacnetPoint
+		if body.Description == "" {
+			bacPoint.Description = "na"
+		}
+		bacPoint.ObjectName = body.Name
+		bacPoint.Enable = true
+		bacPoint.Address = utils.IntIsNil(body.AddressID)
+		bacPoint.ObjectType = body.ObjectType
+		bacPoint.COV = utils.Float64IsNil(body.COV)
+		bacPoint.EventState = "normal"
+		bacPoint.Units = "noUnits"
+		bacPoint.RelinquishDefault = utils.Float64IsNil(body.Fallback)
+		_, r := bacnetClient.AddPoint(bacPoint)
+		if r.ApiReply.Err != nil {
+			ctx.JSON(r.Response.StatusCode, r.Response)
 		} else {
-			ctx.JSON(http.StatusOK, p)
+
+			ctx.JSON(r.Response.StatusCode, r.Response)
 		}
 	})
-	mux.PATCH("/bacnet/points/:object/:address", func(ctx *gin.Context) {
+	mux.PATCH("/bacnet/points/:uuid", func(ctx *gin.Context) {
+		uuid := resolveUUID(ctx)
 		body, _ := getBODYPoints(ctx)
-		obj := resolveObject(ctx)
-		addr := resolveAddress(ctx)
-		cli := plgrest.NewNoAuth(ip, string(port))
-		p, err := cli.EditPoint(*body, obj, utils.ToInt(addr))
+		point, err := inst.pointPatch2(body)
 		if err != nil {
-			log.Error(err, "ERROR ON EditPoint")
-			ctx.JSON(http.StatusBadRequest, err)
+			fmt.Println(111111, err)
+		}
+		_, r := bacnetClient.UpdatePoint(uuid, point)
+		if r.ApiReply.Err != nil {
+			ctx.JSON(r.Response.StatusCode, r.Response)
 		} else {
-			ctx.JSON(http.StatusOK, p)
+			ctx.JSON(r.Response.StatusCode, r.Response)
 		}
 	})
+
+	mux.DELETE("/bacnet/points/:uuid", func(ctx *gin.Context) {
+		uuid := resolveUUID(ctx)
+		r := bacnetClient.DeletePoint(uuid)
+		if r.ApiReply.Err != nil {
+			ctx.JSON(r.Response.StatusCode, r.Response)
+		} else {
+			ctx.JSON(r.Response.StatusCode, r.Response)
+			return
+		}
+	})
+
 	//delete all the bacnet-server points
 	mux.DELETE("/bacnet/points/drop", func(ctx *gin.Context) {
-		cli := plgrest.NewNoAuth(ip, string(port))
-		p, err := cli.GetPoints()
-		for _, pnt := range *p {
-			_, err := i.bacnetServerDeletePoint(&pnt)
-			if err != nil {
-				return
-			}
-		}
-		if err != nil {
-			log.Error(err, "ERROR ON bacnetServerDeletePoint")
-			ctx.JSON(http.StatusBadRequest, err)
+
+		r := bacnetClient.DropPoints()
+		if r.ApiReply.Err != nil {
+			ctx.JSON(r.Response.StatusCode, r.Response)
 		} else {
-			ctx.JSON(http.StatusOK, p)
+			ctx.JSON(r.Response.StatusCode, r.Response)
+			return
 		}
+
 	})
 	mux.POST("/bacnet/wizard", func(ctx *gin.Context) {
-		wizard, err := i.wizard()
+		wizard, err := inst.wizard()
 		if err != nil {
 			log.Error(err, "ERROR ON wizard")
 			ctx.JSON(http.StatusBadRequest, err)

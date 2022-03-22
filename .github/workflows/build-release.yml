@@ -135,6 +135,7 @@ jobs:
       - name: Build armv7
         if: ${{ needs.context.outputs.isRelease == 'true' }}
         run: |
+          sudo apt-get update
           sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -o app-armv7 app.go
 

@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (i *Instance) BusServ() {
+func (inst *Instance) BusServ() {
 	handlerCreated := bus.Handler{ //CREATED
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {
@@ -40,23 +40,23 @@ func (i *Instance) BusServ() {
 					return
 				}
 				//try and match is point
-				pnt, err := eventbus.IsPoint(e.Topic, e)
+				//pnt, err := eventbus.IsPoint(e.Topic, e)
 				fmt.Println("BACNET ADD POINT ON BUS")
-				if err != nil {
-					return
-				}
-				_, err = i.addPoint(pnt)
-				if err != nil {
-					log.Error("BACNET ADD POINT BUS issue on add rest")
-					return
-				}
-				if pnt != nil {
-					log.Info("BACNET BUS PluginsCreated IsPoint", " ", pnt.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
+				//if err != nil {
+				//	return
+				//}
+				//_, err = inst.addPoint(pnt)
+				//if err != nil {
+				//	log.Error("BACNET ADD POINT BUS issue on add rest")
+				//	return
+				//}
+				//if pnt != nil {
+				//	log.Info("BACNET BUS PluginsCreated IsPoint", " ", pnt.UUID)
+				//	if err != nil {
+				//		return
+				//	}
+				//	return
+				//}
 			}()
 		},
 		Matcher: eventbus.PluginsCreated,
@@ -98,7 +98,7 @@ func (i *Instance) BusServ() {
 					return
 				}
 				if pnt != nil {
-					_, err = i.pointPatch(pnt)
+					_, err = inst.pointPatch(pnt)
 					log.Info("BACNET BUS PluginsUpdated IsPoint", " ", pnt.UUID)
 					if err != nil {
 						return
@@ -148,7 +148,7 @@ func (i *Instance) BusServ() {
 				}
 				log.Info("BACNET BUS DELETED IsPoint", " ")
 				if pnt != nil {
-					p, err := i.deletePoint(pnt)
+					p, err := inst.deletePoint(pnt)
 					log.Info("BACNET BUS DELETED IsPoint", " ", pnt.UUID, "WAS DELETED", " ", p)
 					if err != nil {
 						return
@@ -166,7 +166,7 @@ func (i *Instance) BusServ() {
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {
 				p, _ := e.Data.(mqtt.Message)
-				_, err := i.bacnetUpdate(p)
+				_, err := inst.bacnetUpdate(p)
 				if err != nil {
 					return
 				}

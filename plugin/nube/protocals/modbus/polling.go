@@ -30,8 +30,8 @@ type devCheck struct {
 }
 
 func delays(networkType string) (deviceDelay, pointDelay time.Duration) {
-	deviceDelay = 80 * time.Millisecond
-	pointDelay = 80 * time.Millisecond
+	deviceDelay = 250 * time.Millisecond
+	pointDelay = 100 * time.Millisecond
 	if networkType == model.TransType.LoRa {
 		deviceDelay = 80 * time.Millisecond
 		pointDelay = 6000 * time.Millisecond
@@ -280,14 +280,17 @@ func (i *Instance) PollingTCP(p polling) error {
 	arg.WithDevices = true
 	arg.WithPoints = true
 	f := func() (bool, error) {
-		nets, err := i.db.GetNetworksByPlugin(i.pluginUUID, arg)
+		nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, arg)
 		if len(nets) == 0 {
 			time.Sleep(2 * time.Second)
 			log.Info("modbus: NO MODBUS NETWORKS FOUND")
 		}
 
 		for _, net := range nets { //NETWORKS
-			if net.UUID != "" && net.PluginConfId == i.pluginUUID {
+			if !inst.pollingEnabled {
+				break
+			}
+			if net.UUID != "" && net.PluginConfId == inst.pluginUUID {
 				timeStart := time.Now()
 				deviceDelay, pointDelay := delays(net.TransportType)
 				counter++
@@ -304,7 +307,7 @@ func (i *Instance) PollingTCP(p polling) error {
 					var mbClient smod.ModbusClient
 					var dCheck devCheck
 					dCheck.devUUID = dev.UUID
-					mbClient, err = i.setClient(net, dev, true)
+					mbClient, err = inst.setClient(net, dev, true)
 					if err != nil {
 						log.Errorf("modbus: failed to set client error: %v network name:%s\n", err, net.Name)
 						continue
@@ -332,37 +335,33 @@ func (i *Instance) PollingTCP(p polling) error {
 							continue
 						}
 						write := isWrite(pnt.ObjectType)
-						skipDelay := false
 						if write { //IS WRITE
 							//get existing
 							if !utils.BoolIsNil(pnt.InSync) {
-								//_, responseValue, err := networkRequest(mbClient, pnt, true)
+								_, responseValue, err := networkRequest(mbClient, pnt, true)
 								if err != nil {
-									_, err = i.pointUpdateErr(pnt.UUID, err)
+									_, err = inst.pointUpdateErr(pnt.UUID, err)
 									continue
 								}
-								//_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
-							} else {
-								skipDelay = true
+								responseValue = utils.Float64IsNil(pnt.WriteValueOriginal) //feedback in the WriteValue
+								_, err = inst.pointUpdate(pnt.UUID, responseValue)
 							}
 						} else { //READ
 							_, responseValue, err := networkRequest(mbClient, pnt, false)
 							if err != nil {
-								_, err = i.pointUpdateErr(pnt.UUID, err)
+								_, err = inst.pointUpdateErr(pnt.UUID, err)
 								continue
 							}
 							//simple cov
 							isChange := !utils.CompareFloatPtr(pnt.PresentValue, &responseValue)
 							if isChange {
-								//_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
+								_, err = inst.pointUpdate(pnt.UUID, responseValue)
 								if err != nil {
 									continue
 								}
 							}
 						}
-						if !skipDelay {
-							time.Sleep(pointDelay) //DELAY between points
-						}
+						time.Sleep(pointDelay) //DELAY between points
 					}
 					timeEnd := time.Now()
 					diff := timeEnd.Sub(timeStart)

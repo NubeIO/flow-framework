@@ -1,18 +1,45 @@
 package main
 
-// Config is user plugin configuration
-type Config struct {
-	OrganizationID string `yaml:"organization_id"`
+type Influx struct {
+	Host        string  `yaml:"host"`
+	Port        int     `yaml:"port"`
+	Token       *string `yaml:"token"`
+	Org         string  `yaml:"org"`
+	Bucket      string  `yaml:"bucket"`
+	Measurement string  `yaml:"measurement"`
 }
 
-// DefaultConfig implements plugin.Configurer
+type Job struct {
+	Frequency string `yaml:"frequency"`
+}
+
+type Config struct {
+	Influx []Influx `yaml:"influx"`
+	Job    Job      `yaml:"job"`
+}
+
 func (i *Instance) DefaultConfig() interface{} {
+	influx := Influx{
+		Host:        "localhost",
+		Port:        8086,
+		Token:       nil,
+		Org:         "nube-org",
+		Bucket:      "nube-bucket",
+		Measurement: "points",
+	}
+	job := Job{
+		Frequency: "1m",
+	}
 	return &Config{
-		OrganizationID: "1",
+		Influx: []Influx{influx},
+		Job:    job,
 	}
 }
 
-// ValidateAndSetConfig implements plugin.Configurer
+func (i *Instance) GetConfig() interface{} {
+	return i.config
+}
+
 func (i *Instance) ValidateAndSetConfig(config interface{}) error {
 	newConfig := config.(*Config)
 	i.config = newConfig

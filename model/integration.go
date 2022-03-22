@@ -7,7 +7,7 @@ type Integration struct {
 	CommonEnable
 	CommonFault
 	IP              string           `json:"ip"`
-	PORT            string           `json:"port"`
+	PORT            int              `json:"port"`
 	Username        string           `json:"username"`
 	Password        string           `json:"password"`
 	Token           string           `json:"token"`

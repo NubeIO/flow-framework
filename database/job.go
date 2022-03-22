@@ -36,6 +36,15 @@ func (d *GormDatabase) GetJob(uuid string) (*model.Job, error) {
 	return jobModel, nil
 }
 
+func (d *GormDatabase) GetJobsByPluginConfigId(pcId string) ([]*model.Job, error) {
+	var jobsModel []*model.Job
+	query := d.DB.Where("plugin_conf_id = ?", pcId).Find(&jobsModel)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+	return jobsModel, nil
+}
+
 func (d *GormDatabase) GetJobByPluginConfId(pcId string) (*model.Job, error) {
 	var jobModel *model.Job
 	query := d.DB.Where("plugin_conf_id = ?", pcId).First(&jobModel)
@@ -89,5 +98,4 @@ func (d *GormDatabase) DropJobs() (bool, error) {
 	} else {
 		return true, nil
 	}
-
 }

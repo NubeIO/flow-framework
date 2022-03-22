@@ -1,10 +1,17 @@
 package main
 
 import (
+	"github.com/NubeIO/flow-framework/plugin"
 	"net/http"
 
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/lora/lora_model"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	networks = "/networks"
+	devices  = "/devices"
+	points   = "/points"
 )
 
 const (
@@ -32,11 +39,34 @@ func bodyWizard(ctx *gin.Context) (dto wizard, err error) {
 // RegisterWebhook implements plugin.Webhooker
 func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	inst.basePath = basePath
-	mux.GET(help, func(ctx *gin.Context) {
+	mux.POST(networks, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYNetwork(ctx)
+		network, err := inst.addNetwork(body)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
+			return
 		} else {
-			ctx.JSON(http.StatusOK, "add")
+			ctx.JSON(http.StatusOK, network)
+		}
+	})
+	mux.POST(devices, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYDevice(ctx)
+		device, err := inst.addDevice(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, device)
+		}
+	})
+	mux.POST(points, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYPoint(ctx)
+		err := inst.addPoint(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, body)
 		}
 	})
 	mux.POST(restartSerial, func(ctx *gin.Context) {

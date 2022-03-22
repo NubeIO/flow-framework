@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/NubeIO/flow-framework/model"
+	"github.com/NubeIO/flow-framework/plugin"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/mbmodel"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uurl"
@@ -57,22 +58,6 @@ func bodyWizard(ctx *gin.Context) (dto wizard, err error) {
 	return dto, err
 }
 
-type Urls struct {
-	Help       []string `json:"help"`
-	ListSerial string   `json:"list_serial"`
-}
-
-type T2 struct {
-	Capabilities struct {
-		Help []string `json:"help,omitempty"`
-	} `json:"capabilities,omitempty"`
-	ObjectType struct {
-		Options  interface{} `json:"options"`
-		Type     string      `json:"type"`
-		Required bool        `json:"required"`
-	} `json:"object_type"`
-}
-
 //supportedObjects return all objects that are not bacnet
 func supportedObjects() *utils.Array {
 	out := utils.NewArray()
@@ -86,10 +71,42 @@ func supportedObjects() *utils.Array {
 }
 
 // RegisterWebhook implements plugin.Webhooker
-func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
-	i.basePath = basePath
+func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
+	inst.basePath = basePath
+	mux.POST(plugin.NetworksURL, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYNetwork(ctx)
+		network, err := inst.addNetwork(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, network)
+		}
+	})
+	mux.POST(plugin.DevicesURL, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYDevice(ctx)
+		device, err := inst.addDevice(body)
+		fmt.Println(err)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, device)
+		}
+	})
+	mux.POST(plugin.PointsURL, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYPoint(ctx)
+		point, err := inst.addPoint(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err.Error())
+			return
+		} else {
+			ctx.JSON(http.StatusOK, point)
+		}
+	})
+
 	mux.GET(listSerial, func(ctx *gin.Context) {
-		serial, err := i.listSerialPorts()
+		serial, err := inst.listSerialPorts()
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 			return
@@ -101,7 +118,7 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	mux.POST("/modbus/point/operation", func(ctx *gin.Context) {
 		body, err := bodyClient(ctx)
 		netType := body.Network.TransportType
-		mbClient, err := i.setClient(body.Network, body.Device, false)
+		mbClient, err := inst.setClient(body.Network, body.Device, false)
 		if err != nil {
 			log.Errorln(err, "ERROR ON set modbus client")
 			ctx.JSON(http.StatusBadRequest, err.Error())
@@ -132,7 +149,7 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	})
 	mux.POST("/modbus/wizard/tcp", func(ctx *gin.Context) {
 		body, _ := bodyWizard(ctx)
-		n, err := i.wizardTCP(body)
+		n, err := inst.wizardTCP(body)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 			return
@@ -143,7 +160,7 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	})
 	mux.POST("/modbus/wizard/serial", func(ctx *gin.Context) {
 		body, _ := bodyWizard(ctx)
-		serial, err := i.wizardSerial(body)
+		serial, err := inst.wizardSerial(body)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 			return

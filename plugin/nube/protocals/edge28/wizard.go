@@ -17,7 +17,7 @@ type wizard struct {
 }
 
 //wizard make a network/dev/pnt
-func (i *Instance) wizard(body wizard) (string, error) {
+func (inst *Instance) wizard(body wizard) (string, error) {
 	ip := "192.168.15.63"
 	if body.IP != "" {
 		ip = body.IP
@@ -32,7 +32,7 @@ func (i *Instance) wizard(body wizard) (string, error) {
 	net.TransportType = model.TransType.IP
 	net.PluginPath = "edge28"
 
-	network, err := i.db.CreateNetwork(&net, false)
+	network, err := inst.db.CreateNetwork(&net, false)
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +46,7 @@ func (i *Instance) wizard(body wizard) (string, error) {
 	dev.CommonIP.Port = p
 	dev.PollDelayPointsMS = 2500
 
-	device, err := i.db.CreateDevice(&dev)
+	device, err := inst.db.CreateDevice(&dev)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +86,7 @@ func (i *Instance) wizard(body wizard) (string, error) {
 		}
 		pnt.IoType = string(model.IOTypeRAW)
 		pnt.COV = utils.NewFloat64(0.5)
-		point, err := i.db.CreatePoint(&pnt, false, false)
+		point, err := inst.db.CreatePoint(&pnt, false, false)
 		if err != nil {
 			return "", err
 		}

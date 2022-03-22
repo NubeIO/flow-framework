@@ -32,6 +32,8 @@ type PluginInstance interface {
 
 	// DefaultConfig see Configurer
 	DefaultConfig() interface{}
+	// GetConfig see Configurer
+	GetConfig() interface{}
 	// ValidateAndSetConfig see Configurer
 	ValidateAndSetConfig(c interface{}) error
 

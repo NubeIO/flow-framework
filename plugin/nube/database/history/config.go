@@ -1,16 +1,19 @@
 package main
 
+type Job struct {
+	Frequency string `yaml:"frequency"`
+}
+
 type Config struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	HttpPort string `yaml:"http_port"`
+	Job Job `yaml:"job"`
 }
 
 func (i *Instance) DefaultConfig() interface{} {
+	job := Job{
+		Frequency: "1m",
+	}
 	return &Config{
-		Host:     "0.0.0.0",
-		Port:     "1883",
-		HttpPort: "8099",
+		Job: job,
 	}
 }
 

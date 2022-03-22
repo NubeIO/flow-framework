@@ -6,6 +6,8 @@ import (
 	"github.com/NubeIO/flow-framework/src/cachestore"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube_api"
+	nube_api_bacnetserver "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube_api/bacnetserver"
 )
 
 const path = "bacnetserver" //must be unique across all plugins
@@ -40,6 +42,10 @@ type Instance struct {
 	bus         eventbus.BusService
 	pluginUUID  string
 	networkUUID string
+	nubeApi     *nube_api.NubeRest
+	bacnetRest  *nube_api_bacnetserver.RestClient
+	nrest       *nrest.ReqType
+	restOptions *nrest.ReqOpt
 }
 
 // GetFlowPluginInfo returns plugin info.

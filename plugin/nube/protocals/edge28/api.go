@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/NubeIO/flow-framework/plugin"
 	model "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/edge_model"
 	edgerest "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/restclient"
 	"github.com/gin-gonic/gin"
@@ -19,9 +20,47 @@ const (
 	schemaPoint   = "/schema/point"
 )
 
+const (
+	networks = "/networks"
+	devices  = "/devices"
+	points   = "/points"
+)
+
+var err error
+
 // RegisterWebhook implements plugin.Webhooker
-func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
-	i.basePath = basePath
+func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
+	inst.basePath = basePath
+	mux.POST(networks, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYNetwork(ctx)
+		network, err := inst.addNetwork(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, network)
+		}
+	})
+	mux.POST(devices, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYDevice(ctx)
+		device, err := inst.addDevice(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, device)
+		}
+	})
+	mux.POST(points, func(ctx *gin.Context) {
+		body, _ := plugin.GetBODYPoint(ctx)
+		point, err := inst.addPoint(body)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		} else {
+			ctx.JSON(http.StatusOK, point)
+		}
+	})
 
 	mux.GET(schemaNetwork, func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, model.GetNetworkSchema())
@@ -74,7 +113,7 @@ func (i *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	})
 	mux.POST("/edge/wizard", func(ctx *gin.Context) {
 		body, err := bodyWizard(ctx)
-		p, err := i.wizard(body)
+		p, err := inst.wizard(body)
 		if err != nil {
 			log.Info(err, "ERROR ON ping server")
 			ctx.JSON(http.StatusBadRequest, err)

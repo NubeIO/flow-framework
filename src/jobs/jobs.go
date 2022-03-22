@@ -7,6 +7,7 @@ import (
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/go-co-op/gocron"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -36,8 +37,8 @@ func (j *Jobs) InitCron() {
 }
 
 func (j *Jobs) task(mp string, uuid string) {
-	fmt.Println("TASK RUN")
 	t := fmt.Sprintf("%s.%s.%s", eventbus.JobTrigger, mp, uuid)
+	log.Info(fmt.Sprintf("Triggering a job: %s", t))
 	bus.RegisterTopic(t)
 	err := bus.Emit(eventbus.CTX(), t, "MEG OVER BUS")
 	if err != nil {

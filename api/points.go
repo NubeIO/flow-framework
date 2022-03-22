@@ -9,6 +9,7 @@ type PointDatabase interface {
 	GetPoints(args Args) ([]*model.Point, error)
 	GetPoint(uuid string, args Args) (*model.Point, error)
 	CreatePoint(body *model.Point, fromPlugin bool) (*model.Point, error)
+	CreatePointPlugin(body *model.Point) (*model.Point, error)
 	UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error)
 	PointWrite(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error)
 	GetOnePointByArgs(args Args) (*model.Point, error)
@@ -56,7 +57,7 @@ func (a *PointAPI) GetOnePointByArgs(ctx *gin.Context) {
 
 func (a *PointAPI) CreatePoint(ctx *gin.Context) {
 	body, _ := getBODYPoint(ctx)
-	q, err := a.DB.CreatePoint(body, false)
+	q, err := a.DB.CreatePointPlugin(body)
 	responseHandler(q, err, ctx)
 }
 

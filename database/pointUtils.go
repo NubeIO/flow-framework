@@ -94,14 +94,9 @@ func pointScale(presentValue, scaleInMin, scaleInMax, scaleOutMin, scaleOutMax *
 	return presentValue
 }
 
-func pointEval(presentValue, originalValue *float64, evalMode, evalString string) (value *float64, err error) {
-	val := presentValue
-	if model.EvalMode(evalMode) == model.EvalModeCalcOnOriginalValue {
-		val = originalValue
-	}
-	exp := evalString
-	if evalString != "" && model.EvalMode(evalMode) != model.EvalModeDisabled {
-		eval, err := gval.Full().NewEvaluable(exp)
+func pointEval(val *float64, evalString string) (value *float64, err error) {
+	if evalString != "" {
+		eval, err := gval.Full().NewEvaluable(evalString)
 		if err != nil || val == nil {
 			return nil, err
 		}

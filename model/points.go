@@ -117,23 +117,6 @@ const (
 	IOTypeThermistor10K IOType = "thermistor_10k_type_2"
 )
 
-type EvalExamples string
-
-const (
-	EvalExExample             EvalExamples = "example"
-	EvalExBoolInvert          EvalExamples = "bool_invert"
-	EvalExCelsiusToFahrenheit EvalExamples = "celsius_to_fahrenheit"
-)
-
-type EvalMode string
-
-const (
-	EvalModeEnable              EvalMode = "enable"
-	EvalModeDisabled            EvalMode = "disabled"
-	EvalModeCalcOnOriginalValue EvalMode = "calc_on_original_value"
-	EvalModeCalcAfterScale      EvalMode = "calc_after_scale"
-)
-
 type PointPriorityArrayMode string
 
 const (
@@ -155,6 +138,8 @@ type Point struct {
 	CommonFault
 	PresentValue         *float64  `json:"present_value"` //point value, read only
 	OriginalValue        *float64  `json:"original_value"`
+	WriteValue           *float64  `json:"write_value"`          //writeValue was added so if user wanted to do a math function on the point write
+	WriteValueOriginal   *float64  `json:"write_value_original"` //writeValue was added so if user wanted to do a math function on the point write
 	CurrentPriority      *int      `json:"current_priority,omitempty"`
 	InSync               *bool     `json:"in_sync"`                    //is set to false when a new value is written from the user example: if its false then modbus would write the new value. if user edits the point it will disable the COV for one time
 	WriteValueOnce       *bool     `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
@@ -164,9 +149,8 @@ type Point struct {
 	NetworkUUID          string    `json:"network_uuid,omitempty" gorm:"TYPE:string REFERENCES networks;not null;default:null"`
 	EnableWriteable      *bool     `json:"writeable,omitempty"`
 	IsOutput             *bool     `json:"is_output,omitempty"`
-	EvalMode             string    `json:"eval_mode,omitempty"`
-	Eval                 string    `json:"eval_expression,omitempty"`
-	EvalExample          string    `json:"eval_example,omitempty"`
+	MathOnPresentValue   string    `json:"math_on_present_value,omitempty"` // x+100
+	MathOnWriteValue     string    `json:"math_on_write_value,omitempty"`   // x*100
 	COV                  *float64  `json:"cov"`
 	ObjectType           string    `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
 	DataType             string    `json:"data_type,omitempty"`       //int16, uint16, float32

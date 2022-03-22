@@ -69,12 +69,14 @@ type Operation struct {
 }
 
 func pointWrite(pnt *model.Point) (out float64) {
-	if pnt.Priority != nil {
-		if (*pnt.Priority).P16 != nil {
-			out = *pnt.Priority.P16
-			log.Infof("modbus-write: pointWrite() ObjectType: %s  Addr: %d WriteValue: %v\n", pnt.ObjectType, utils.IntIsNil(pnt.AddressID), out)
-		}
-	}
+	out = utils.Float64IsNil(pnt.WriteValue)
+	log.Infof("modbus-write: pointWrite() ObjectType: %s  Addr: %d WriteValue: %v\n", pnt.ObjectType, utils.IntIsNil(pnt.AddressID), out)
+	//if pnt.Priority != nil {
+	//	if (*pnt.Priority).P16 != nil {
+	//		out = *pnt.Priority.P16
+	//		log.Infof("modbus-write: pointWrite() ObjectType: %s  Addr: %d WriteValue: %v\n", pnt.ObjectType, utils.IntIsNil(pnt.AddressID), out)
+	//	}
+	//}
 	return
 }
 
@@ -128,9 +130,12 @@ func networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) 
 		length = 1
 	}
 	var writeValue float64
+	if doWrite {
+		writeValue = pointWrite(pnt)
+	}
+
 	if mbClient.Debug {
 		if doWrite {
-			writeValue = pointWrite(pnt)
 			log.Infof("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
 		} else {
 			log.Infof("modbus-read: ObjectType: %s  Addr: %d", objectType, address)

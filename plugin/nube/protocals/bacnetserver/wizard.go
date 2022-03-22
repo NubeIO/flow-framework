@@ -9,13 +9,13 @@ import (
 )
 
 //wizard make a network/dev/pnt
-func (i *Instance) wizard() (string, error) {
+func (inst *Instance) wizard() (string, error) {
 	var net model.Network
 	net.Name = "bacnet"
 	net.TransportType = model.TransType.IP
 	net.PluginPath = "bacnetserver"
 
-	network, err := i.db.CreateNetwork(&net, false)
+	network, err := inst.db.CreateNetwork(&net, false)
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +26,7 @@ func (i *Instance) wizard() (string, error) {
 	dev.NetworkUUID = network.UUID
 	dev.Name = "bacnet"
 
-	device, err := i.db.CreateDevice(&dev)
+	device, err := inst.db.CreateDevice(&dev)
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +52,7 @@ func (i *Instance) wizard() (string, error) {
 	pnt.Unit = utils.NewStringAddress("noUnits")
 	pnt.Priority = new(model.Priority)
 	(*pnt.Priority).P16 = utils.NewFloat64(1)
-	point, err := i.db.CreatePoint(&pnt, false, false)
+	point, err := inst.db.CreatePoint(&pnt, false, false)
 	if err != nil {
 		return "", err
 	}

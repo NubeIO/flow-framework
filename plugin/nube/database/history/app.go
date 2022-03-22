@@ -9,7 +9,7 @@ import (
 )
 
 func (i *Instance) syncHistory() (bool, error) {
-	log.Info("History sync has is been called")
+	log.Info("History sync has is been called...")
 	fnClones, err := i.db.GetFlowNetworkClones()
 	if err != nil {
 		return false, err
@@ -21,14 +21,14 @@ func (i *Instance) syncHistory() (bool, error) {
 			return false, err
 		}
 		cli := client.NewFlowClientCli(fnc.FlowIP, fnc.FlowPort, fnc.FlowToken, fnc.IsMasterSlave, fnc.GlobalUUID, model.IsFNCreator(fnc))
-		pHistories, err := cli.GetProducerHistoriesPoints(fnc.UUID, hisLog.LastSyncID)
+		pHistories, err := cli.GetProducerHistoriesPoints(hisLog.LastSyncID)
 		if err != nil {
 			return false, err
 		}
 		for k, h := range *pHistories {
+			h := h // more: https://medium.com/swlh/use-pointer-of-for-range-loop-variable-in-go-3d3481f7ffc9
 			histories = append(histories, &h)
-			// Update History Log
-			if k == len(*pHistories)-1 {
+			if k == len(*pHistories)-1 { // Update History Log
 				hisLog.FlowNetworkCloneUUID = fnc.UUID
 				hisLog.LastSyncID = h.ID
 				hisLog.Timestamp = time.Now()

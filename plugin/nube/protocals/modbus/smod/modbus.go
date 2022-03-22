@@ -143,7 +143,7 @@ func (mc *ModbusClient) ReadInputRegisters(addr uint16, quantity uint16) (raw []
 func (mc *ModbusClient) ReadHoldingRegisters(addr uint16, quantity uint16) (raw []byte, out float64, err error) {
 	raw, err = mc.Client.ReadHoldingRegisters(addr, quantity)
 	if err != nil {
-		log.Errorf("modbus-function: failed to ReadHoldingRegisters: %v\n", err)
+		log.Errorf("modbus-function: failed to ReadHoldingRegisters  addr:%d  quantity:%d error: %v\n", addr, quantity, err)
 		return
 	}
 	// decode payload bytes as uint16s

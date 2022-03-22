@@ -1,9 +1,13 @@
 package main
 
-func (i *Instance) setUUID() {
-	q, err := i.db.GetPluginByPath(path)
+func (inst *Instance) setUUID() {
+	q, err := inst.db.GetPluginByPath(path)
 	if err != nil {
 		return
 	}
-	i.pluginUUID = q.UUID
+	inst.pluginUUID = q.UUID
+
+	//nrest_bacnet_server.NewClient(rt)
+	//aa := nrest_bacnet_server.RestClient{}
+	//nrest_bacnet_server.BacnetPoint{}
 }

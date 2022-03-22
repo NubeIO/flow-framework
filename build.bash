@@ -59,20 +59,20 @@ cd $dir/plugin/nube/utils/git
 go build -buildmode=plugin -o git.so *.go  && cp git.so  $pluginDir
 
 
-cd $dir/plugin/nube/protocols/edge28
+cd $dir/plugin/nube/protocals/edge28
 go build -buildmode=plugin -o edge28.so *.go  && cp edge28.so $pluginDir
 
-cd $dir/plugin/nube/protocols/lorawan
+cd $dir/plugin/nube/protocals/lorawan
 go build -buildmode=plugin -o lorawan.so *.go  && cp lorawan.so $pluginDir
 
-cd $dir/plugin/nube/protocols/modbus
+cd $dir/plugin/nube/protocals/modbus
 go build -buildmode=plugin -o modbus.so *.go  && cp modbus.so $pluginDir
 
-cd $dir/plugin/nube/protocols/lora
+cd $dir/plugin/nube/protocals/lora
 go build -buildmode=plugin -o lora.so *.go  && cp lora.so $pluginDir
 
 
-cd $dir/plugin/nube/protocols/bacnetserver
+cd $dir/plugin/nube/protocals/bacnetserver
 go build -buildmode=plugin -o bacnetserver.so *.go  && cp bacnetserver.so $pluginDir
 
 cd $dir/plugin/nube/database/influx
@@ -81,7 +81,7 @@ go build -buildmode=plugin -o influx.so *.go  && cp influx.so $pluginDir
 cd $dir/plugin/nube/database/history
 go build -buildmode=plugin -o history.so *.go  && cp history.so $pluginDir
 
-cd $dir/plugin/nube/protocols/broker
+cd $dir/plugin/nube/protocals/broker
 go build -buildmode=plugin -o broker.so *.go  && cp broker.so $pluginDir
 
 cd $dir

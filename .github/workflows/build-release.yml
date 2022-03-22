@@ -104,22 +104,22 @@ jobs:
           cd ../../../../plugin/nube/utils/git
           go build -buildmode=plugin -o git-amd64.so *.go  && cp git-amd64.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/edge28
+          cd ../../../../plugin/nube/protocals/edge28
           go build -buildmode=plugin -o edge28-amd64.so *.go  && cp edge28-amd64.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/lorawan
+          cd ../../../../plugin/nube/protocals/lorawan
           go build -buildmode=plugin -o lorawan-amd64.so *.go  && cp lorawan-amd64.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/modbus
+          cd ../../../../plugin/nube/protocals/modbus
           go build -buildmode=plugin -o modbus-amd64.so *.go  && cp modbus-amd64.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/lora
+          cd ../../../../plugin/nube/protocals/lora
           go build -buildmode=plugin -o lora-amd64.so *.go  && cp lora-amd64.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/bacnetserver
+          cd ../../../../plugin/nube/protocals/bacnetserver
           go build -buildmode=plugin -o bacnetserver-amd64.so *.go  && cp bacnetserver-amd64.so ../../../../
           
-          cd ../../../../plugin/nube/protocols/bacnetmaster
+          cd ../../../../plugin/nube/protocals/bacnetmaster
           go build -buildmode=plugin -o bacnetmaster-amd64.so *.go  && cp bacnetmaster-amd64.so ../../../../
 
           cd ../../../../plugin/nube/database/influx
@@ -128,7 +128,7 @@ jobs:
           cd ../../../../plugin/nube/database/history
           go build -buildmode=plugin -o history-amd64.so *.go  && cp history-amd64.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/broker
+          cd ../../../../plugin/nube/protocals/broker
           go build -buildmode=plugin -o broker-amd64.so *.go  && cp broker-amd64.so ../../../../
 
 
@@ -150,22 +150,22 @@ jobs:
           cd ../../../../plugin/nube/utils/git
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o git-armv7.so *.go  && cp git-armv7.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/edge28
+          cd ../../../../plugin/nube/protocals/edge28
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o edge28-armv7.so *.go  && cp edge28-armv7.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/lorawan
+          cd ../../../../plugin/nube/protocals/lorawan
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o lorawan-armv7.so *.go  && cp lorawan-armv7.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/modbus
+          cd ../../../../plugin/nube/protocals/modbus
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o modbus-armv7.so *.go  && cp modbus-armv7.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/lora
+          cd ../../../../plugin/nube/protocals/lora
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o lora-armv7.so *.go  && cp lora-armv7.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/bacnetserver
+          cd ../../../../plugin/nube/protocals/bacnetserver
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o bacnetserver-armv7.so *.go  && cp bacnetserver-armv7.so ../../../../
           
-          cd ../../../../plugin/nube/protocols/bacnetmaster
+          cd ../../../../plugin/nube/protocals/bacnetmaster
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o bacnetmaster-armv7.so *.go  && cp bacnetmaster-armv7.so ../../../../
 
           cd ../../../../plugin/nube/database/influx
@@ -174,7 +174,7 @@ jobs:
           cd ../../../../plugin/nube/database/history
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o history-armv7.so *.go  && cp history-armv7.so ../../../../
 
-          cd ../../../../plugin/nube/protocols/broker
+          cd ../../../../plugin/nube/protocals/broker
           env GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc  CXX=arm-linux-gnueabihf-g++ go build -buildmode=plugin -o broker-armv7.so *.go  && cp broker-armv7.so ../../../../
 
       - name: Zip artifacts

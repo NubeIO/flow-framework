@@ -2,50 +2,48 @@ package main
 
 import (
 	"github.com/NubeIO/flow-framework/eventbus"
-	lwrest "github.com/NubeIO/flow-framework/plugin/nube/protocals/lorawan/restclient"
+	edgerest "github.com/NubeIO/flow-framework/plugin/nube/protocals/edge28/restclient"
 	"github.com/NubeIO/flow-framework/plugin/plugin-api"
 	"github.com/NubeIO/flow-framework/src/cachestore"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
-	"github.com/NubeIO/flow-framework/src/jobs"
-	"github.com/patrickmn/go-cache"
 )
 
-const path = "history" //must be unique across all plugins
-const name = "history" //must be unique across all plugins
-const description = "history"
+const name = "edge28" //must be unique across all plugins
+const description = "edge28 api"
 const author = "ap"
 const webSite = "https://www.github.com/NubeIO"
 const protocolType = "ip"
-const DefaultExpiration = cache.DefaultExpiration
 
-const pluginType = "database"
-const allowConfigWrite = false
-const isNetwork = false
-const maxAllowedNetworks = 0
-const networkType = "na"
-const transportType = "na"
+const pluginType = "protocol"
+const allowConfigWrite = true
+const isNetwork = true
+const maxAllowedNetworks = 1
+const networkType = "edge28"
+const transportType = "ip" //serial, ip
 
 // Instance is plugin instance
 type Instance struct {
-	enabled     bool
-	basePath    string
-	db          dbhandler.Handler
-	store       cachestore.Handler
-	bus         eventbus.BusService
-	pluginUUID  string
-	networkUUID string
-	REST        *lwrest.RestClient
-	jobs        jobs.Jobs
+	config         *Config
+	enabled        bool
+	basePath       string
+	db             dbhandler.Handler
+	store          cachestore.Handler
+	bus            eventbus.BusService
+	pluginUUID     string
+	networkUUID    string
+	rest           *edgerest.RestClient
+	pollingEnabled bool
 }
 
 // GetFlowPluginInfo returns plugin info.
 func GetFlowPluginInfo() plugin.Info {
 	return plugin.Info{
-		ModulePath:   path,
+		ModulePath:   name,
 		Name:         name,
 		Description:  description,
 		Author:       author,
 		Website:      webSite,
+		HasNetwork:   true,
 		ProtocolType: protocolType,
 	}
 }
@@ -53,6 +51,7 @@ func GetFlowPluginInfo() plugin.Info {
 // NewFlowPluginInstance creates a plugin instance for a user context.
 func NewFlowPluginInstance() plugin.Plugin {
 	return &Instance{}
+
 }
 
 //main will not let main run

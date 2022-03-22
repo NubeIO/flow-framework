@@ -85,37 +85,37 @@ if [ ${SYSTEM} == true ]; then
      echo -e "${GREEN}BUILD SYSTEM"
 fi
 if [ ${EDGE28} == true ]; then
-     cd $dir/plugin/nube/protocols/edge28
+     cd $dir/plugin/nube/protocals/edge28
      go build -buildmode=plugin -o edge28.so *.go  && cp edge28.so  $pluginDir
      echo -e "${GREEN}BUILD EDGE28"
 fi
 if [ ${MODBUS} == true ]; then
-    cd $dir/plugin/nube/protocols/modbus
+    cd $dir/plugin/nube/protocals/modbus
     go build -buildmode=plugin -o modbus.so *.go  && cp modbus.so $pluginDir
     echo -e "${GREEN}BUILD MODBUS"
 fi
 if [ ${LORA} == true ]; then
-    cd $dir/plugin/nube/protocols/lora
+    cd $dir/plugin/nube/protocals/lora
     go build -buildmode=plugin -o lora.so *.go  && cp lora.so $pluginDir
     echo -e "${GREEN}BUILD LORA"
 fi
 if [ ${BACNET} == true ]; then
-    cd $dir/plugin/nube/protocols/bacnetserver
+    cd $dir/plugin/nube/protocals/bacnetserver
     go build -buildmode=plugin -o bacnetserver.so *.go  && cp bacnetserver.so $pluginDir
     echo -e "${GREEN}BUILD BACNET"
 fi
 if [ ${BROKER} == true ]; then
-    cd $dir/plugin/nube/protocols/broker
+    cd $dir/plugin/nube/protocals/broker
     go build -buildmode=plugin -o broker.so *.go  && cp broker.so $pluginDir
     echo -e "${GREEN}BUILD BROKER"
 fi
 if [ ${LORAWAN} == true ]; then
-    cd $dir/plugin/nube/protocols/lorawan
+    cd $dir/plugin/nube/protocals/lorawan
     go build -buildmode=plugin -o lorawan.so *.go  && cp lorawan.so $pluginDir
     echo -e "${GREEN}BUILD LORAWAN"
 fi
 if [ ${BACNET_MASTER} == true ]; then
-    cd $dir/plugin/nube/protocols/bacnetmaster
+    cd $dir/plugin/nube/protocals/bacnetmaster
     go build -buildmode=plugin -o bacnetmaster.so *.go  && cp bacnetmaster.so $pluginDir
     echo -e "${GREEN}BUILD BACNET_MASTER"
 fi

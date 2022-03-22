@@ -192,12 +192,14 @@ func (i *Instance) ModbusPolling() error {
 
 			var responseValue float64
 			var response interface{}
+			var writeValuePointer *float64
 			writeSuccess := false
 			if utils.BoolIsNil(pnt.WritePollRequired) { //DO WRITE IF REQUIRED
 				log.Info("modbus write point:")
 				fmt.Printf("%+v\n", pnt)
 				pnt.PrintPointValues()
-				if pnt.Priority.GetHighestPriorityValue() != nil {
+				writeValuePointer = pnt.Priority.GetHighestPriorityValue()
+				if writeValuePointer != nil {
 					response, responseValue, err = networkWrite(mbClient, pnt)
 					if err != nil {
 						_, err = i.pointUpdateErr(pnt.UUID, err)
@@ -233,7 +235,17 @@ func (i *Instance) ModbusPolling() error {
 			}
 
 			//update point in DB if required
-			if readSuccess {
+			//For write_once and write_always type, write value should become present value
+			writeValueToPresentVal := (pnt.WriteMode == poller.WriteOnce || pnt.WriteMode == poller.WriteAlways) && writeSuccess && writeValuePointer != nil
+
+			fmt.Println("ModbusPolling: writeValueToPresentVal ", writeValueToPresentVal)
+
+			if readSuccess || writeValueToPresentVal {
+				if writeValueToPresentVal {
+					responseValue = *writeValuePointer
+					fmt.Println("ModbusPolling: writeOnceWriteValueToPresentVal responseValue: ", responseValue)
+					readSuccess = true
+				}
 				_, err = i.pointUpdate(pnt, responseValue, writeSuccess, readSuccess)
 			}
 

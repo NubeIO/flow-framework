@@ -153,45 +153,47 @@ type Point struct {
 	CommonThingRef
 	CommonThingType
 	CommonFault
-	PresentValue           *float64               `json:"present_value"` //point value, read only
-	OriginalValue          *float64               `json:"original_value"`
-	CurrentPriority        *int                   `json:"current_priority,omitempty"`
-	InSync                 *bool                  `json:"in_sync"`                    //is set to false when a new value is written from the user example: if its false then modbus would write the new value. if user edits the point it will disable the COV for one time
-	WriteValueOnce         *bool                  `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
-	WriteValueOnceSync     *bool                  `json:"write_value_once_sync,omitempty"`
-	Fallback               *float64               `json:"fallback"`
-	DeviceUUID             string                 `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
-	NetworkUUID            string                 `json:"network_uuid,omitempty" gorm:"TYPE:string REFERENCES networks;not null;default:null"`
-	EnableWriteable        *bool                  `json:"writeable,omitempty"`
-	IsOutput               *bool                  `json:"is_output,omitempty"`
-	EvalMode               string                 `json:"eval_mode,omitempty"`
-	Eval                   string                 `json:"eval_expression,omitempty"`
-	EvalExample            string                 `json:"eval_example,omitempty"`
-	COV                    *float64               `json:"cov"`
-	ObjectType             string                 `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
-	DataType               string                 `json:"data_type,omitempty"`       //int16, uint16, float32
-	ObjectEncoding         string                 `json:"object_encoding,omitempty"` //BEB_LEW bebLew
-	IoNumber               string                 `json:"io_number,omitempty"`       //DI1,UI1,AO1, temp, pulse, motion
-	IoType                 string                 `json:"io_type,omitempty"`         //0-10dc, 0-40ma, thermistor
-	AddressID              *int                   `json:"address_id"`                // for example a modbus address or bacnet address
-	AddressLength          *int                   `json:"address_length"`            // for example a modbus address offset
-	AddressUUID            *string                `json:"address_uuid,omitempty"`    // for example a droplet id (so a string)
-	NextAvailableAddress   *bool                  `json:"use_next_available_address,omitempty"`
-	Decimal                *uint32                `json:"decimal,omitempty"`
-	LimitMin               *float64               `json:"limit_min"`
-	LimitMax               *float64               `json:"limit_max"`
-	ScaleInMin             *float64               `json:"scale_in_min"`
-	ScaleInMax             *float64               `json:"scale_in_max"`
-	ScaleOutMin            *float64               `json:"scale_out_min"`
-	ScaleOutMax            *float64               `json:"scale_out_max"`
-	UnitType               *string                `json:"unit_type,omitempty"` //temperature
-	Unit                   *string                `json:"unit,omitempty"`
-	UnitTo                 *string                `json:"unit_to,omitempty"` //with take the unit and convert to, this would affect the presentValue and the original value will be stored in the raw
-	IsProducer             *bool                  `json:"is_producer,omitempty"`
-	IsConsumer             *bool                  `json:"is_consumer,omitempty"`
-	ValueRaw               string                 `json:"value_raw,omitempty"`
-	Priority               *Priority              `json:"priority,omitempty" gorm:"constraint:OnDelete:CASCADE"`
-	Tags                   []*Tag                 `json:"tags,omitempty" gorm:"many2many:points_tags;constraint:OnDelete:CASCADE"`
+	PresentValue         *float64  `json:"present_value"` //point value, read only
+	OriginalValue        *float64  `json:"original_value"`
+	CurrentPriority      *int      `json:"current_priority,omitempty"`
+	InSync               *bool     `json:"in_sync"`                    //is set to false when a new value is written from the user example: if its false then modbus would write the new value. if user edits the point it will disable the COV for one time
+	WriteValueOnce       *bool     `json:"write_value_once,omitempty"` //when point is used for polling and if it's a writeable point and WriteValueOnce is true then on a successful write it will set the WriteValueOnceSync to true and on the next poll cycle it will not send the write value
+	WriteValueOnceSync   *bool     `json:"write_value_once_sync,omitempty"`
+	Fallback             *float64  `json:"fallback"`
+	DeviceUUID           string    `json:"device_uuid,omitempty" gorm:"TYPE:string REFERENCES devices;not null;default:null"`
+	NetworkUUID          string    `json:"network_uuid,omitempty" gorm:"TYPE:string REFERENCES networks;not null;default:null"`
+	EnableWriteable      *bool     `json:"writeable,omitempty"`
+	IsOutput             *bool     `json:"is_output,omitempty"`
+	EvalMode             string    `json:"eval_mode,omitempty"`
+	Eval                 string    `json:"eval_expression,omitempty"`
+	EvalExample          string    `json:"eval_example,omitempty"`
+	COV                  *float64  `json:"cov"`
+	ObjectType           string    `json:"object_type,omitempty"`     //binaryInput, coil, if type os input don't return the priority array
+	DataType             string    `json:"data_type,omitempty"`       //int16, uint16, float32
+	ObjectEncoding       string    `json:"object_encoding,omitempty"` //BEB_LEW bebLew
+	IoNumber             string    `json:"io_number,omitempty"`       //DI1,UI1,AO1, temp, pulse, motion
+	IoType               string    `json:"io_type,omitempty"`         //0-10dc, 0-40ma, thermistor
+	AddressID            *int      `json:"address_id"`                // for example a modbus address or bacnet address
+	AddressLength        *int      `json:"address_length"`            // for example a modbus address offset
+	AddressUUID          *string   `json:"address_uuid,omitempty"`    // for example a droplet id (so a string)
+	NextAvailableAddress *bool     `json:"use_next_available_address,omitempty"`
+	Decimal              *uint32   `json:"decimal,omitempty"`
+	LimitMin             *float64  `json:"limit_min"`
+	LimitMax             *float64  `json:"limit_max"`
+	ScaleInMin           *float64  `json:"scale_in_min"`
+	ScaleInMax           *float64  `json:"scale_in_max"`
+	ScaleOutMin          *float64  `json:"scale_out_min"`
+	ScaleOutMax          *float64  `json:"scale_out_max"`
+	UnitType             *string   `json:"unit_type,omitempty"` //temperature
+	Unit                 *string   `json:"unit,omitempty"`
+	UnitTo               *string   `json:"unit_to,omitempty"` //with take the unit and convert to, this would affect the presentValue and the original value will be stored in the raw
+	IsProducer           *bool     `json:"is_producer,omitempty"`
+	IsConsumer           *bool     `json:"is_consumer,omitempty"`
+	ValueRaw             string    `json:"value_raw,omitempty"`
+	Priority             *Priority `json:"priority,omitempty" gorm:"constraint:OnDelete:CASCADE"`
+	Tags                 []*Tag    `json:"tags,omitempty" gorm:"many2many:points_tags;constraint:OnDelete:CASCADE"`
+	ValueUpdatedFlag     *bool     `json:"value_updated_flag,omitempty"` //This is used when a plugin updates the PresentValue (not from priority array) and it triggers UpdatePointValue() to broadcast to producers. Should only be set to FALSE from UpdatePointValue().
+	//LastWrite
 	PointPriorityArrayMode PointPriorityArrayMode `json:"point_priority_use_type,omitempty"` //This configures how the point handles the priority array and present value.
 	WriteMode              poller.WriteMode       `json:"write_mode"`
 	WritePollRequired      *bool                  `json:"write_required"`
@@ -294,7 +296,7 @@ func (p *Priority) GetHighestPriorityValue() *float64 {
 
 func (pnt *Point) PrintPointValues() {
 	if pnt != nil {
-		fmt.Println("\n \n \n ")
+		fmt.Println("\n ")
 		fmt.Println("PrintPointValues() for point: ", pnt.UUID, " ", pnt.Name)
 		if pnt.PresentValue == nil {
 			fmt.Println("PresentValue: nil")
@@ -307,22 +309,61 @@ func (pnt *Point) PrintPointValues() {
 			fmt.Println("CurrentPriority: ", *pnt.CurrentPriority)
 		}
 		if pnt.Priority != nil {
-			fmt.Println("_1: ", *pnt.Priority.P1)
-			fmt.Println("_2: ", *pnt.Priority.P2)
-			fmt.Println("_3: ", *pnt.Priority.P3)
-			fmt.Println("_4: ", *pnt.Priority.P4)
-			fmt.Println("_5: ", *pnt.Priority.P5)
-			fmt.Println("_6: ", *pnt.Priority.P6)
-			fmt.Println("_7: ", *pnt.Priority.P7)
-			fmt.Println("_8: ", *pnt.Priority.P8)
-			fmt.Println("_9: ", *pnt.Priority.P9)
-			fmt.Println("_10: ", *pnt.Priority.P10)
-			fmt.Println("_11: ", *pnt.Priority.P11)
-			fmt.Println("_12: ", *pnt.Priority.P12)
-			fmt.Println("_13: ", *pnt.Priority.P13)
-			fmt.Println("_14: ", *pnt.Priority.P14)
-			fmt.Println("_15: ", *pnt.Priority.P15)
-			fmt.Println("_16: ", *pnt.Priority.P16)
+			if pnt.Priority.P1 != nil {
+				fmt.Println("_1: ", *pnt.Priority.P1)
+			}
+			if pnt.Priority.P2 != nil {
+				fmt.Println("_2: ", *pnt.Priority.P2)
+			}
+			if pnt.Priority.P3 != nil {
+				fmt.Println("_3: ", *pnt.Priority.P3)
+			}
+			if pnt.Priority.P4 != nil {
+				fmt.Println("_4: ", *pnt.Priority.P4)
+			}
+			if pnt.Priority.P5 != nil {
+				fmt.Println("_5: ", *pnt.Priority.P5)
+			}
+			if pnt.Priority.P6 != nil {
+				fmt.Println("_6: ", *pnt.Priority.P6)
+			}
+			if pnt.Priority.P7 != nil {
+				fmt.Println("_7: ", *pnt.Priority.P7)
+			}
+			if pnt.Priority.P8 != nil {
+				fmt.Println("_8: ", *pnt.Priority.P8)
+			}
+			if pnt.Priority.P9 != nil {
+				fmt.Println("_9: ", *pnt.Priority.P9)
+			}
+			if pnt.Priority.P10 != nil {
+				fmt.Println("_10: ", *pnt.Priority.P10)
+			}
+			if pnt.Priority.P11 != nil {
+				fmt.Println("_11: ", *pnt.Priority.P11)
+			}
+			if pnt.Priority.P12 != nil {
+				fmt.Println("_12: ", *pnt.Priority.P12)
+			}
+			if pnt.Priority.P13 != nil {
+				fmt.Println("_13: ", *pnt.Priority.P13)
+			}
+			if pnt.Priority.P14 != nil {
+				fmt.Println("_14: ", *pnt.Priority.P14)
+			}
+			if pnt.Priority.P15 != nil {
+				fmt.Println("_15: ", *pnt.Priority.P15)
+			}
+			if pnt.Priority.P16 != nil {
+				fmt.Println("_16: ", *pnt.Priority.P16)
+			}
 		}
+		if pnt.WritePollRequired != nil {
+			fmt.Println("WritePollRequired: ", *pnt.WritePollRequired)
+		}
+		if pnt.ReadPollRequired != nil {
+			fmt.Println("ReadPollRequired: ", *pnt.ReadPollRequired)
+		}
+		fmt.Println("\n ")
 	}
 }

@@ -3,15 +3,15 @@ package database
 import (
 	"errors"
 	"fmt"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
-	"reflect"
-	"time"
-
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/model"
+	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
 	log "github.com/sirupsen/logrus"
+	"reflect"
+	"time"
 )
 
 func (d *GormDatabase) GetPoints(args api.Args) ([]*model.Point, error) {
@@ -87,12 +87,17 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	body.CommonFault.LastOk = time.Now().UTC()
 	body.InSync = utils.NewFalse()
 	body.WriteValueOnceSync = utils.NewFalse()
-	if body.Priority == nil && model.PointPriorityArrayMode(body.PointPriorityArrayMode) != model.ReadOnlyNoPriorityArrayRequired {
-		body.Priority = &model.Priority{}
-	}
-	if model.PointPriorityArrayMode(body.PointPriorityArrayMode) != model.ReadOnlyNoPriorityArrayRequired {
-		body.Priority = nil
-	}
+
+	body.Priority = &model.Priority{}
+	/*
+		if body.Priority == nil && body.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired {
+			body.Priority = &model.Priority{}
+		}
+		if body.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired {
+			body.Priority = nil
+		}
+	*/
+
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, query.Error
 	}
@@ -103,7 +108,7 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	}
 	body.NetworkUUID = dev.NetworkUUID
 
-	if !fromPlugin { //TODO: This looks like it should be reversed
+	if !fromPlugin {
 		var netArg api.Args
 		net, err := d.GetNetwork(dev.NetworkUUID, netArg)
 		if err != nil {
@@ -121,6 +126,11 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 
 func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {
 	var pointModel *model.Point
+
+	fmt.Println("UpdatePoint() 1 : body")
+	fmt.Printf("%+v\n", body)
+	fmt.Println("UpdatePoint() 1 : body PRIORITY")
+	fmt.Printf("%+v\n", body.Priority)
 
 	query := d.DB.Where("uuid = ?", uuid).Preload("Priority").First(&pointModel)
 	if query.Error != nil {
@@ -161,29 +171,28 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 	if query.Error != nil {
 		return nil, query.Error
 	}
-	// Don't update point value if priority array on body is nil
-	if body.Priority == nil || body.PointPriorityArrayMode == model.ReadOnlyNoPriorityArrayRequired { // No need to update priority array if it isn't used
-		if !fromPlugin { // stop looping
-			plug, err := d.GetPluginIDFromDevice(pointModel.DeviceUUID)
-			if err != nil {
-				return nil, errors.New("ERROR failed to get plugin uuid")
-			}
-			t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsUpdated, plug.PluginConfId, uuid)
-			d.Bus.RegisterTopic(t)
-			err = d.Bus.Emit(eventbus.CTX(), t, pointModel)
-			if err != nil {
-				return pointModel, errors.New("ERROR on device eventbus")
-			}
-		}
-		return pointModel, nil
-	} else {
-		pointModel.Priority = body.Priority
-	}
+
+	fmt.Println("UpdatePoint() 2: body")
+	fmt.Printf("%+v\n", body)
+
+	pointModel.Priority = body.Priority
+
+	fmt.Println("UpdatePoint() 3: pointModel")
+	fmt.Printf("%+v\n", pointModel)
+
+	fmt.Println("UpdatePoint() WRITE POINT TO DB")
+	_ = d.DB.Model(&pointModel).Updates(&pointModel) //Update Point in DB
 
 	pnt, err := d.UpdatePointValue(pointModel, fromPlugin)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("UpdatePoint() 4: pnt")
+	fmt.Printf("%+v\n", pnt)
+	fmt.Println("UpdatePoint() 4 : body PRIORITY")
+	fmt.Printf("%+v\n", body.Priority)
+
 	return pnt, nil
 }
 
@@ -197,17 +206,27 @@ func (d *GormDatabase) PointWrite(uuid string, body *model.Point, fromPlugin boo
 		return nil, errors.New("no priority value is been sent")
 	} else {
 		pointModel.Priority = body.Priority
+		pointModel.ValueUpdatedFlag = utils.NewTrue()
 	}
 	pointModel.InSync = utils.NewFalse()
+	fmt.Println("PointWrite() 1: body")
+	fmt.Printf("%+v\n", body)
+	fmt.Println("PointWrite() 1: body PRIORITY")
+	fmt.Printf("%+v\n", body.Priority)
 	point, err := d.UpdatePointValue(pointModel, fromPlugin)
 	return point, err
 }
 
 func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool) (*model.Point, error) {
+	fmt.Println("UpdatePointValue() 1: pointModel")
+	fmt.Printf("%+v\n", pointModel)
+	fmt.Println("UpdatePointValue() 1: pointModel PRIORITY")
+	fmt.Printf("%+v\n", pointModel.Priority)
 	pointModel, presentValue := d.updatePriority(pointModel)
 
 	ov := utils.Float64IsNil(presentValue)
 	pointModel.OriginalValue = &ov
+	fmt.Println("UpdatePointValue(): OriginalValue ", ov)
 
 	presentValue = pointScale(presentValue, pointModel.ScaleInMin, pointModel.ScaleInMax, pointModel.ScaleOutMin, pointModel.ScaleOutMax)
 	presentValue = pointRange(presentValue, pointModel.LimitMin, pointModel.LimitMax)
@@ -229,7 +248,9 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 	//example for wires and modbus: if a new value is written from  wires then set this to false so the modbus knows on the next poll to write a new value to the modbus point
 	if !fromPlugin {
 		pointModel.InSync = utils.NewFalse()
-		pointModel.WritePollRequired = utils.NewTrue()
+		if pointModel.WriteMode == poller.WriteAlways || pointModel.WriteMode == poller.WriteOnce || pointModel.WriteMode == poller.WriteOnceReadOnce || pointModel.WriteMode == poller.WriteOnceThenRead || pointModel.WriteMode == poller.WriteAndMaintain {
+			pointModel.WritePollRequired = utils.NewTrue()
+		}
 	}
 	if !utils.Unit32NilCheck(pointModel.Decimal) && presentValue != nil {
 		val := utils.RoundTo(*presentValue, *pointModel.Decimal)
@@ -242,7 +263,13 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 		// nil is ignored on GORM, so we are pushing forcefully because isChange comparison will fail on `null` write
 		d.DB.Model(&pointModel).Update("present_value", nil)
 	}
-	if isChange == true {
+	if isChange == true || utils.BoolIsNil(pointModel.ValueUpdatedFlag) {
+		pointModel.ValueUpdatedFlag = utils.NewFalse()
+		fmt.Println("UpdatePointValue() WRITE POINT TO DB")
+		fmt.Println("UpdatePointValue() 2: pointModel")
+		fmt.Printf("%+v\n", pointModel)
+		fmt.Println("UpdatePointValue() 2: pointModel PRIORITY")
+		fmt.Printf("%+v\n", pointModel.Priority)
 		_ = d.DB.Model(&pointModel).Updates(&pointModel)
 		err = d.ProducersPointWrite(pointModel)
 		if err != nil {
@@ -267,18 +294,24 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 
 func (d *GormDatabase) updatePriority(pointModel *model.Point) (*model.Point, *float64) {
 	var presentValue *float64
-	if pointModel.Priority != nil && pointModel.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired && pointModel.PointPriorityArrayMode != model.PriorityArrayToWriteValue {
+	presentValueFromPriority := pointModel.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired && pointModel.PointPriorityArrayMode != model.PriorityArrayToWriteValue
+	if pointModel.Priority != nil {
 		priorityMap, highestValue, currentPriority, isPriorityExist := d.parsePriority(pointModel.Priority)
 		if isPriorityExist {
 			pointModel.CurrentPriority = &currentPriority
-			presentValue = &highestValue
+			if presentValueFromPriority {
+				presentValue = &highestValue
+			}
 		} else if !utils.FloatIsNilCheck(pointModel.Fallback) {
 			pointModel.Priority.P16 = utils.NewFloat64(*pointModel.Fallback)
 			pointModel.CurrentPriority = utils.NewInt(16)
-			presentValue = utils.NewFloat64(*pointModel.Fallback)
+			if presentValueFromPriority {
+				presentValue = utils.NewFloat64(*pointModel.Fallback)
+			}
 		}
 		d.DB.Model(&model.Priority{}).Where("point_uuid = ?", pointModel.UUID).Updates(&priorityMap)
-	} else {
+	}
+	if !presentValueFromPriority {
 		presentValue = pointModel.PresentValue
 	}
 	return pointModel, presentValue

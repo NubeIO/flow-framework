@@ -93,7 +93,9 @@ func (pm *NetworkPollManager) StopPolling() {
 	pm.StopQueueUnloader()
 	//TODO: STOP ANY QUEUE LOADERS
 	for _, pp := range pm.PollQueue.StandbyPollingPoints.PriorityQueue {
-		pp.RepollTimer.Stop()
+		if pp != nil && pp.RepollTimer != nil {
+			pp.RepollTimer.Stop()
+		}
 	}
 	pm.PollQueue.EmptyQueue()
 }
@@ -145,8 +147,8 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 	refQueue := make([]*PollingPoint, 0)
 	rq := &PriorityPollQueue{refQueue}
 	adl := make([]string, 0)
-	npq := &NetworkPriorityPollQueue{pq, rq, FFPluginUUID, FFNetworkUUID, adl}
 	pqu := &QueueUnloader{nil, nil, nil}
+	npq := &NetworkPriorityPollQueue{pq, rq, pqu, FFPluginUUID, FFNetworkUUID, adl}
 	pm := new(NetworkPollManager)
 	pm.PollQueue = npq
 	pm.PluginQueueUnloader = pqu
@@ -163,34 +165,39 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 }
 
 func (pm *NetworkPollManager) GetPollRateDuration(rate poller.PollRate, deviceUUID string) time.Duration {
-	//fmt.Println("GetPollRateDuration()")
+	fmt.Println("GetPollRateDuration(): ", rate)
 	var arg api.Args
 	device, err := pm.DBHandlerRef.GetDevice(deviceUUID, arg)
 	if err != nil {
 		fmt.Printf("NetworkPollManager.GetPollRateDuration(): couldn't find device %s/n", deviceUUID)
 	}
+	fmt.Println("GetPollRateDuration() device poll times: ", device.FastPollRate, device.NormalPollRate, device.SlowPollRate)
 
 	var duration time.Duration
 	switch rate {
 	case poller.RATE_FAST:
+		fmt.Println("GetPollRateDuration(): FAST")
 		if device.FastPollRate == nil {
 			duration = 60 * time.Second
 		} else {
 			duration = *device.FastPollRate
 		}
 	case poller.RATE_NORMAL:
+		fmt.Println("GetPollRateDuration(): NORMAL")
 		if device.NormalPollRate == nil {
 			duration = 10 * time.Second
 		} else {
 			duration = *device.NormalPollRate
 		}
 	case poller.RATE_SLOW:
+		fmt.Println("GetPollRateDuration(): SLOW")
 		if device.SlowPollRate == nil {
 			duration = 60 * time.Second
 		} else {
 			duration = *device.SlowPollRate
 		}
 	default:
+		fmt.Println("GetPollRateDuration(): UNKNOWN")
 		if device.NormalPollRate == nil {
 			duration = 60 * time.Second
 		} else {
@@ -205,9 +212,9 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate poller.PollRate, deviceUU
 	return duration
 }
 
-func (pm *NetworkPollManager) PollingFinished(pp *PollingPoint, pollStartTime time.Time, writeSuccess, readSuccess bool, callback func(pp *PollingPoint, writeSuccess bool, readSuccess bool, pollTimeSecs float64)) {
+func (pm *NetworkPollManager) PollingFinished(pp *PollingPoint, pollStartTime time.Time, writeSuccess, readSuccess bool, callback func(pp *PollingPoint, writeSuccess bool, readSuccess bool, pollTimeSecs float64, pointUpdate bool)) {
 	pollEndTime := time.Now()
 	pollDuration := pollEndTime.Sub(pollStartTime)
 	pollTimeSecs := pollDuration.Seconds()
-	callback(pp, writeSuccess, readSuccess, pollTimeSecs) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
+	callback(pp, writeSuccess, readSuccess, pollTimeSecs, false) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
 }

@@ -12,24 +12,27 @@ import (
 )
 
 //pointUpdate update point present value
-func (i *Instance) pointUpdate(uuid string, priorityArrayMode model.PointPriorityArrayMode, value float64) (*model.Point, error) {
-	var point model.Point
+func (i *Instance) pointUpdate(point *model.Point, value float64, writeSuccess, readSuccess bool) (*model.Point, error) {
 	point.CommonFault.InFault = false
 	point.CommonFault.MessageLevel = model.MessageLevel.Info
 	point.CommonFault.MessageCode = model.CommonFaultCode.Ok
 	point.CommonFault.Message = fmt.Sprintf("last-update: %s", utilstime.TimeStamp())
 	point.CommonFault.LastOk = time.Now().UTC()
 
-	fmt.Println("pointUpdate() value: ", value)
-	point.PresentValue = utils.NewFloat64(value)
+	if readSuccess {
+		if value != utils.Float64IsNil(point.PresentValue) {
+			point.ValueUpdatedFlag = utils.NewTrue() //Flag so that UpdatePointValue() will broadcast new value to producers.
+		}
+		fmt.Println("pointUpdate() value: ", value)
+		point.PresentValue = utils.NewFloat64(value)
+	}
 	point.InSync = utils.NewTrue()
-	point.PointPriorityArrayMode = priorityArrayMode
 
 	fmt.Println("pointUpdate(): AFTER READ AND BEFORE DB UPDATE")
 	point.PrintPointValues()
 
 	//_, err = i.db.UpdatePointPresentValue(&point, true)
-	_, err = i.db.UpdatePoint(uuid, &point, true) //Changed so that Faults will update too
+	_, err = i.db.UpdatePoint(point.UUID, point, true) //Changed so that Faults will update too
 	if err != nil {
 		log.Error("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
 		return nil, err

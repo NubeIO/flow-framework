@@ -227,7 +227,8 @@ func (i *Instance) wizardTCP(body wizard) (string, error) {
 				fmt.Errorf("device creation failure: %s", err)
 			}
 			log.Info("Created a Device: ", dev)
-			pointsArray := [4]int{401, 403, 405, 407}
+			//pointsArray := [4]int{401, 403, 405, 407}
+			pointsArray := [1]int{401}
 			for _, l := range pointsArray {
 				var pnt model.Point
 				pnt.Name = "Modbus Pnt " + strconv.Itoa(l)

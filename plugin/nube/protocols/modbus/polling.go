@@ -128,21 +128,30 @@ func (i *Instance) ModbusPolling() error {
 				continue
 			}
 
-			pnt, err := i.db.GetPoint(pp.FFPointUUID)
+			pnt, err := i.db.GetPoint(pp.FFPointUUID, api.Args{WithPriority: true})
 			if pnt == nil || err != nil {
 				log.Errorf("modbus: could not find pointID: %s\n", pp.FFPointUUID)
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
-			//fmt.Println("ModbusPolling: point")
-			//fmt.Printf("%+v\n", pnt)
+			fmt.Println("ModbusPolling: point")
+			fmt.Printf("%+v\n", pnt)
+
+			if pnt.Priority == nil {
+				fmt.Println("ModbusPolling: HAD TO ADD PRIORITY ARRAY")
+				pnt.Priority = &model.Priority{}
+			} else {
+				fmt.Println("ModbusPolling: point PRIORITY")
+				fmt.Printf("%+v\n", pnt.Priority)
+			}
+
 			if !utils.BoolIsNil(pnt.Enable) {
 				log.Errorf("modbus: point is disabled.\n")
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 
-			log.Infof("MODBUS POLL! : Priority: %d, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s, WriteRequired: %t, ReadRequired: %t \n", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, *pnt.AddressID, pnt.ObjectType, utils.BoolIsNil(pnt.WritePollRequired), utils.BoolIsNil(pnt.ReadPollRequired))
+			log.Infof("MODBUS POLL! : Priority: %s, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s, WriteRequired: %t, ReadRequired: %t \n", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, *pnt.AddressID, pnt.ObjectType, utils.BoolIsNil(pnt.WritePollRequired), utils.BoolIsNil(pnt.ReadPollRequired))
 
 			if !utils.BoolIsNil(pnt.WritePollRequired) && !utils.BoolIsNil(pnt.ReadPollRequired) {
 				fmt.Println("polling not required on this point")
@@ -185,14 +194,22 @@ func (i *Instance) ModbusPolling() error {
 			var response interface{}
 			writeSuccess := false
 			if utils.BoolIsNil(pnt.WritePollRequired) { //DO WRITE IF REQUIRED
-				response, responseValue, err = networkWrite(mbClient, pnt)
-				if err != nil {
-					_, err = i.pointUpdateErr(pnt.UUID, err)
-					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
-					continue
+				log.Info("modbus write point:")
+				fmt.Printf("%+v\n", pnt)
+				pnt.PrintPointValues()
+				if pnt.Priority.GetHighestPriorityValue() != nil {
+					response, responseValue, err = networkWrite(mbClient, pnt)
+					if err != nil {
+						_, err = i.pointUpdateErr(pnt.UUID, err)
+						netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+						continue
+					}
+					writeSuccess = true
+					log.Infof("modbus-write response: responseValue %f, point UUID: %s, response: %+v \n", responseValue, pnt.UUID, response)
+				} else {
+					writeSuccess = true //successful because there is no value to write.  Otherwise the point will short cycle.
+					log.Info("modbus write point error: no value in priority array to write")
 				}
-				writeSuccess = true
-				log.Infof("modbus-write response: responseValue %f, point UUID: %s, response: %+v \n", responseValue, pnt.UUID, response)
 			}
 
 			readSuccess := false
@@ -216,15 +233,17 @@ func (i *Instance) ModbusPolling() error {
 			}
 
 			//update point in DB if required
-			if writeSuccess || readSuccess {
-				_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
+			if readSuccess {
+				_, err = i.pointUpdate(pnt, responseValue, writeSuccess, readSuccess)
 			}
 
-			//JUST FOR TESTING
-			pnt, err = i.db.GetPoint(pp.FFPointUUID)
-			if pnt == nil || err != nil {
-				log.Errorf("modbus: AFTER... could not find pointID : %s\n", pp.FFPointUUID)
-			}
+			/*
+				//JUST FOR TESTING
+				pnt, err = i.db.GetPoint(pp.FFPointUUID)
+				if pnt == nil || err != nil {
+					log.Errorf("modbus: AFTER... could not find pointID : %s\n", pp.FFPointUUID)
+				}
+			*/
 
 			// This callback function triggers the PollManager to evaluate whether the point should be re-added to the PollQueue (Never, Immediately, or after the Poll Rate Delay)
 			netPollMan.PollingFinished(pp, pollStartTime, writeSuccess, readSuccess, callback)
@@ -305,12 +324,12 @@ func (i *Instance) PollingTCP(p polling) error {
 						if write { //IS WRITE
 							//get existing
 							if !utils.BoolIsNil(pnt.InSync) {
-								_, responseValue, err := networkRequest(mbClient, pnt, true)
+								//_, responseValue, err := networkRequest(mbClient, pnt, true)
 								if err != nil {
 									_, err = i.pointUpdateErr(pnt.UUID, err)
 									continue
 								}
-								_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
+								//_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
 							} else {
 								skipDelay = true
 							}
@@ -323,7 +342,7 @@ func (i *Instance) PollingTCP(p polling) error {
 							//simple cov
 							isChange := !utils.CompareFloatPtr(pnt.PresentValue, &responseValue)
 							if isChange {
-								_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
+								//_, err = i.pointUpdate(pnt.UUID, pnt.PointPriorityArrayMode, responseValue)
 								if err != nil {
 									continue
 								}

@@ -38,6 +38,7 @@ import (
 type NetworkPriorityPollQueue struct {
 	PriorityQueue        *PriorityPollQueue //This is the queue that is polling points are drawn from
 	StandbyPollingPoints *PriorityPollQueue //This is a slice that contains polling points that are not in the active polling queue, it is mostly a reference so that we can periodically find out if any points have been dropped from polling.
+	QueueUnloader        *QueueUnloader
 	FFPluginUUID         string
 	FFNetworkUUID        string
 	ActiveDevicesList    []string //UUIDs of devices that have points in the queue
@@ -75,6 +76,9 @@ func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
 }
 func (nq *NetworkPriorityPollQueue) RemovePollingPointByPointUUID(pointUUID string) bool {
 	fmt.Println("RemovePollingPointByPointUUID(): ", pointUUID)
+	if nq.QueueUnloader != nil && nq.QueueUnloader.NextPollPoint != nil && nq.QueueUnloader.NextPollPoint.FFPointUUID == pointUUID {
+		nq.QueueUnloader.NextPollPoint = nil
+	}
 	nq.PriorityQueue.RemovePollingPointByPointUUID(pointUUID)
 	nq.StandbyPollingPoints.RemovePollingPointByPointUUID(pointUUID)
 	return true

@@ -221,6 +221,8 @@ func (i *Instance) OnDeviceCreated(dev *model.Device) {
 
 func (i *Instance) OnPointCreated(pnt *model.Point) {
 	fmt.Println("MODBUS OnPointCreated(): ", pnt.UUID)
+	fmt.Println("MODBUS OnPointCreated(): point")
+	fmt.Printf("%+v\n", pnt)
 	//NOTHING REQUIRED AS OnPointUpdated() is called whenever a point is created.
 	/*
 		if pnt == nil {
@@ -306,6 +308,9 @@ func (i *Instance) OnDeviceUpdated(dev *model.Device) {
 
 func (i *Instance) OnPointUpdated(pnt *model.Point) {
 	fmt.Println("MODBUS OnPointUpdated(): ", pnt.UUID)
+	fmt.Printf("%+v\n", pnt)
+	fmt.Println("MODBUS OnPointUpdated(): PRIORITY")
+	fmt.Printf("%+v\n", pnt.Priority)
 	if pnt == nil {
 		log.Error("Modbus: OnPointUpdated(): cannot find point ", pnt.UUID)
 		return
@@ -323,10 +328,12 @@ func (i *Instance) OnPointUpdated(pnt *model.Point) {
 	} else if utils.BoolIsNil(pnt.Enable) == true {
 		netPollMan.PollQueue.RemovePollingPointByPointUUID(pnt.UUID)
 		//DO POLLING ENABLE ACTIONS FOR POINT
+		//TODO: review these steps to check that UpdatePollingPointByUUID might work better?
 		pp := pollqueue.NewPollingPoint(pnt.UUID, pnt.DeviceUUID, pnt.NetworkUUID, netPollMan.FFPluginUUID)
 		pp.PollPriority = pnt.PollPriority
-		netPollMan.PollQueue.AddPollingPoint(pp)
-		netPollMan.SetPointPollRequiredFlagsBasedOnWriteMode(pp)
+		netPollMan.PollingPointCompleteNotification(pp, false, false, 0, true) // This will perform the queue re-add actions based on Point WriteMode.
+		//netPollMan.PollQueue.AddPollingPoint(pp)
+		//netPollMan.SetPointPollRequiredFlagsBasedOnWriteMode(pnt)
 	}
 }
 

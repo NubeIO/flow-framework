@@ -14,8 +14,8 @@ func (h *Handler) GetPoints(args api.Args) ([]*model.Point, error) {
 	return q, nil
 }
 
-func (h *Handler) GetPoint(uuid string) (*model.Point, error) {
-	q, err := getDb().GetPoint(uuid, api.Args{})
+func (h *Handler) GetPoint(uuid string, args api.Args) (*model.Point, error) {
+	q, err := getDb().GetPoint(uuid, args)
 	if err != nil {
 		return nil, err
 	}
@@ -24,11 +24,15 @@ func (h *Handler) GetPoint(uuid string) (*model.Point, error) {
 
 func (h *Handler) CreatePoint(body *model.Point, fromPlugin, updatePoint bool) (*model.Point, error) {
 	fmt.Println("CreatePoint() BEFORE")
+	fmt.Println("CreatePoint() BEFORE: point")
+	fmt.Printf("%+v\n", body)
 	pnt, err := getDb().CreatePoint(body, fromPlugin)
 	if err != nil {
 		fmt.Println("CreatePoint() ERROR 1")
 		return nil, err
 	}
+	fmt.Println("CreatePoint() AFTER: pnt")
+	fmt.Printf("%+v\n", pnt)
 	fmt.Println("CreatePoint() updatePoint: ", updatePoint, " fromPlugin: ", fromPlugin)
 	if updatePoint {
 		fmt.Println("UpdatePoint() in CreatePoint() BEFORE")
@@ -38,11 +42,15 @@ func (h *Handler) CreatePoint(body *model.Point, fromPlugin, updatePoint bool) (
 			return nil, err
 		}
 		fmt.Println("UpdatePoint() in CreatePoint() AFTER")
+		fmt.Println("UpdatePoint() in CreatePoint() AFTER: pnt")
+		fmt.Printf("%+v\n", pnt)
 	}
 	return pnt, nil
 }
 
 func (h *Handler) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {
+	fmt.Println("DB HANDLER UpdatePoint(): body")
+	fmt.Printf("%+v\n", body)
 	q, err := getDb().UpdatePoint(uuid, body, fromPlugin)
 	if err != nil {
 		return nil, err

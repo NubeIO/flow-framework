@@ -135,12 +135,10 @@ func networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) 
 		writeValue = pointWrite(pnt)
 	}
 
-	if mbClient.Debug {
-		if doWrite {
-			modbusErrorMsg("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
-		} else {
-			modbusErrorMsg("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
-		}
+	if doWrite {
+		modbusDebugMsg("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
+	} else {
+		modbusDebugMsg("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
 	}
 
 	switch objectType {
@@ -222,9 +220,8 @@ func networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interf
 	}
 
 	writeValue := utils.Float64IsNil(pnt.Priority.GetHighestPriorityValue())
-	if mbClient.Debug {
-		modbusErrorMsg(fmt.Sprintf("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue))
-	}
+
+	modbusDebugMsg(fmt.Sprintf("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue))
 
 	switch objectType {
 	//WRITE COILS
@@ -273,9 +270,7 @@ func networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interfa
 		length = 1
 	}
 
-	if mbClient.Debug {
-		modbusErrorMsg(fmt.Sprintf("modbus-read: ObjectType: %s  Addr: %d", objectType, address))
-	}
+	modbusDebugMsg(fmt.Sprintf("modbus-read: ObjectType: %s  Addr: %d", objectType, address))
 
 	switch objectType {
 	//COILS

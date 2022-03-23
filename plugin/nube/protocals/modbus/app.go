@@ -54,7 +54,7 @@ func (i *Instance) pointUpdate(point *model.Point, value float64, writeSuccess, 
 	point.InSync = utils.NewTrue()
 
 	modbusDebugMsg("pointUpdate(): AFTER READ AND BEFORE DB UPDATE")
-	point.PrintPointValues()
+	//point.PrintPointValues()
 
 	//_, err = i.db.UpdatePointPresentValue(&point, true)
 	_, err = i.db.UpdatePoint(point.UUID, point, true) //Changed so that Faults will update too

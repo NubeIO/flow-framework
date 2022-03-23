@@ -62,7 +62,7 @@ func (pm *NetworkPollManager) RebuildPollingQueue() error {
 		pm.StartQueueUnloader()
 	}
 	//TODO: START ANY OTHER REQUIRED QUEUE LOADERS/OPTIMIZERS
-	pm.PrintPollQueuePointUUIDs()
+	//pm.PrintPollQueuePointUUIDs()
 	return nil
 }
 

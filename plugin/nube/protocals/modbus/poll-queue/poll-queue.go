@@ -98,7 +98,7 @@ func (nq *NetworkPriorityPollQueue) UpdatePollingPointByPointUUID(pointUUID stri
 func (nq *NetworkPriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error) {
 	pp, err := nq.PriorityQueue.GetNextPollingPoint()
 	if err != nil {
-		log.Errorf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue. FFNetworkUUID: %s \n", nq.FFNetworkUUID)
+		pollQueueDebugMsg(fmt.Sprintf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue. FFNetworkUUID: %s \n", nq.FFNetworkUUID))
 		return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue"))
 	}
 	return pp, nil

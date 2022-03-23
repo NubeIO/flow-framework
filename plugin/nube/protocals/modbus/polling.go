@@ -91,7 +91,7 @@ func (i *Instance) ModbusPolling() error {
 				modbusDebugMsg("NETWORK DISABLED: COUNT %v NAME: %s\n", counter, net.Name)
 				continue
 			}
-			netPollMan.PrintPollQueuePointUUIDs()
+			//netPollMan.PrintPollQueuePointUUIDs()
 			pp, callback := netPollMan.GetNextPollingPoint() //callback function is called once polling is completed.
 			//pp, _ := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
 			if pp == nil {

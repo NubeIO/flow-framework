@@ -7,7 +7,6 @@ import (
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -125,7 +124,7 @@ func (pm *NetworkPollManager) ReAddDevicePoints(devUUID string) { //This is trig
 	arg.WithPoints = true
 	dev, err := pm.DBHandlerRef.GetDevice(devUUID, arg)
 	if dev == nil || err != nil {
-		log.Error("Modbus: ReAddDevicePoints(): cannot find device ", devUUID)
+		pollQueueErrorMsg("ReAddDevicePoints(): cannot find device ", devUUID)
 		return
 	}
 	pm.PollQueue.RemovePollingPointByDeviceUUID(devUUID)
@@ -165,39 +164,39 @@ func NewPollManager(dbHandler *dbhandler.Handler, FFNetworkUUID, FFPluginUUID st
 }
 
 func (pm *NetworkPollManager) GetPollRateDuration(rate poller.PollRate, deviceUUID string) time.Duration {
-	fmt.Println("GetPollRateDuration(): ", rate)
+	pollQueueDebugMsg("GetPollRateDuration(): ", rate)
 	var arg api.Args
 	device, err := pm.DBHandlerRef.GetDevice(deviceUUID, arg)
 	if err != nil {
-		fmt.Printf("NetworkPollManager.GetPollRateDuration(): couldn't find device %s/n", deviceUUID)
+		pollQueueDebugMsg(fmt.Sprintf("NetworkPollManager.GetPollRateDuration(): couldn't find device %s/n", deviceUUID))
 	}
-	fmt.Println("GetPollRateDuration() device poll times: ", device.FastPollRate, device.NormalPollRate, device.SlowPollRate)
+	pollQueueDebugMsg("GetPollRateDuration() device poll times: ", device.FastPollRate, device.NormalPollRate, device.SlowPollRate)
 
 	var duration time.Duration
 	switch rate {
 	case poller.RATE_FAST:
-		fmt.Println("GetPollRateDuration(): FAST")
+		pollQueueDebugMsg("GetPollRateDuration(): FAST")
 		if device.FastPollRate == nil {
 			duration = 60 * time.Second
 		} else {
 			duration = *device.FastPollRate
 		}
 	case poller.RATE_NORMAL:
-		fmt.Println("GetPollRateDuration(): NORMAL")
+		pollQueueDebugMsg("GetPollRateDuration(): NORMAL")
 		if device.NormalPollRate == nil {
 			duration = 10 * time.Second
 		} else {
 			duration = *device.NormalPollRate
 		}
 	case poller.RATE_SLOW:
-		fmt.Println("GetPollRateDuration(): SLOW")
+		pollQueueDebugMsg("GetPollRateDuration(): SLOW")
 		if device.SlowPollRate == nil {
 			duration = 60 * time.Second
 		} else {
 			duration = *device.SlowPollRate
 		}
 	default:
-		fmt.Println("GetPollRateDuration(): UNKNOWN")
+		pollQueueDebugMsg("GetPollRateDuration(): UNKNOWN")
 		if device.NormalPollRate == nil {
 			duration = 60 * time.Second
 		} else {
@@ -207,7 +206,7 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate poller.PollRate, deviceUU
 
 	if duration.Milliseconds() <= 100 {
 		duration = 60 * time.Second
-		log.Info("NetworkPollManager.GetPollRateDuration: invalid PollRate duration. Set to 60 seconds/n")
+		pollQueueErrorMsg("NetworkPollManager.GetPollRateDuration: invalid PollRate duration. Set to 60 seconds/n")
 	}
 	return duration
 }

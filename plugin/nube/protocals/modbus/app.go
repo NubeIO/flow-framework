@@ -2,18 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/utilstime"
-	"time"
-
 	"github.com/NubeIO/flow-framework/model"
 	"github.com/NubeIO/flow-framework/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/utilstime"
 	"go.bug.st/serial"
+	"time"
 )
 
 //addDevice add network
-func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, err error) {
-	network, err = inst.db.CreateNetwork(body, false)
+func (i *Instance) addNetwork(body *model.Network) (network *model.Network, err error) {
+	network, err = i.db.CreateNetwork(body, false)
 	if err != nil {
 		return nil, err
 	}
@@ -21,8 +19,8 @@ func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, e
 }
 
 //addDevice add device
-func (inst *Instance) addDevice(body *model.Device) (device *model.Device, err error) {
-	device, err = inst.db.CreateDevice(body)
+func (i *Instance) addDevice(body *model.Device) (device *model.Device, err error) {
+	device, err = i.db.CreateDevice(body)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +28,8 @@ func (inst *Instance) addDevice(body *model.Device) (device *model.Device, err e
 }
 
 //addPoint add point
-func (inst *Instance) addPoint(body *model.Point) (point *model.Point, err error) {
-	point, err = inst.db.CreatePoint(body, false, false)
+func (i *Instance) addPoint(body *model.Point) (point *model.Point, err error) {
+	point, err = i.db.CreatePoint(body, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -50,18 +48,18 @@ func (i *Instance) pointUpdate(point *model.Point, value float64, writeSuccess, 
 		if value != utils.Float64IsNil(point.PresentValue) {
 			point.ValueUpdatedFlag = utils.NewTrue() //Flag so that UpdatePointValue() will broadcast new value to producers.
 		}
-		fmt.Println("pointUpdate() value: ", value)
+		modbusDebugMsg("pointUpdate() value: ", value)
 		point.PresentValue = utils.NewFloat64(value)
 	}
 	point.InSync = utils.NewTrue()
 
-	fmt.Println("pointUpdate(): AFTER READ AND BEFORE DB UPDATE")
+	modbusDebugMsg("pointUpdate(): AFTER READ AND BEFORE DB UPDATE")
 	point.PrintPointValues()
 
 	//_, err = i.db.UpdatePointPresentValue(&point, true)
 	_, err = i.db.UpdatePoint(point.UUID, point, true) //Changed so that Faults will update too
 	if err != nil {
-		log.Error("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
+		modbusErrorMsg("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
 		return nil, err
 	}
 	return nil, nil
@@ -77,7 +75,7 @@ func (i *Instance) pointUpdateErr(uuid string, err error) (*model.Point, error) 
 	point.CommonFault.LastFail = time.Now().UTC()
 	_, err = i.db.UpdatePoint(uuid, &point, true)
 	if err != nil {
-		log.Error("MODBUS UPDATE POINT pointUpdateErr()", err)
+		modbusErrorMsg("MODBUS UPDATE POINT pointUpdateErr()", err)
 		return nil, err
 	}
 	return nil, nil

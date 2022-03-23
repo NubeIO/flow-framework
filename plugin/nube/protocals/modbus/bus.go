@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (inst *Instance) BusServ() {
+func (i *Instance) BusServ() {
 	handlerCreated := bus.Handler{
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {
@@ -22,7 +22,7 @@ func (inst *Instance) BusServ() {
 				}
 				if net != nil {
 					i.OnNetworkCreated(net)
-					log.Info("MODBUS BUS PluginsCreated isNetwork", " ", net.UUID)
+					modbusDebugMsg("MODBUS BUS PluginsCreated isNetwork", " ", net.UUID)
 					if err != nil {
 						return
 					}
@@ -35,7 +35,7 @@ func (inst *Instance) BusServ() {
 				}
 				if dev != nil {
 					i.OnDeviceCreated(dev)
-					log.Info("MODBUS BUS PluginsCreated IsDevice", " ", dev.UUID)
+					modbusDebugMsg("MODBUS BUS PluginsCreated IsDevice", " ", dev.UUID)
 					//_, err = i.addPoints(dev)
 					if err != nil {
 						return
@@ -44,7 +44,7 @@ func (inst *Instance) BusServ() {
 				}
 				//try and match is point
 				pnt, err := eventbus.IsPoint(e.Topic, e)
-				fmt.Println("ADD POINT ON BUS")
+				modbusDebugMsg("ADD POINT ON BUS")
 				if err != nil {
 					return
 				}
@@ -54,7 +54,7 @@ func (inst *Instance) BusServ() {
 				}
 				if pnt != nil {
 					i.OnPointCreated(pnt)
-					log.Info("MODBUS BUS PluginsCreated IsPoint", " ", pnt.UUID)
+					modbusDebugMsg("MODBUS BUS PluginsCreated IsPoint", " ", pnt.UUID)
 					if err != nil {
 						return
 					}
@@ -77,7 +77,7 @@ func (inst *Instance) BusServ() {
 				}
 				if net != nil {
 					i.OnNetworkUpdated(net)
-					log.Info("MODBUS BUS PluginsUpdated isNetwork", " ", net.UUID)
+					modbusDebugMsg("MODBUS BUS PluginsUpdated isNetwork", " ", net.UUID)
 					if err != nil {
 						return
 					}
@@ -91,7 +91,7 @@ func (inst *Instance) BusServ() {
 				if dev != nil {
 					i.OnDeviceUpdated(dev)
 					//_, err = i.addPoints(dev)
-					log.Info("MODBUS BUS PluginsUpdated IsDevice", " ", dev.UUID)
+					modbusDebugMsg("MODBUS BUS PluginsUpdated IsDevice", " ", dev.UUID)
 					if err != nil {
 						return
 					}
@@ -105,7 +105,7 @@ func (inst *Instance) BusServ() {
 				if pnt != nil {
 					i.OnPointUpdated(pnt)
 					//_, err = i.pointPatch(pnt)
-					log.Info("MODBUS BUS PluginsUpdated IsPoint", " ", pnt.UUID)
+					modbusDebugMsg("MODBUS BUS PluginsUpdated IsPoint", " ", pnt.UUID)
 					if err != nil {
 						return
 					}
@@ -121,7 +121,7 @@ func (inst *Instance) BusServ() {
 	handlerDeleted := bus.Handler{
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {
-				log.Info("MODBUS BUS DELETED NEW MSG", " ", e.Topic)
+				modbusDebugMsg("MODBUS BUS DELETED NEW MSG", " ", e.Topic)
 				//try and match is network
 				net, err := eventbus.IsNetwork(e.Topic, e)
 				if err != nil {
@@ -130,7 +130,7 @@ func (inst *Instance) BusServ() {
 				if net != nil {
 					netUUID := eventbus.GetTopicPart(e.Topic, 3, "net")
 					i.OnNetworkDeleted(netUUID)
-					log.Info("MODBUS BUS DELETED isNetwork", " ", net.UUID)
+					modbusDebugMsg("MODBUS BUS DELETED isNetwork", " ", net.UUID)
 					if err != nil {
 						return
 					}
@@ -143,7 +143,7 @@ func (inst *Instance) BusServ() {
 				}
 				if dev != nil {
 					if e.Topic == "ALL" {
-						log.Error("MODBUS: DropDevices() has been called, check operation of polling.")
+						modbusErrorMsg("MODBUS: DropDevices() has been called, check operation of polling.")
 						for index, netPollMan := range i.NetworkPollManagers {
 							netPollMan.StopPolling()
 							//Next remove the NetworkPollManager from the slice in polling instance
@@ -151,14 +151,14 @@ func (inst *Instance) BusServ() {
 							i.NetworkPollManagers = i.NetworkPollManagers[:len(i.NetworkPollManagers)-1]
 						}
 					}
-					fmt.Println("MODBUS DEVICE DELETED:")
-					fmt.Printf("%+v\n", dev)
-					fmt.Printf("%+v\n", e)
+					modbusDebugMsg("MODBUS DEVICE DELETED:")
+					modbusDebugMsg("%+v\n", dev)
+					modbusDebugMsg("%+v\n", e)
 					netUUID := eventbus.GetTopicPart(e.Topic, 2, "net")
 					devUUID := eventbus.GetTopicPart(e.Topic, 3, "dev")
 					i.OnDeviceDeleted(devUUID, netUUID)
 					//_, err = i.addPoints(dev)
-					log.Info("MODBUS BUS DELETED IsDevice", " ", dev.UUID)
+					modbusDebugMsg("MODBUS BUS DELETED IsDevice", " ", dev.UUID)
 					if err != nil {
 						return
 					}
@@ -171,15 +171,15 @@ func (inst *Instance) BusServ() {
 				}
 				log.Info("MODBUS BUS DELETED IsPoint", " ")
 				if pnt != nil {
-					fmt.Println("MODBUS POINT DELETED:")
-					fmt.Printf("%+v\n", pnt)
-					fmt.Printf("%+v\n", e)
+					modbusDebugMsg("MODBUS POINT DELETED:")
+					modbusDebugMsg("%+v\n", pnt)
+					modbusDebugMsg("%+v\n", e)
 					netUUID := eventbus.GetTopicPart(e.Topic, 2, "net")
 					pntUUID := eventbus.GetTopicPart(e.Topic, 3, "pnt")
 					devUUID := eventbus.GetTopicPart(e.Topic, 4, "dev")
 					i.OnPointDeleted(pntUUID, devUUID, netUUID)
 					//p, err := i.deletePoint(pnt)
-					log.Info("MODBUS BUS DELETED IsPoint", " ", pntUUID, "WAS DELETED", " ", "p")
+					modbusDebugMsg("MODBUS BUS DELETED IsPoint", " ", pntUUID, "WAS DELETED", " ", "p")
 					if err != nil {
 						return
 					}
@@ -196,9 +196,9 @@ func (inst *Instance) BusServ() {
 }
 
 func (i *Instance) OnNetworkCreated(net *model.Network) {
-	fmt.Println("MODBUS OnNetworkCreated(): ", net.UUID)
+	modbusDebugMsg("MODBUS OnNetworkCreated(): ", net.UUID)
 	if net == nil {
-		log.Error("Modbus: OnNetworkCreated(): cannot find network ", net.UUID)
+		modbusErrorMsg("OnNetworkCreated(): cannot find network ", net.UUID)
 		return
 	}
 	if utils.BoolIsNil(net.Enable) == false {
@@ -211,18 +211,18 @@ func (i *Instance) OnNetworkCreated(net *model.Network) {
 }
 
 func (i *Instance) OnDeviceCreated(dev *model.Device) {
-	fmt.Println("MODBUS OnDeviceCreated(): ", dev.UUID)
+	modbusDebugMsg("MODBUS OnDeviceCreated(): ", dev.UUID)
 	if dev == nil {
-		log.Error("Modbus: OnDeviceCreated(): cannot find device ", dev.UUID)
+		modbusErrorMsg("OnDeviceCreated(): cannot find device ", dev.UUID)
 		return
 	}
 	//NOTHING TO DO ON DEVICE CREATED
 }
 
 func (i *Instance) OnPointCreated(pnt *model.Point) {
-	fmt.Println("MODBUS OnPointCreated(): ", pnt.UUID)
-	fmt.Println("MODBUS OnPointCreated(): point")
-	fmt.Printf("%+v\n", pnt)
+	modbusDebugMsg("MODBUS OnPointCreated(): ", pnt.UUID)
+	modbusDebugMsg("MODBUS OnPointCreated(): point")
+	modbusDebugMsg("%+v\n", pnt)
 	//NOTHING REQUIRED AS OnPointUpdated() is called whenever a point is created.
 	/*
 		if pnt == nil {
@@ -245,14 +245,14 @@ func (i *Instance) OnPointCreated(pnt *model.Point) {
 }
 
 func (i *Instance) OnNetworkUpdated(net *model.Network) {
-	fmt.Println("MODBUS OnNetworkUpdated(): ", net.UUID)
+	modbusDebugMsg("MODBUS OnNetworkUpdated(): ", net.UUID)
 	if net == nil {
-		log.Error("Modbus: OnNetworkUpdated(): cannot find network ", net.UUID)
+		modbusErrorMsg("Modbus: OnNetworkUpdated(): cannot find network ", net.UUID)
 		return
 	}
 	netPollMan, err := i.getNetworkPollManagerByUUID(net.UUID)
 	if netPollMan == nil || err != nil {
-		log.Error("Modbus: OnNetworkUpdated(): cannot find NetworkPollManager for network: ", net.UUID)
+		modbusErrorMsg("Modbus: OnNetworkUpdated(): cannot find NetworkPollManager for network: ", net.UUID)
 		return
 	}
 
@@ -267,14 +267,14 @@ func (i *Instance) OnNetworkUpdated(net *model.Network) {
 }
 
 func (i *Instance) OnDeviceUpdated(dev *model.Device) {
-	fmt.Println("MODBUS OnDeviceUpdated(): ", dev.UUID)
+	modbusDebugMsg("MODBUS OnDeviceUpdated(): ", dev.UUID)
 	if dev == nil {
-		log.Error("Modbus: OnDeviceUpdated(): cannot find device ", dev.UUID)
+		modbusErrorMsg("Modbus: OnDeviceUpdated(): cannot find device ", dev.UUID)
 		return
 	}
 	netPollMan, err := i.getNetworkPollManagerByUUID(dev.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		log.Error("Modbus: OnDeviceUpdated(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
+		modbusErrorMsg("Modbus: OnDeviceUpdated(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
 		return
 	}
 
@@ -307,17 +307,17 @@ func (i *Instance) OnDeviceUpdated(dev *model.Device) {
 }
 
 func (i *Instance) OnPointUpdated(pnt *model.Point) {
-	fmt.Println("MODBUS OnPointUpdated(): ", pnt.UUID)
-	fmt.Printf("%+v\n", pnt)
-	fmt.Println("MODBUS OnPointUpdated(): PRIORITY")
-	fmt.Printf("%+v\n", pnt.Priority)
+	modbusDebugMsg("MODBUS OnPointUpdated(): ", pnt.UUID)
+	modbusDebugMsg("%+v\n", pnt)
+	modbusDebugMsg("MODBUS OnPointUpdated(): PRIORITY")
+	modbusDebugMsg("%+v\n", pnt.Priority)
 	if pnt == nil {
-		log.Error("Modbus: OnPointUpdated(): cannot find point ", pnt.UUID)
+		modbusErrorMsg("Modbus: OnPointUpdated(): cannot find point ", pnt.UUID)
 		return
 	}
 	netPollMan, err := i.getNetworkPollManagerByUUID(pnt.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		log.Error("Modbus: OnPointUpdated(): cannot find NetworkPollManager for network: ", pnt.NetworkUUID)
+		modbusErrorMsg("Modbus: OnPointUpdated(): cannot find NetworkPollManager for network: ", pnt.NetworkUUID)
 		return
 	}
 
@@ -338,7 +338,7 @@ func (i *Instance) OnPointUpdated(pnt *model.Point) {
 }
 
 func (i *Instance) OnNetworkDeleted(netUUID string) {
-	fmt.Println("MODBUS OnNetworkDeleted(): ", netUUID)
+	modbusDebugMsg("MODBUS OnNetworkDeleted(): ", netUUID)
 	found := false
 	for index, netPollMan := range i.NetworkPollManagers {
 		if netPollMan.FFNetworkUUID == netUUID {
@@ -350,15 +350,15 @@ func (i *Instance) OnNetworkDeleted(netUUID string) {
 		}
 	}
 	if !found {
-		log.Error("Modbus: OnNetworkDeleted(): cannot find NetworkPollManager for network: ", netUUID)
+		modbusErrorMsg("Modbus: OnNetworkDeleted(): cannot find NetworkPollManager for network: ", netUUID)
 	}
 }
 
 func (i *Instance) OnDeviceDeleted(devUUID, netUUID string) {
-	fmt.Println("MODBUS OnDeviceDeleted(): devUUID: ", devUUID, "  netUUID: ", netUUID)
+	modbusDebugMsg("MODBUS OnDeviceDeleted(): devUUID: ", devUUID, "  netUUID: ", netUUID)
 	netPollMan, err := i.getNetworkPollManagerByUUID(netUUID)
 	if netPollMan == nil || err != nil {
-		log.Error("Modbus: OnDeviceDeleted(): cannot find NetworkPollManager for network: ", netUUID)
+		modbusErrorMsg("Modbus: OnDeviceDeleted(): cannot find NetworkPollManager for network: ", netUUID)
 		return
 	}
 	netPollMan.PollQueue.RemovePollingPointByDeviceUUID(devUUID)
@@ -366,10 +366,10 @@ func (i *Instance) OnDeviceDeleted(devUUID, netUUID string) {
 }
 
 func (i *Instance) OnPointDeleted(pntUUID, devUUID, netUUID string) {
-	fmt.Println("MODBUS OnPointDeleted(): ", pntUUID)
+	modbusDebugMsg("MODBUS OnPointDeleted(): ", pntUUID)
 	netPollMan, err := i.getNetworkPollManagerByUUID(netUUID)
 	if netPollMan == nil || err != nil {
-		log.Error("Modbus: OnPointDeleted(): cannot find NetworkPollManager for network: ", netUUID)
+		modbusErrorMsg("Modbus: OnPointDeleted(): cannot find NetworkPollManager for network: ", netUUID)
 		return
 	}
 	netPollMan.PollQueue.RemovePollingPointByPointUUID(pntUUID)

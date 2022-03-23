@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/smod"
 	"github.com/NubeIO/flow-framework/src/poller"
 
@@ -136,9 +137,9 @@ func networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) 
 
 	if mbClient.Debug {
 		if doWrite {
-			log.Infof("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
+			modbusErrorMsg("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
 		} else {
-			log.Infof("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
+			modbusErrorMsg("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
 		}
 	}
 
@@ -222,7 +223,7 @@ func networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interf
 
 	writeValue := utils.Float64IsNil(pnt.Priority.GetHighestPriorityValue())
 	if mbClient.Debug {
-		log.Infof("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
+		modbusErrorMsg(fmt.Sprintf("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue))
 	}
 
 	switch objectType {
@@ -273,7 +274,7 @@ func networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interfa
 	}
 
 	if mbClient.Debug {
-		log.Infof("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
+		modbusErrorMsg(fmt.Sprintf("modbus-read: ObjectType: %s  Addr: %d", objectType, address))
 	}
 
 	switch objectType {

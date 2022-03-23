@@ -1,7 +1,6 @@
 package pollqueue
 
 import (
-	"fmt"
 	"github.com/NubeIO/flow-framework/api"
 	"time"
 	//log "github.com/sirupsen/logrus"
@@ -31,13 +30,13 @@ type QueueUnloader struct {
 }
 
 func (pm *NetworkPollManager) StartQueueUnloader() {
-	fmt.Println("StartQueueUnloader() 1")
+	pollQueueDebugMsg("StartQueueUnloader() 1")
 	pm.StopQueueUnloader()
-	fmt.Println("StartQueueUnloader() 2")
+	pollQueueDebugMsg("StartQueueUnloader() 2")
 	ql := &QueueUnloader{nil, nil, nil}
 	pm.PluginQueueUnloader = ql
 	if pm.PluginQueueUnloader.NextPollPoint == nil {
-		//fmt.Println("StartQueueUnloader() pm.PluginQueueUnloader.NextPollPoint == nil")
+		pollQueueDebugMsg("StartQueueUnloader() pm.PluginQueueUnloader.NextPollPoint == nil")
 		pp, err := pm.PollQueue.GetNextPollingPoint()
 		if pp != nil && err == nil {
 			pm.PluginQueueUnloader.NextPollPoint = pp
@@ -46,10 +45,10 @@ func (pm *NetworkPollManager) StartQueueUnloader() {
 	var netArg api.Args
 	net, err := pm.DBHandlerRef.GetNetwork(pm.FFNetworkUUID, netArg)
 	if err != nil {
-		fmt.Printf("NetworkPollManager.StartQueueUnloader(): couldn't find network %s \n", pm.FFNetworkUUID)
+		pollQueueDebugMsg("NetworkPollManager.StartQueueUnloader(): couldn't find network %s \n", pm.FFNetworkUUID)
 		return
 	}
-	fmt.Printf("NetworkPollManager.StartQueueUnloader(): net.MaxPollRate %d \n", net.MaxPollRate)
+	pollQueueDebugMsg("NetworkPollManager.StartQueueUnloader(): net.MaxPollRate %d \n", net.MaxPollRate)
 	refreshRate := net.MaxPollRate
 	if pm.MaxPollRate <= 0*time.Second {
 		refreshRate = 1 * time.Second
@@ -66,7 +65,7 @@ func (pm *NetworkPollManager) StartQueueUnloader() {
 			case <-done:
 				return
 			case <-ticker.C:
-				fmt.Println("RELOAD QUEUE TICKER")
+				pollQueueDebugMsg("RELOAD QUEUE TICKER")
 				pm.postNextPointCallback()
 			}
 		}
@@ -74,7 +73,7 @@ func (pm *NetworkPollManager) StartQueueUnloader() {
 }
 
 func (pm *NetworkPollManager) StopQueueUnloader() {
-	fmt.Println("StopQueueUnloader()")
+	pollQueueDebugMsg("StopQueueUnloader()")
 	if pm.PluginQueueUnloader != nil && pm.PluginQueueUnloader.NextUnloadTimer != nil && pm.PluginQueueUnloader.CancelChannel != nil {
 		pm.PluginQueueUnloader.NextUnloadTimer.Stop()
 		pm.PluginQueueUnloader.CancelChannel <- true
@@ -84,7 +83,7 @@ func (pm *NetworkPollManager) StopQueueUnloader() {
 
 //This function should be called from the Polling service. It will start a timer that posts the next polling point.
 func (pm *NetworkPollManager) GetNextPollingPoint() (pp *PollingPoint, callback func(pp *PollingPoint, writeSuccess, readSuccess bool, pollTimeSecs float64, pointUpdate bool)) {
-	fmt.Println("GetNextPollingPoint()")
+	pollQueueDebugMsg("GetNextPollingPoint()")
 	if pm.PluginQueueUnloader != nil && pm.PluginQueueUnloader.NextPollPoint != nil {
 		pp := pm.PluginQueueUnloader.NextPollPoint
 		pm.PluginQueueUnloader.NextPollPoint = nil
@@ -92,13 +91,13 @@ func (pm *NetworkPollManager) GetNextPollingPoint() (pp *PollingPoint, callback 
 		//pm.PluginQueueUnloader.NextUnloadTimer = time.AfterFunc(pm.MaxPollRate, pm.postNextPointCallback)
 		return pp, pm.PollingPointCompleteNotification
 	}
-	fmt.Println("GetNextPollingPoint(): No pollingPoint available")
+	pollQueueDebugMsg("GetNextPollingPoint(): No pollingPoint available")
 	return nil, nil
 }
 
 //This is the callback function that is called by the timer made in (pm *NetworkPollManager) GetNextPollingPoint().
 func (pm *NetworkPollManager) postNextPointCallback() {
-	fmt.Println("postNextPointCallback()")
+	pollQueueDebugMsg("postNextPointCallback()")
 	if pm.PluginQueueUnloader != nil && pm.PluginQueueUnloader.NextPollPoint == nil {
 		pp, err := pm.PollQueue.GetNextPollingPoint()
 		if pp != nil && err == nil {

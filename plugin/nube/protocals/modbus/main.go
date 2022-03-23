@@ -8,6 +8,7 @@ import (
 	"github.com/NubeIO/flow-framework/src/cachestore"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/patrickmn/go-cache"
+	log "github.com/sirupsen/logrus"
 )
 
 const path = "modbus" //must be unique across all plugins
@@ -61,4 +62,20 @@ func NewFlowPluginInstance() plugin.Plugin {
 //main will not let main run
 func main() {
 	panic("this should be built as plugin")
+}
+
+func modbusDebugMsg(args ...interface{}) {
+	debugMsgEnable := false
+	if debugMsgEnable {
+		prefix := "Modbus: "
+		log.Info(prefix, args)
+	}
+}
+
+func modbusErrorMsg(args ...interface{}) {
+	debugMsgEnable := true
+	if debugMsgEnable {
+		prefix := "Modbus: "
+		log.Error(prefix, args)
+	}
 }

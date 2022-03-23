@@ -45,9 +45,9 @@ type NetworkPriorityPollQueue struct {
 }
 
 func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
-	fmt.Println("NetworkPriorityPollQueue AddPollingPoint(): ", pp.FFPointUUID)
+	pollQueueDebugMsg("NetworkPriorityPollQueue AddPollingPoint(): ", pp.FFPointUUID)
 	if pp.FFNetworkUUID != nq.FFNetworkUUID {
-		log.Errorf("NetworkPriorityPollQueue.AddPollingPoint: PollingPoint FFNetworkUUID does not match the queue FFNetworkUUID. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID)
+		pollQueueErrorMsg(fmt.Sprintf("NetworkPriorityPollQueue.AddPollingPoint: PollingPoint FFNetworkUUID does not match the queue FFNetworkUUID. FFNetworkUUID: %s  FFPointUUID: %s \n", nq.FFNetworkUUID, pp.FFPointUUID))
 		if pp.LockupAlertTimer != nil {
 			pp.LockupAlertTimer.Stop()
 		}
@@ -75,7 +75,7 @@ func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
 	return true
 }
 func (nq *NetworkPriorityPollQueue) RemovePollingPointByPointUUID(pointUUID string) bool {
-	fmt.Println("RemovePollingPointByPointUUID(): ", pointUUID)
+	pollQueueDebugMsg("RemovePollingPointByPointUUID(): ", pointUUID)
 	if nq.QueueUnloader != nil && nq.QueueUnloader.NextPollPoint != nil && nq.QueueUnloader.NextPollPoint.FFPointUUID == pointUUID {
 		nq.QueueUnloader.NextPollPoint = nil
 	}
@@ -84,7 +84,7 @@ func (nq *NetworkPriorityPollQueue) RemovePollingPointByPointUUID(pointUUID stri
 	return true
 }
 func (nq *NetworkPriorityPollQueue) RemovePollingPointByDeviceUUID(deviceUUID string) bool {
-	fmt.Println("RemovePollingPointByDeviceUUID(): ", deviceUUID)
+	pollQueueDebugMsg("RemovePollingPointByDeviceUUID(): ", deviceUUID)
 	nq.PriorityQueue.RemovePollingPointByDeviceUUID(deviceUUID)
 	nq.StandbyPollingPoints.RemovePollingPointByDeviceUUID(deviceUUID)
 	nq.RemoveDeviceFromActiveDevicesList(deviceUUID)
@@ -96,16 +96,12 @@ func (nq *NetworkPriorityPollQueue) UpdatePollingPointByPointUUID(pointUUID stri
 	return true
 }
 func (nq *NetworkPriorityPollQueue) GetNextPollingPoint() (*PollingPoint, error) {
-	//if nq.PriorityQueue.Enable {
 	pp, err := nq.PriorityQueue.GetNextPollingPoint()
 	if err != nil {
 		log.Errorf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue. FFNetworkUUID: %s \n", nq.FFNetworkUUID)
 		return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue.GetNextPollingPoint: no PollingPoints in queue"))
 	}
 	return pp, nil
-	//}
-	//fmt.Println("(nq *NetworkPriorityPollQueue) GetNextPollingPoint(): nq.PriorityQueue.Enable is false ")
-	//return nil, errors.New(fmt.Sprintf("NetworkPriorityPollQueue %s is not enabled.", nq.FFNetworkUUID))
 }
 func (nq *NetworkPriorityPollQueue) Start() {
 	//nq.PriorityQueue.Start()
@@ -283,4 +279,20 @@ func NewPollingPoint(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID stri
 func NewPollingPointWithPriority(FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID string, priority poller.PollPriority) *PollingPoint {
 	pp := &PollingPoint{priority, FFPointUUID, FFDeviceUUID, FFNetworkUUID, FFPluginUUID, nil, 0, nil}
 	return pp
+}
+
+func pollQueueDebugMsg(args ...interface{}) {
+	debugMsgEnable := false
+	if debugMsgEnable {
+		prefix := "Modbus Poll Queue: "
+		log.Info(prefix, args)
+	}
+}
+
+func pollQueueErrorMsg(args ...interface{}) {
+	debugMsgEnable := true
+	if debugMsgEnable {
+		prefix := "Modbus Poll Queue: "
+		log.Error(prefix, args)
+	}
 }

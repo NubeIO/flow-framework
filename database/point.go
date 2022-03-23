@@ -6,8 +6,8 @@ import (
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/eventbus"
 	"github.com/NubeIO/flow-framework/model"
-	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/src/client"
+	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
 	log "github.com/sirupsen/logrus"
@@ -168,11 +168,6 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {
 	var pointModel *model.Point
 
-	fmt.Println("UpdatePoint() 1 : body")
-	fmt.Printf("%+v\n", body)
-	fmt.Println("UpdatePoint() 1 : body PRIORITY")
-	fmt.Printf("%+v\n", body.Priority)
-
 	query := d.DB.Where("uuid = ?", uuid).Preload("Priority").First(&pointModel)
 	if query.Error != nil {
 		return nil, query.Error
@@ -213,26 +208,14 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 		return nil, query.Error
 	}
 
-	fmt.Println("UpdatePoint() 2: body")
-	fmt.Printf("%+v\n", body)
-
 	pointModel.Priority = body.Priority
 
-	fmt.Println("UpdatePoint() 3: pointModel")
-	fmt.Printf("%+v\n", pointModel)
-
-	fmt.Println("UpdatePoint() WRITE POINT TO DB")
 	_ = d.DB.Model(&pointModel).Updates(&pointModel) //Update Point in DB
 
 	pnt, err := d.UpdatePointValue(pointModel, fromPlugin)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("UpdatePoint() 4: pnt")
-	fmt.Printf("%+v\n", pnt)
-	fmt.Println("UpdatePoint() 4 : body PRIORITY")
-	fmt.Printf("%+v\n", body.Priority)
 
 	return pnt, nil
 }
@@ -250,24 +233,15 @@ func (d *GormDatabase) PointWrite(uuid string, body *model.Point, fromPlugin boo
 		pointModel.ValueUpdatedFlag = utils.NewTrue()
 	}
 	pointModel.InSync = utils.NewFalse()
-	fmt.Println("PointWrite() 1: body")
-	fmt.Printf("%+v\n", body)
-	fmt.Println("PointWrite() 1: body PRIORITY")
-	fmt.Printf("%+v\n", body.Priority)
 	point, err := d.UpdatePointValue(pointModel, fromPlugin)
 	return point, err
 }
 
 func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool) (*model.Point, error) {
-	fmt.Println("UpdatePointValue() 1: pointModel")
-	fmt.Printf("%+v\n", pointModel)
-	fmt.Println("UpdatePointValue() 1: pointModel PRIORITY")
-	fmt.Printf("%+v\n", pointModel.Priority)
 	pointModel, presentValue := d.updatePriority(pointModel)
 
 	ov := utils.Float64IsNil(presentValue)
 	pointModel.OriginalValue = &ov
-	fmt.Println("UpdatePointValue(): OriginalValue ", ov)
 
 	presentValue = pointScale(presentValue, pointModel.ScaleInMin, pointModel.ScaleInMax, pointModel.ScaleOutMin, pointModel.ScaleOutMax)
 	presentValue = pointRange(presentValue, pointModel.LimitMin, pointModel.LimitMax)
@@ -309,11 +283,6 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, fromPlugin bool
 	}
 	if isChange == true || utils.BoolIsNil(pointModel.ValueUpdatedFlag) {
 		pointModel.ValueUpdatedFlag = utils.NewFalse()
-		fmt.Println("UpdatePointValue() WRITE POINT TO DB")
-		fmt.Println("UpdatePointValue() 2: pointModel")
-		fmt.Printf("%+v\n", pointModel)
-		fmt.Println("UpdatePointValue() 2: pointModel PRIORITY")
-		fmt.Printf("%+v\n", pointModel.Priority)
 		_ = d.DB.Model(&pointModel).Updates(&pointModel)
 		err = d.ProducersPointWrite(pointModel)
 		if err != nil {

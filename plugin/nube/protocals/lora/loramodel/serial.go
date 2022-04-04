@@ -53,10 +53,11 @@ type Network struct {
 		Default  int    `json:"default" default:"38400"`
 	} `json:"serial_baud_rate"`
 	AutoMappingNetworks struct {
-		Type     string   `json:"type" default:"array"`
-		Required bool     `json:"required" default:"true"`
-		Options  []string `json:"options" default:"[\"bacnetserver\",\"system\",\"modbus\"]"`
-		Default  string   `json:"default" default:""`
+		Type       string   `json:"type" default:"array"`
+		Required   bool     `json:"required" default:"true"`
+		Options    []string `json:"options" default:"[\"bacnetserver\",\"system\",\"modbus\"]"`
+		Default    string   `json:"default" default:""`
+		WidgetType string   `json:"widget_type" default:"switch"` //slider, multi-select
 	} `json:"auto_mapping_networks"`
 }
 

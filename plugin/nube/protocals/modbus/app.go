@@ -93,18 +93,15 @@ func (inst *Instance) deletePoint(body *model.Point) (ok bool, err error) {
 }
 
 //pointUpdate update point present value
-func (inst *Instance) pointUpdate(uuid string, value float64) (*model.Point, error) {
-	var point model.Point
+func (inst *Instance) pointUpdate(point *model.Point, value float64) (*model.Point, error) {
 	point.CommonFault.InFault = false
 	point.CommonFault.MessageLevel = model.MessageLevel.Info
 	point.CommonFault.MessageCode = model.CommonFaultCode.Ok
 	point.CommonFault.Message = fmt.Sprintf("last-update: %s", utilstime.TimeStamp())
 	point.CommonFault.LastOk = time.Now().UTC()
-	var pri model.Priority
-	pri.P16 = &value
-	point.Priority = &pri
+	point.OriginalValue = utils.NewFloat64(value)
 	point.InSync = utils.NewTrue()
-	_, err = inst.db.UpdatePointValue(uuid, &point, true)
+	_, err = inst.db.UpdatePointValue(point.UUID, point, true)
 	if err != nil {
 		log.Error("MODBUS UPDATE POINT UpdatePointValue()", err)
 		return nil, err

@@ -62,8 +62,33 @@ func (d *GormDatabase) GetOnePointByArgs(args api.Args) (*model.Point, error) {
 func (d *GormDatabase) updatePriority(pointModel *model.Point) (*model.Point, *float64) {
 	var presentValue *float64
 	presentValueFromPriority := pointModel.PointPriorityArrayMode != model.ReadOnlyNoPriorityArrayRequired && pointModel.PointPriorityArrayMode != model.PriorityArrayToWriteValue
+	log.Infof("updatePriority() presentValueFromPriority = %t", presentValueFromPriority)
+	log.Infof("updatePriority() pointModel = %+v", pointModel)
+	// THESE VALUES ARE NOT REQUIRED FOR model.ReadOnlyNoPriorityArrayRequired
+	if pointModel.PointPriorityArrayMode == model.ReadOnlyNoPriorityArrayRequired {
+		pointModel.CurrentPriority = nil
+		pointModel.WriteValue = nil
+		pointModel.WriteValueOriginal = nil
+		pointModel.Priority.P1 = nil
+		pointModel.Priority.P2 = nil
+		pointModel.Priority.P3 = nil
+		pointModel.Priority.P4 = nil
+		pointModel.Priority.P5 = nil
+		pointModel.Priority.P6 = nil
+		pointModel.Priority.P7 = nil
+		pointModel.Priority.P8 = nil
+		pointModel.Priority.P9 = nil
+		pointModel.Priority.P10 = nil
+		pointModel.Priority.P11 = nil
+		pointModel.Priority.P12 = nil
+		pointModel.Priority.P13 = nil
+		pointModel.Priority.P14 = nil
+		pointModel.Priority.P15 = nil
+		pointModel.Priority.P16 = nil
+	}
 	if pointModel.Priority != nil {
 		priorityMap, highestValue, currentPriority, isPriorityExist := d.parsePriority(pointModel.Priority, pointModel)
+		log.Infof("updatePriority() highestValue = %f", highestValue)
 		if isPriorityExist {
 			pointModel.CurrentPriority = &currentPriority
 			pointModel.WriteValueOriginal = utils.NewFloat64(highestValue)

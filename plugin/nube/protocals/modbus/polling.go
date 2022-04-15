@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"github.com/NubeIO/flow-framework/api"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/smod"
 	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uurl"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	log "github.com/sirupsen/logrus"
 	"time"
@@ -47,7 +45,7 @@ func (inst *Instance) PollingTCP(p polling) error {
 	arg.WithDevices = true
 	arg.WithPoints = true
 	f := func() (bool, error) {
-		nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, arg)
+		nets, _ := inst.db.GetNetworksByPlugin(inst.pluginUUID, arg)
 		if len(nets) == 0 {
 			time.Sleep(2 * time.Second)
 			log.Info("modbus: NO MODBUS NETWORKS FOUND")
@@ -59,7 +57,6 @@ func (inst *Instance) PollingTCP(p polling) error {
 			}
 			if net.UUID != "" && net.PluginConfId == inst.pluginUUID {
 				timeStart := time.Now()
-				deviceDelay, pointDelay := delays(net.TransportType)
 				counter++
 				log.Infof("modbus-poll: POLL START: NAME: %s\n", net.Name)
 				if !utils.BoolIsNil(net.Enable) {
@@ -71,64 +68,20 @@ func (inst *Instance) PollingTCP(p polling) error {
 						log.Infof("modbus-device: DEVICE DISABLED: NAME: %s\n", dev.Name)
 						continue
 					}
-					var mbClient smod.ModbusClient
-					var dCheck devCheck
-					dCheck.devUUID = dev.UUID
-					mbClient, err = inst.setClient(net, dev, true)
-					if err != nil {
-						log.Errorf("modbus: failed to set client error: %v network name:%s\n", err, net.Name)
-						continue
-					}
-					if net.TransportType == model.TransType.Serial || net.TransportType == model.TransType.LoRa {
-						if dev.AddressId >= 1 {
-							mbClient.RTUClientHandler.SlaveID = byte(dev.AddressId)
-						}
-					} else if dev.TransportType == model.TransType.IP {
-						url, err := uurl.JoinIpPort(dev.Host, dev.Port)
-						if err != nil {
-							log.Errorf("modbus: failed to validate device IP %s\n", url)
-							continue
-						}
-						mbClient.TCPClientHandler.Address = url
-						mbClient.TCPClientHandler.SlaveID = byte(dev.AddressId)
-					} else {
-						log.Errorf("modbus: failed to validate device and network %v %s\n", err, dev.Name)
-						continue
-					}
-					time.Sleep(deviceDelay)          //DELAY between devices
 					for _, pnt := range dev.Points { //POINTS
+						time.Sleep(10 * time.Second)
 						if !utils.BoolIsNil(pnt.Enable) {
 							log.Infof("modbus-point: POINT DISABLED: NAME: %s\n", pnt.Name)
 							continue
 						}
 						write := isWrite(pnt.ObjectType)
 						if write { //IS WRITE
-							//get existing
-							if !utils.BoolIsNil(pnt.InSync) {
-								_, responseValue, err := networkRequest(mbClient, pnt, true)
-								if err != nil {
-									_, err = inst.pointUpdateErr(pnt.UUID, err)
-									continue
-								}
-								responseValue = utils.Float64IsNil(pnt.WriteValueOriginal) //feedback in the WriteValue
-								_, err = inst.pointUpdate(pnt.UUID, responseValue)
-							}
+							responseValue := utils.Float64IsNil(pnt.WriteValueOriginal) //feedback in the WriteValue
+							_, err = inst.pointUpdate(pnt, responseValue)
 						} else { //READ
-							_, responseValue, err := networkRequest(mbClient, pnt, false)
-							if err != nil {
-								_, err = inst.pointUpdateErr(pnt.UUID, err)
-								continue
-							}
-							//simple cov
-							isChange := !utils.CompareFloatPtr(pnt.PresentValue, &responseValue)
-							if isChange {
-								_, err = inst.pointUpdate(pnt.UUID, responseValue)
-								if err != nil {
-									continue
-								}
-							}
+							responseValue := float64(counter)
+							_, err = inst.pointUpdate(pnt, responseValue)
 						}
-						time.Sleep(pointDelay) //DELAY between points
 					}
 					timeEnd := time.Now()
 					diff := timeEnd.Sub(timeStart)

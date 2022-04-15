@@ -153,6 +153,12 @@ type Point struct {
 		Default     string `json:"default" default:"(x + 0) + 0"`
 		DisplayName string `json:"display_name" default:"math expression on write value"`
 	} `json:"math_on_write_value"`
+	PointPriorityArrayMode struct {
+		Type     string   `json:"type" default:"array"`
+		Required bool     `json:"required" default:"true"`
+		Options  []string `json:"options" default:"[\"priority_array_to_present_value\",\"priority_array_to_write_value\",\"read_only_no_priority_array_required\"]"`
+		Default  string   `json:"default" default:"priority_array_to_present_value"`
+	} `json:"point_priority_use_type"`
 	Enable struct {
 		Type     string `json:"type" default:"bool"`
 		Required bool   `json:"required" default:"true"`

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/times/utilstime"
 	"time"
 
@@ -17,6 +18,8 @@ func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, e
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("Instance(): %+v\n", inst)
+	inst.db.DB.GetNetworksByName(network.Name, api.Args{})
 	return network, nil
 }
 

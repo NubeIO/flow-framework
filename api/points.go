@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 )
 
 type PointDatabase interface {
@@ -53,6 +55,13 @@ func (a *PointAPI) UpdatePoint(ctx *gin.Context) {
 }
 
 func (a *PointAPI) PointWrite(ctx *gin.Context) {
+	fmt.Println(fmt.Sprintf("PointWrite ctx %+v", ctx))
+	fmt.Println(fmt.Sprintf("PointWrite ctx.Request %+v", ctx.Request))
+	fmt.Println(fmt.Sprintf("PointWrite ctx.Request.Body %+v", ctx.Request.Body))
+	bodyPrint, err := ioutil.ReadAll(ctx.Request.Body) //THIS GETS THE RAW BYTE STREAM OF BODY
+	fmt.Println(fmt.Sprintf("PointWrite ctx.Request.Body %s", bodyPrint))
+	fmt.Println(fmt.Sprintf("PointWrite ctx.Request.Body err %+v", err))
+
 	body, _ := getBODYPoint(ctx)
 	uuid := resolveID(ctx)
 	q, err := a.DB.PointWrite(uuid, body, false)

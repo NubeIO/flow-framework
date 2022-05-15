@@ -19,7 +19,7 @@ Point 2
 -- consumer table -> nil
 -- producer table -> point 1 uuid
 
-remote point will subscribe to cov events
+remote point will subscribe to csv events
 - the local db will store a copy of the producer to know where to publish the data to
 - the remote device will store a copy of its consumer in the consumers table, these will be the details of the remote producer
 

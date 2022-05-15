@@ -46,7 +46,7 @@ const (
 
 	PointUpdated = "point.updated"
 	PointCreated = "point.created"
-	PointCOV     = "point.cov"
+	PointCOV     = "point.csv"
 
 	NodeUpdated  = "node.updated"
 	NodeCreated  = "node.created"

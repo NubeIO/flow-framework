@@ -41,7 +41,7 @@ func (inst *Instance) initializeInfluxSettings() []*InfluxSetting {
 func (inst *Instance) syncInflux(influxSettings []*InfluxSetting) (bool, error) {
 	log.Info("InfluxDB sync has is been called...")
 	if len(influxSettings) == 0 {
-		err := "influx: InfluxDB sync failure: no any valid InfluxDB connection with not NULL token"
+		err := "influx: InfluxDB sync failure: No InfluxDB connection available"
 		log.Warn(err)
 		return false, errors.New(err)
 	}
@@ -60,7 +60,7 @@ func (inst *Instance) syncInflux(influxSettings []*InfluxSetting) (bool, error) 
 		if !isError {
 			allError = false
 		}
-		if leastLastSyncId > lastSyncId && !isError {
+		if leastLastSyncId > lastSyncId && !isError { //TODO: Can leastLastSyncId (math.MinInt16) ever be greater than lastSyncId?
 			leastLastSyncId = lastSyncId
 		}
 		influxDetails = append(influxDetails, influxDetail)

@@ -23,7 +23,7 @@ func (a *FlowClient) SyncWriter(body *model.SyncWriter) (*model.WriterClone, err
 func (a *FlowClient) SyncCOV(writerUUID string, body *model.SyncCOV) error {
 	resp, err := a.client.R().
 		SetBody(body).
-		Post(fmt.Sprintf("/api/sync/cov/%s", writerUUID))
+		Post(fmt.Sprintf("/api/sync/csv/%s", writerUUID))
 	if err != nil {
 		if resp == nil || resp.String() == "" {
 			return fmt.Errorf("SyncCOV: %s", err)

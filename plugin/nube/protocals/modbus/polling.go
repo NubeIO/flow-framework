@@ -94,7 +94,7 @@ func (inst *Instance) ModbusPolling() error {
 			//modbusDebugMsg(fmt.Sprintf("modbus-poll: POLL START: NAME: %s\n", net.Name))
 
 			if !boolean.IsTrue(net.Enable) {
-				modbusDebugMsg(fmt.Sprintf("NETWORK DISABLED: NAME: %s", net.Name))
+				//modbusDebugMsg(fmt.Sprintf("NETWORK DISABLED: NAME: %s", net.Name))
 				continue
 			}
 

@@ -36,9 +36,11 @@ func (nq *NetworkPriorityPollQueue) AddPollingPoint(pp *PollingPoint) bool {
 		if pp.LockupAlertTimer != nil {
 			pp.LockupAlertTimer.Stop()
 		}
-		return false
-	}
-	if nq.StandbyPollingPoints.GetPollingPointIndexByPointUUID(pp.FFPointUUID) != -1 {
+		success := nq.PriorityQueue.RemovePollingPointByPointUUID(pp.FFPointUUID)
+		if !success {
+			return false
+		}
+	} else if nq.StandbyPollingPoints.GetPollingPointIndexByPointUUID(pp.FFPointUUID) != -1 {
 		//point exists in the StandbyPollingPoints list, remove it and add immediately.
 		nq.RemovePollingPointByPointUUID(pp.FFPointUUID)
 	}

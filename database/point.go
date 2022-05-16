@@ -13,6 +13,7 @@ import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	log "github.com/sirupsen/logrus"
+	"reflect"
 	"time"
 )
 
@@ -151,7 +152,47 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 		d.DB.Model(&pointModel).Update("fallback", nil)
 	}
 	query = d.DB.Model(&pointModel).Updates(&body)
-	return pointModel, nil
+	// Don't update point value if priority array on body is nil
+	if body.Priority == nil {
+		return pointModel, nil
+	} else {
+		pointModel.Priority = body.Priority
+	}
+
+	//TEST FUNCTION TO GET PRIORITY ARRAY FROM POINT
+	parsePriorityArrayFromPoint := func(priority *model.Priority, pointModel *model.Point) *map[string]*float64 {
+		priorityMap := map[string]*float64{}
+		priorityValue := reflect.ValueOf(*priority)
+		typeOfPriority := priorityValue.Type()
+		isPriorityExist := false
+		for i := 0; i < priorityValue.NumField(); i++ {
+			if priorityValue.Field(i).Type().Kind().String() == "ptr" {
+				val := priorityValue.Field(i).Interface().(*float64)
+				if val == nil {
+					priorityMap[typeOfPriority.Field(i).Name] = nil
+				} else {
+					if !isPriorityExist {
+						writeValue, err := pointEval(val, pointModel.MathOnWriteValue)
+						if err != nil {
+							log.Errorln("point.db parsePriority() error on run point MathOnWriteValue error:", err)
+							//return nil, 0, 0, false
+						}
+						pointModel.WriteValue = writeValue
+						pointModel.WriteValueOriginal = val
+					}
+					priorityMap[typeOfPriority.Field(i).Name] = val
+					isPriorityExist = true
+				}
+			}
+		}
+		return &priorityMap
+	}
+
+	pnt, err := d.UpdatePointValue(pointModel, parsePriorityArrayFromPoint(pointModel.Priority, pointModel), fromPlugin)
+	if err != nil {
+		return nil, err
+	}
+	return pnt, nil
 }
 
 func (d *GormDatabase) PointWrite(uuid string, body *model.PointWriter, fromPlugin bool) (*model.Point, error) {

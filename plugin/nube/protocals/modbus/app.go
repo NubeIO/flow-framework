@@ -304,7 +304,9 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 	}
 
 	if boolean.IsTrue(point.Enable) {
-		pp, _ := netPollMan.PollQueue.RemovePollingPointByPointUUID(pntUUID)
+		modbusDebugMsg("writePoint() point after database WritePoint()")
+		printPointDebugInfo(point)
+		pp, _ := netPollMan.PollQueue.RemovePollingPointByPointUUID(point.UUID)
 		if pp == nil {
 			modbusErrorMsg("writePoint(): cannot find PollingPoint for point: ", point.UUID)
 			inst.pointUpdateErr(point, errors.New(fmt.Sprint("writePoint(): cannot find PollingPoint for point: ", point.UUID)))

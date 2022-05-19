@@ -67,7 +67,7 @@ type Network struct {
 		Default  int    `json:"default" default:""`
 	} `json:"serial_stop_bits"`
 	MaxPollRate struct {
-		Type        string   `json:"type" default:"int"`
+		Type        string   `json:"type" default:"float"`
 		Required    bool     `json:"required" default:"true"`
 		Options     int      `json:"options" default:"1"`
 		DisplayName string   `json:"display_name" default:"Max Poll Rate (seconds)"`
@@ -104,21 +104,21 @@ type Device struct {
 		Default  int    `json:"default" default:""`
 	} `json:"port"`
 	FastPollRate struct {
-		Type        string   `json:"type" default:"int"`
+		Type        string   `json:"type" default:"float"`
 		Required    bool     `json:"required" default:"true"`
 		Options     int      `json:"options" default:"1"`
 		DisplayName string   `json:"display_name" default:"Fast Poll Rate (seconds)"`
 		Default     *float64 `json:"default" default:"5"`
 	} `json:"fast_poll_rate"`
 	NormalPollRate struct {
-		Type        string   `json:"type" default:"int"`
+		Type        string   `json:"type" default:"float"`
 		Required    bool     `json:"required" default:"true"`
 		Options     int      `json:"options" default:"1"`
 		DisplayName string   `json:"display_name" default:"Normal Poll Rate (seconds)"`
 		Default     *float64 `json:"default" default:"30"`
 	} `json:"normal_poll_rate"`
 	SlowPollRate struct {
-		Type        string   `json:"type" default:"int"`
+		Type        string   `json:"type" default:"float"`
 		Required    bool     `json:"required" default:"true"`
 		Options     int      `json:"options" default:"1"`
 		DisplayName string   `json:"display_name" default:"Slow Poll Rate (seconds)"`

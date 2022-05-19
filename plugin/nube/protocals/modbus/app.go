@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
+	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/pollqueue"
 	"github.com/NubeIO/flow-framework/utils/array"
 	"github.com/NubeIO/flow-framework/utils/boolean"
@@ -18,24 +19,21 @@ import (
 //addDevice add network. Called via API call (or wizard)
 func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, err error) {
 	if body == nil {
-		modbusErrorMsg("addNetwork(): nil network object")
+		inst.modbusErrorMsg("addNetwork(): nil network object")
 		return nil, errors.New("empty network body, no network created")
 	}
-	modbusDebugMsg("addNetwork(): ", body.Name)
+	inst.modbusDebugMsg("addNetwork(): ", body.Name)
 	network, err = inst.db.CreateNetwork(body, true)
 	if network == nil || err != nil {
-		modbusErrorMsg("addNetwork(): failed to create modbus network: ", body.Name)
+		inst.modbusErrorMsg("addNetwork(): failed to create modbus network: ", body.Name)
 		return nil, errors.New("failed to create modbus network")
 	}
 
 	if boolean.IsTrue(body.Enable) {
-		pollManager := pollqueue.NewPollManager(&inst.db, network.UUID, inst.pluginUUID)
+		conf := inst.GetConfig().(*config.Config)
+		pollManager := pollqueue.NewPollManager(conf, &inst.db, network.UUID, inst.pluginUUID)
 		pollManager.StartPolling()
 		inst.NetworkPollManagers = append(inst.NetworkPollManagers, pollManager)
-	}
-
-	if err != nil {
-		return nil, err
 	}
 	return network, nil
 }
@@ -43,17 +41,17 @@ func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, e
 //addDevice add device. Called via API call (or wizard)
 func (inst *Instance) addDevice(body *model.Device) (device *model.Device, err error) {
 	if body == nil {
-		modbusErrorMsg("addDevice(): nil device object")
+		inst.modbusDebugMsg("addDevice(): nil device object")
 		return nil, errors.New("empty device body, no device created")
 	}
-	modbusDebugMsg("addDevice(): ", body.Name)
+	inst.modbusDebugMsg("addDevice(): ", body.Name)
 	device, err = inst.db.CreateDevice(body)
 	if device == nil || err != nil {
-		modbusErrorMsg("addDevice(): failed to create modbus device: ", body.Name)
+		inst.modbusDebugMsg("addDevice(): failed to create modbus device: ", body.Name)
 		return nil, errors.New("failed to create modbus device")
 	}
 
-	modbusDebugMsg("addDevice(): ", body.UUID)
+	inst.modbusDebugMsg("addDevice(): ", body.UUID)
 	//NOTHING TO DO ON DEVICE CREATED
 	return device, nil
 }
@@ -61,10 +59,10 @@ func (inst *Instance) addDevice(body *model.Device) (device *model.Device, err e
 //addPoint add point. Called via API call (or wizard)
 func (inst *Instance) addPoint(body *model.Point) (point *model.Point, err error) {
 	if body == nil {
-		modbusErrorMsg("addPoint(): nil point object")
+		inst.modbusDebugMsg("addPoint(): nil point object")
 		return nil, errors.New("empty point body, no point created")
 	}
-	modbusDebugMsg("addPoint(): ", body.Name)
+	inst.modbusDebugMsg("addPoint(): ", body.Name)
 
 	if isWriteable(body.WriteMode) {
 		body.WritePollRequired = boolean.NewTrue()
@@ -76,21 +74,21 @@ func (inst *Instance) addPoint(body *model.Point) (point *model.Point, err error
 	//point, err = inst.db.CreatePoint(body, true, false)
 	point, err = inst.db.CreatePoint(body, true, true)
 	if point == nil || err != nil {
-		modbusErrorMsg("addPoint(): failed to create modbus point: ", body.Name)
+		inst.modbusDebugMsg("addPoint(): failed to create modbus point: ", body.Name)
 		return nil, errors.New("failed to create modbus point")
 	}
-	modbusDebugMsg(fmt.Sprintf("addPoint(): %+v\n", point))
+	inst.modbusDebugMsg(fmt.Sprintf("addPoint(): %+v\n", point))
 
 	//net, err := inst.db.DB.GetNetworkByDeviceUUID(point.DeviceUUID, api.Args{})
 	dev, err := inst.db.GetDevice(point.DeviceUUID, api.Args{})
 	if err != nil || dev == nil {
-		modbusErrorMsg("addPoint(): bad response from GetDevice()")
+		inst.modbusDebugMsg("addPoint(): bad response from GetDevice()")
 		return nil, err
 	}
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(dev.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("addPoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
+		inst.modbusDebugMsg("addPoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
 		return
 	}
 
@@ -109,9 +107,9 @@ func (inst *Instance) addPoint(body *model.Point) (point *model.Point, err error
 
 //updateNetwork update network. Called via API call.
 func (inst *Instance) updateNetwork(body *model.Network) (network *model.Network, err error) {
-	modbusDebugMsg("updateNetwork(): ", body.UUID)
+	inst.modbusDebugMsg("updateNetwork(): ", body.UUID)
 	if body == nil {
-		modbusErrorMsg("updateNetwork():  nil network object")
+		inst.modbusDebugMsg("updateNetwork():  nil network object")
 		return
 	}
 	network, err = inst.db.UpdateNetwork(body.UUID, body, true)
@@ -121,7 +119,7 @@ func (inst *Instance) updateNetwork(body *model.Network) (network *model.Network
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(network.UUID)
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("updateNetwork(): cannot find NetworkPollManager for network: ", network.UUID)
+		inst.modbusDebugMsg("updateNetwork(): cannot find NetworkPollManager for network: ", network.UUID)
 		return
 	}
 
@@ -139,9 +137,9 @@ func (inst *Instance) updateNetwork(body *model.Network) (network *model.Network
 
 //updateDevice update device. Called via API call.
 func (inst *Instance) updateDevice(body *model.Device) (device *model.Device, err error) {
-	modbusDebugMsg("updateDevice(): ", body.UUID)
+	inst.modbusDebugMsg("updateDevice(): ", body.UUID)
 	if body == nil {
-		modbusErrorMsg("updateDevice(): nil device object")
+		inst.modbusDebugMsg("updateDevice(): nil device object")
 		return
 	}
 
@@ -159,7 +157,7 @@ func (inst *Instance) updateDevice(body *model.Device) (device *model.Device, er
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(dev.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("updateDevice(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
+		inst.modbusDebugMsg("updateDevice(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
 		return
 	}
 
@@ -199,40 +197,40 @@ func (inst *Instance) updateDevice(body *model.Device) (device *model.Device, er
 
 //updatePoint update point. Called via API call.
 func (inst *Instance) updatePoint(body *model.Point) (point *model.Point, err error) {
-	modbusDebugMsg("updatePoint(): ", body.UUID)
+	inst.modbusDebugMsg("updatePoint(): ", body.UUID)
 	if body == nil {
-		modbusErrorMsg("updatePoint(): nil point object")
+		inst.modbusDebugMsg("updatePoint(): nil point object")
 		return
 	}
 
 	/*
 		pnt, err := inst.db.GetPoint(body.UUID, api.Args{WithPriority: true})
 		if pnt == nil || err != nil {
-			modbusErrorMsg("could not find pointID: ", pp.FFPointUUID)
+			inst.modbusErrorMsg("could not find pointID: ", pp.FFPointUUID)
 			netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 			continue
 		}
 
 	*/
 
-	modbusDebugMsg(fmt.Sprintf("updatePoint() body: %+v\n", body))
-	modbusDebugMsg(fmt.Sprintf("updatePoint() priority: %+v\n", body.Priority))
+	inst.modbusDebugMsg(fmt.Sprintf("updatePoint() body: %+v\n", body))
+	inst.modbusDebugMsg(fmt.Sprintf("updatePoint() priority: %+v\n", body.Priority))
 
 	point, err = inst.db.UpdatePoint(body.UUID, body, true)
 	if err != nil || point == nil {
-		modbusErrorMsg("updatePoint(): bad response from UpdatePoint()")
+		inst.modbusDebugMsg("updatePoint(): bad response from UpdatePoint()")
 		return nil, err
 	}
 
 	dev, err := inst.db.GetDevice(point.DeviceUUID, api.Args{})
 	if err != nil || dev == nil {
-		modbusErrorMsg("updatePoint(): bad response from GetDevice()")
+		inst.modbusDebugMsg("updatePoint(): bad response from GetDevice()")
 		return nil, err
 	}
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(dev.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("updatePoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
+		inst.modbusDebugMsg("updatePoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
 		inst.pointUpdateErr(point, err)
 		return
 	}
@@ -259,19 +257,19 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 
 	//TODO: check for PointWriteByName calls that might not flow through the plugin.
 
-	modbusDebugMsg("writePoint(): ", pntUUID)
+	inst.modbusDebugMsg("writePoint(): ", pntUUID)
 	if body == nil {
-		modbusErrorMsg("writePoint(): nil point object")
+		inst.modbusDebugMsg("writePoint(): nil point object")
 		return
 	}
 
-	modbusDebugMsg(fmt.Sprintf("writePoint() body: %+v", body))
-	modbusDebugMsg(fmt.Sprintf("writePoint() priority: %+v", body.Priority))
+	inst.modbusDebugMsg(fmt.Sprintf("writePoint() body: %+v", body))
+	inst.modbusDebugMsg(fmt.Sprintf("writePoint() priority: %+v", body.Priority))
 
 	/* TODO: ONLY NEEDED IF THE WRITE VALUE IS WRITTEN ON COV (CURRENTLY IT IS WRITTEN ANYTIME THERE IS A WRITE COMMAND).
 	point, err = inst.db.GetPoint(pntUUID, apinst.Args{})
 	if err != nil || point == nil {
-		modbusErrorMsg("writePoint(): bad response from GetPoint(), ", err)
+		inst.modbusErrorMsg("writePoint(): bad response from GetPoint(), ", err)
 		return nil, err
 	}
 
@@ -285,20 +283,20 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 
 	point, err = inst.db.WritePoint(pntUUID, body, true)
 	if err != nil || point == nil {
-		modbusErrorMsg("writePoint(): bad response from WritePoint(), ", err)
+		inst.modbusDebugMsg("writePoint(): bad response from WritePoint(), ", err)
 		return nil, err
 	}
 
 	//  TODO: THIS SECTION MIGHT BE USEFUL IF WE ADD ASAP PRIORITY FOR IMMEDIATE POINT WRITES
 	dev, err := inst.db.GetDevice(point.DeviceUUID, api.Args{})
 	if err != nil || dev == nil {
-		modbusErrorMsg("writePoint(): bad response from GetDevice()")
+		inst.modbusDebugMsg("writePoint(): bad response from GetDevice()")
 		return nil, err
 	}
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(dev.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("writePoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
+		inst.modbusDebugMsg("writePoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
 		inst.pointUpdateErr(point, err)
 		return
 	}
@@ -308,7 +306,7 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 		printPointDebugInfo(point)
 		pp, _ := netPollMan.PollQueue.RemovePollingPointByPointUUID(point.UUID)
 		if pp == nil {
-			modbusErrorMsg("writePoint(): cannot find PollingPoint for point: ", point.UUID)
+			inst.modbusDebugMsg("writePoint(): cannot find PollingPoint for point: ", point.UUID)
 			inst.pointUpdateErr(point, errors.New(fmt.Sprint("writePoint(): cannot find PollingPoint for point: ", point.UUID)))
 			return point, err
 		}
@@ -335,9 +333,9 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 
 //deleteNetwork delete network. Called via API call.
 func (inst *Instance) deleteNetwork(body *model.Network) (ok bool, err error) {
-	modbusDebugMsg("deleteNetwork(): ", body.UUID)
+	inst.modbusDebugMsg("deleteNetwork(): ", body.UUID)
 	if body == nil {
-		modbusErrorMsg("deleteNetwork(): nil network object")
+		inst.modbusDebugMsg("deleteNetwork(): nil network object")
 		return
 	}
 	found := false
@@ -351,7 +349,7 @@ func (inst *Instance) deleteNetwork(body *model.Network) (ok bool, err error) {
 		}
 	}
 	if !found {
-		modbusErrorMsg("deleteNetwork(): cannot find NetworkPollManager for network: ", body.UUID)
+		inst.modbusDebugMsg("deleteNetwork(): cannot find NetworkPollManager for network: ", body.UUID)
 	}
 	ok, err = inst.db.DeleteNetwork(body.UUID)
 	if err != nil {
@@ -362,15 +360,15 @@ func (inst *Instance) deleteNetwork(body *model.Network) (ok bool, err error) {
 
 //deleteNetwork delete device. Called via API call.
 func (inst *Instance) deleteDevice(body *model.Device) (ok bool, err error) {
-	modbusDebugMsg("deleteDevice(): ", body.UUID)
+	inst.modbusDebugMsg("deleteDevice(): ", body.UUID)
 	if body == nil {
-		modbusErrorMsg("deleteDevice(): nil device object")
+		inst.modbusDebugMsg("deleteDevice(): nil device object")
 		return
 	}
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(body.NetworkUUID)
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("deleteDevice(): cannot find NetworkPollManager for network: ", body.NetworkUUID)
+		inst.modbusDebugMsg("deleteDevice(): cannot find NetworkPollManager for network: ", body.NetworkUUID)
 		return
 	}
 	netPollMan.PollQueue.RemovePollingPointByDeviceUUID(body.UUID)
@@ -383,22 +381,22 @@ func (inst *Instance) deleteDevice(body *model.Device) (ok bool, err error) {
 
 //deletePoint delete point. Called via API call.
 func (inst *Instance) deletePoint(body *model.Point) (ok bool, err error) {
-	modbusDebugMsg("deletePoint(): ", body.UUID)
+	inst.modbusDebugMsg("deletePoint(): ", body.UUID)
 	if body == nil {
-		modbusErrorMsg("deletePoint(): nil point object")
+		inst.modbusDebugMsg("deletePoint(): nil point object")
 		return
 	}
 
 	dev, err := inst.db.GetDevice(body.DeviceUUID, api.Args{})
 	if err != nil || dev == nil {
-		modbusErrorMsg("addPoint(): bad response from GetDevice()")
+		inst.modbusDebugMsg("addPoint(): bad response from GetDevice()")
 		return false, err
 	}
 
 	netPollMan, err := inst.getNetworkPollManagerByUUID(dev.NetworkUUID)
 
 	if netPollMan == nil || err != nil {
-		modbusErrorMsg("addPoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
+		inst.modbusDebugMsg("addPoint(): cannot find NetworkPollManager for network: ", dev.NetworkUUID)
 		inst.pointUpdateErr(body, err)
 		return
 	}
@@ -435,7 +433,7 @@ func (inst *Instance) pointUpdate(point *model.Point, value float64, writeSucces
 
 	_, err = inst.db.UpdatePoint(point.UUID, point, true)
 	if err != nil {
-		modbusErrorMsg("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
+		inst.modbusDebugMsg("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
 		return nil, err
 	}
 	return point, nil
@@ -450,7 +448,7 @@ func (inst *Instance) pointUpdateErr(point *model.Point, err error) (*model.Poin
 	point.CommonFault.LastFail = time.Now().UTC()
 	_, err = inst.db.UpdatePoint(point.UUID, point, true)
 	if err != nil {
-		modbusErrorMsg(" pointUpdateErr()", err)
+		inst.modbusDebugMsg(" pointUpdateErr()", err)
 		return nil, err
 	}
 	return nil, nil

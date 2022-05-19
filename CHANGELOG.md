@@ -1,7 +1,10 @@
 # CHANGELOG
+## [v0.5.2](https://github.com/NubeIO/flow-framework/tree/v0.5.2) (2022-05-19)
+- Make configurable modbus log level
 
 ## [v0.5.1](https://github.com/NubeIO/flow-framework/tree/v0.5.1) (2022-05-19)
-- minor update to polling. Safeties on timeouts.
+- Minor update to polling (safeties on timeouts)
+- Added a Postgres plugin
 
 ## [v0.5.0](https://github.com/NubeIO/flow-framework/tree/v0.5.0) (2022-05-17)
 - fixed modbus point/device/network time settings

@@ -107,7 +107,7 @@ func pointAddress(pnt *model.Point, zeroMode bool) (out uint16, err error) {
 	}
 }
 
-func networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) (response interface{}, responseValue float64, err error) {
+func (inst *Instance) networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) (response interface{}, responseValue float64, err error) {
 	mbClient.Debug = true
 	objectEncoding := pnt.ObjectEncoding                          //beb_lew
 	objectType := nstring.NewString(pnt.ObjectType).ToSnakeCase() //eg: readCoil, read_coil, writeCoil
@@ -136,9 +136,9 @@ func networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) 
 	}
 
 	if doWrite {
-		modbusDebugMsg("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
+		inst.modbusDebugMsg("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue)
 	} else {
-		modbusDebugMsg("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
+		inst.modbusDebugMsg("modbus-read: ObjectType: %s  Addr: %d", objectType, address)
 	}
 
 	switch objectType {
@@ -195,7 +195,7 @@ func networkRequest(mbClient smod.ModbusClient, pnt *model.Point, doWrite bool) 
 	return nil, 0, nil
 }
 
-func networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interface{}, responseValue float64, err error) {
+func (inst *Instance) networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interface{}, responseValue float64, err error) {
 	mbClient.Debug = true
 	objectEncoding := pnt.ObjectEncoding                          //beb_lew
 	objectType := nstring.NewString(pnt.ObjectType).ToSnakeCase() //eg: readCoil, read_coil, writeCoil
@@ -221,7 +221,7 @@ func networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interf
 
 	writeValue := float.NonNil(pnt.Priority.GetHighestPriorityValue())
 
-	modbusDebugMsg(fmt.Sprintf("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue))
+	inst.modbusDebugMsg(fmt.Sprintf("modbus-write: ObjectType: %s  Addr: %d WriteValue: %v\n", objectType, address, writeValue))
 
 	switch objectType {
 	//WRITE COILS
@@ -246,7 +246,7 @@ func networkWrite(mbClient smod.ModbusClient, pnt *model.Point) (response interf
 	return nil, 0, errors.New("modbus-write: dataType is not recognized")
 }
 
-func networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interface{}, responseValue float64, err error) {
+func (inst *Instance) networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interface{}, responseValue float64, err error) {
 	mbClient.Debug = true
 	objectEncoding := pnt.ObjectEncoding                          //beb_lew
 	objectType := nstring.NewString(pnt.ObjectType).ToSnakeCase() //eg: readCoil, read_coil, writeCoil
@@ -270,7 +270,7 @@ func networkRead(mbClient smod.ModbusClient, pnt *model.Point) (response interfa
 		length = 1
 	}
 
-	modbusDebugMsg(fmt.Sprintf("modbus-read: ObjectType: %s  Addr: %d", objectType, address))
+	inst.modbusDebugMsg(fmt.Sprintf("modbus-read: ObjectType: %s  Addr: %d", objectType, address))
 
 	switch objectType {
 	//COILS
@@ -335,5 +335,4 @@ func isWriteable(writeMode model.WriteMode) bool {
 	default:
 		return false
 	}
-	return false
 }

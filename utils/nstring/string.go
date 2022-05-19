@@ -230,3 +230,21 @@ func LcFirst(str string) string {
 func NewStringAddress(str string) *string {
 	return &str
 }
+
+func In(str string, args ...string) bool {
+	for _, s := range args {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+func InEqualIgnoreCase(str string, args ...string) bool {
+	for _, s := range args {
+		if strings.ToUpper(str) == strings.ToUpper(s) {
+			return true
+		}
+	}
+	return false
+}

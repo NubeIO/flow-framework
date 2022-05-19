@@ -68,9 +68,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 		net.PluginConfId = inst.pluginUUID
 		_, err := inst.db.CreateNetwork(&net, false)
 		if err != nil {
-			modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
+			inst.modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
 		}
-		modbusDebugMsg("Created a Network")
+		inst.modbusDebugMsg("Created a Network")
 
 		for j := 1; j < 4; j++ {
 			var dev model.Device
@@ -83,9 +83,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 			dev.NetworkUUID = net.UUID
 			_, err := inst.db.CreateDevice(&dev)
 			if err != nil {
-				modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
+				inst.modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
 			}
-			modbusDebugMsg("Created a Device: ", dev)
+			inst.modbusDebugMsg("Created a Device: ", dev)
 
 			var pnt model.Point
 			pnt.Name = "Modbus Pnt " + strconv.Itoa(j)
@@ -98,9 +98,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 			pnt.WriteMode = model.ReadOnly
 			_, err = inst.db.CreatePoint(&pnt, false, true)
 			if err != nil {
-				modbusErrorMsg(fmt.Sprintf("consumer point creation failure: %s", err))
+				inst.modbusErrorMsg(fmt.Sprintf("consumer point creation failure: %s", err))
 			}
-			modbusDebugMsg("Created a Point for Consumer", pnt)
+			inst.modbusDebugMsg("Created a Point for Consumer", pnt)
 
 		}
 		return "modbus wizard 1: added networks, devices, and points", err
@@ -143,9 +143,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 		net.PluginConfId = inst.pluginUUID
 		_, err := inst.db.CreateNetwork(&net, false)
 		if err != nil {
-			modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
+			inst.modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
 		}
-		modbusDebugMsg("Created a Network")
+		inst.modbusDebugMsg("Created a Network")
 
 		for j := 1; j < 4; j++ {
 			time.Sleep(2 * time.Second)
@@ -162,9 +162,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 			dev.SlowPollRate = float.New(120.0)
 			_, err = inst.db.CreateDevice(&dev)
 			if err != nil {
-				modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
+				inst.modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
 			}
-			modbusDebugMsg("Created a Device: ", dev)
+			inst.modbusDebugMsg("Created a Device: ", dev)
 			for l := 1; l < 6; l++ {
 				var pnt model.Point
 				pnt.Name = "Modbus Pnt " + strconv.Itoa(l)
@@ -182,9 +182,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 				pnt.WriteMode = model.ReadOnly
 				_, err = inst.db.CreatePoint(&pnt, false, true)
 				if err != nil {
-					modbusErrorMsg(fmt.Sprintf("consumer point creation failure: %s", err))
+					inst.modbusErrorMsg(fmt.Sprintf("consumer point creation failure: %s", err))
 				}
-				modbusDebugMsg("Created a Point for Consumer", pnt)
+				inst.modbusDebugMsg("Created a Point for Consumer", pnt)
 			}
 		}
 		return "modbus wizard 3: added a network, 3 devices, and 3 points per device", err
@@ -199,9 +199,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 		net.PluginConfId = inst.pluginUUID
 		_, err := inst.db.CreateNetwork(&net, false)
 		if err != nil {
-			modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
+			inst.modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
 		}
-		modbusDebugMsg("Created a Network")
+		inst.modbusDebugMsg("Created a Network")
 
 		for j := 1; j < 2; j++ {
 			time.Sleep(2 * time.Second)
@@ -218,9 +218,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 			dev.SlowPollRate = float.New(120.0)
 			_, err = inst.db.CreateDevice(&dev)
 			if err != nil {
-				modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
+				inst.modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
 			}
-			modbusDebugMsg("Created a Device: ", dev)
+			inst.modbusDebugMsg("Created a Device: ", dev)
 			//pointsArray := [4]int{401, 403, 405, 407}
 			pointsArray := [1]int{401}
 			for _, l := range pointsArray {
@@ -237,9 +237,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 				pnt.PointPriorityArrayMode = model.ReadOnlyNoPriorityArrayRequired
 				_, err = inst.db.CreatePoint(&pnt, false, true)
 				if err != nil {
-					modbusErrorMsg(fmt.Sprintf("consumer point creation failure: %s", err))
+					inst.modbusErrorMsg(fmt.Sprintf("consumer point creation failure: %s", err))
 				}
-				modbusDebugMsg("Created a Point for Consumer", pnt)
+				inst.modbusDebugMsg("Created a Point for Consumer", pnt)
 			}
 		}
 		return "modbus wizard 4: added a network, 1 device, and 4 points", err
@@ -259,11 +259,11 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 				net.PluginConfId = inst.pluginUUID
 				net, err = inst.addNetwork(net)
 				if err != nil {
-					modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
-					modbusDebugMsg("Created a Network")
+					inst.modbusErrorMsg(fmt.Sprintf("network creation failure: %s", err))
+					inst.modbusDebugMsg("Created a Network")
 				}
 			} else {
-				modbusDebugMsg("Network already exists")
+				inst.modbusDebugMsg("Network already exists")
 			}
 
 			dev, exists := inst.db.DeviceNameExistsInNetwork(body.NameArg, net.UUID)
@@ -283,12 +283,12 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 				dev.SlowPollRate = float.New(120.0)
 				_, err = inst.addDevice(dev)
 				if err != nil {
-					modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
+					inst.modbusErrorMsg(fmt.Sprintf("device creation failure: %s", err))
 				}
-				modbusDebugMsg("Created a Device: ", dev)
+				inst.modbusDebugMsg("Created a Device: ", dev)
 
 			} else {
-				modbusDebugMsg("Device already exists")
+				inst.modbusDebugMsg("Device already exists")
 			}
 
 			type tmvPoint struct {
@@ -659,9 +659,9 @@ func (inst *Instance) wizardTCP(body wizard) (string, error) {
 				pnt.PointPriorityArrayMode = point.PointPriorityArrayMode
 				_, err = inst.addPoint(pnt)
 				if err != nil {
-					modbusErrorMsg(fmt.Sprintf("point creation failure: %s", err))
+					inst.modbusErrorMsg(fmt.Sprintf("point creation failure: %s", err))
 				}
-				modbusDebugMsg("Created a Point for Consumer", pnt)
+				inst.modbusDebugMsg("Created a Point for Consumer", pnt)
 			}
 			return "modbus wizard 5: added a network, 1 device, and 4 points", err
 		}
@@ -714,6 +714,6 @@ func (inst *Instance) wizardSerial(body wizard) (string, error) {
 		return "error: on flow-framework add modbus serial network wizard", err
 	}
 
-	modbusErrorMsg(pntRet, err)
+	inst.modbusErrorMsg(pntRet, err)
 	return "pass: added network and points", err
 }

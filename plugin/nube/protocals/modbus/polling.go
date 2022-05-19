@@ -58,7 +58,7 @@ func (inst *Instance) ModbusPolling() error {
 	f := func() (bool, error) {
 		counter++
 		//fmt.Println("\n \n")
-		//modbusDebugMsg("LOOP COUNT: ", counter)
+		//inst.modbusDebugMsg("LOOP COUNT: ", counter)
 		var netArg api.Args
 		/*
 			nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, netArg)
@@ -68,45 +68,45 @@ func (inst *Instance) ModbusPolling() error {
 		*/
 
 		if len(inst.NetworkPollManagers) == 0 {
-			modbusDebugMsg("NO MODBUS NETWORKS FOUND")
+			inst.modbusDebugMsg("NO MODBUS NETWORKS FOUND")
 		}
-		//modbusDebugMsg("inst.NetworkPollManagers")
-		//modbusDebugMsg("%+v\n", inst.NetworkPollManagers)
+		//inst.modbusDebugMsg("inst.NetworkPollManagers")
+		//inst.modbusDebugMsg("%+v\n", inst.NetworkPollManagers)
 		for _, netPollMan := range inst.NetworkPollManagers { //LOOP THROUGH AND POLL NEXT POINTS IN EACH NETWORK QUEUE
-			//modbusDebugMsg("ModbusPolling: netPollMan ", netPollMan.FFNetworkUUID)
+			//inst.modbusDebugMsg("ModbusPolling: netPollMan ", netPollMan.FFNetworkUUID)
 			if netPollMan.PortUnavailableTimeout != nil {
-				modbusErrorMsg("ModbusPolling: modbus port unavailable. polling paused.")
+				inst.modbusDebugMsg("ModbusPolling: modbus port unavailable. polling paused.")
 				continue
 			}
 			pollStartTime := time.Now()
 			//Check that network exists
-			//modbusDebugMsg("netPollMan")
-			//modbusDebugMsg("%+v\n", netPollMan)
+			//inst.modbusDebugMsg("netPollMan")
+			//inst.modbusDebugMsg("%+v\n", netPollMan)
 			net, err := inst.db.GetNetwork(netPollMan.FFNetworkUUID, netArg)
-			//modbusDebugMsg("net")
-			//modbusDebugMsg("%+v\n", net)
-			//modbusDebugMsg("err")
-			//modbusDebugMsg("%+v\n", err)
+			//inst.modbusDebugMsg("net")
+			//inst.modbusDebugMsg("%+v\n", net)
+			//inst.modbusDebugMsg("err")
+			//inst.modbusDebugMsg("%+v\n", err)
 			if err != nil || net == nil || net.PluginConfId != inst.pluginUUID {
-				modbusErrorMsg("MODBUS NETWORK NOT FOUND")
+				inst.modbusDebugMsg("MODBUS NETWORK NOT FOUND")
 				continue
 			}
-			//modbusDebugMsg(fmt.Sprintf("modbus-poll: POLL START: NAME: %s\n", net.Name))
+			//inst.modbusDebugMsg(fmt.Sprintf("modbus-poll: POLL START: NAME: %s\n", net.Name))
 
 			if !boolean.IsTrue(net.Enable) {
-				modbusDebugMsg(fmt.Sprintf("NETWORK DISABLED: NAME: %s", net.Name))
+				inst.modbusDebugMsg(fmt.Sprintf("NETWORK DISABLED: NAME: %s", net.Name))
 				continue
 			}
 
 			pp, callback := netPollMan.GetNextPollingPoint() //callback function is called once polling is completed.
 			//pp, _ := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
 			if pp == nil {
-				//modbusDebugMsg("No PollingPoint available in Network ", net.UUID)
+				//inst.modbusDebugMsg("No PollingPoint available in Network ", net.UUID)
 				continue
 			}
 
 			if pp.FFNetworkUUID != net.UUID {
-				modbusErrorMsg("PollingPoint FFNetworkUUID does not match the Network UUID")
+				inst.modbusErrorMsg("PollingPoint FFNetworkUUID does not match the Network UUID")
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
@@ -116,45 +116,45 @@ func (inst *Instance) ModbusPolling() error {
 			var devArg api.Args
 			dev, err := inst.db.GetDevice(pp.FFDeviceUUID, devArg)
 			if dev == nil || err != nil {
-				modbusErrorMsg("could not find deviceID:", pp.FFDeviceUUID)
+				inst.modbusErrorMsg("could not find deviceID:", pp.FFDeviceUUID)
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 			if !boolean.IsTrue(dev.Enable) {
-				modbusErrorMsg("device is disabled.")
+				inst.modbusErrorMsg("device is disabled.")
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 			if dev.AddressId <= 0 || dev.AddressId >= 255 {
-				modbusErrorMsg("address is not valid.  modbus addresses must be between 1 and 254")
+				inst.modbusErrorMsg("address is not valid.  modbus addresses must be between 1 and 254")
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 
 			pnt, err := inst.db.GetPoint(pp.FFPointUUID, api.Args{WithPriority: true})
 			if pnt == nil || err != nil {
-				modbusErrorMsg("could not find pointID: ", pp.FFPointUUID)
+				inst.modbusErrorMsg("could not find pointID: ", pp.FFPointUUID)
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 
-			printPointDebugInfo(pnt)
+			inst.printPointDebugInfo(pnt)
 
 			if pnt.Priority == nil {
-				modbusErrorMsg("ModbusPolling: HAD TO ADD PRIORITY ARRAY")
+				inst.modbusErrorMsg("ModbusPolling: HAD TO ADD PRIORITY ARRAY")
 				pnt.Priority = &model.Priority{}
 			}
 
 			if !boolean.IsTrue(pnt.Enable) {
-				modbusErrorMsg("point is disabled.")
+				inst.modbusErrorMsg("point is disabled.")
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
 
-			modbusDebugMsg(fmt.Sprintf("MODBUS POLL! : Priority: %s, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s, WriteRequired: %t, ReadRequired: %t", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, *pnt.AddressID, pnt.ObjectType, boolean.IsTrue(pnt.WritePollRequired), boolean.IsTrue(pnt.ReadPollRequired)))
+			inst.modbusDebugMsg(fmt.Sprintf("MODBUS POLL! : Priority: %s, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s, WriteRequired: %t, ReadRequired: %t", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, *pnt.AddressID, pnt.ObjectType, boolean.IsTrue(pnt.WritePollRequired), boolean.IsTrue(pnt.ReadPollRequired)))
 
 			if !boolean.IsTrue(pnt.WritePollRequired) && !boolean.IsTrue(pnt.ReadPollRequired) {
-				modbusDebugMsg("polling not required on this point")
+				inst.modbusDebugMsg("polling not required on this point")
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
@@ -167,7 +167,7 @@ func (inst *Instance) ModbusPolling() error {
 			//dCheck.devUUID = dev.UUID
 			mbClient, err = inst.setClient(net, dev, true)
 			if err != nil {
-				modbusErrorMsg(fmt.Sprintf("failed to set client error: %v. network name:%s", err, net.Name))
+				inst.modbusErrorMsg(fmt.Sprintf("failed to set client error: %v. network name:%s", err, net.Name))
 				if mbClient.PortUnavailable {
 					netPollMan.PausePolling()
 					unpauseFunc := func() {
@@ -185,14 +185,14 @@ func (inst *Instance) ModbusPolling() error {
 			} else if dev.TransportType == model.TransType.IP {
 				url, err := nurl.JoinIPPort(nurl.Parts{Host: dev.Host, Port: strconv.Itoa(dev.Port)})
 				if err != nil {
-					modbusErrorMsg("failed to validate device IP", url)
+					inst.modbusErrorMsg("failed to validate device IP", url)
 					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 					continue
 				}
 				mbClient.TCPClientHandler.Address = url
 				mbClient.TCPClientHandler.SlaveID = byte(dev.AddressId)
 			} else {
-				modbusDebugMsg(fmt.Sprintf("failed to validate device and network %v %s", err, dev.Name))
+				inst.modbusDebugMsg(fmt.Sprintf("failed to validate device and network %v %s", err, dev.Name))
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
@@ -202,27 +202,27 @@ func (inst *Instance) ModbusPolling() error {
 			var writeValuePointer *float64
 			writeSuccess := false
 			if isWriteable(pnt.WriteMode) && boolean.IsTrue(pnt.WritePollRequired) { //DO WRITE IF REQUIRED
-				modbusDebugMsg(fmt.Sprintf("modbus write point: %+v", pnt))
+				inst.modbusDebugMsg(fmt.Sprintf("modbus write point: %+v", pnt))
 				//pnt.PrintPointValues()
 				writeValuePointer = pnt.Priority.GetHighestPriorityValue()
 				if writeValuePointer != nil {
-					response, responseValue, err = networkWrite(mbClient, pnt)
+					response, responseValue, err = inst.networkWrite(mbClient, pnt)
 					if err != nil {
 						_, err = inst.pointUpdateErr(pnt, err)
 						netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 						continue
 					}
 					writeSuccess = true
-					modbusDebugMsg(fmt.Sprintf("modbus-write response: responseValue %f, point UUID: %s, response: %+v", responseValue, pnt.UUID, response))
+					inst.modbusDebugMsg(fmt.Sprintf("modbus-write response: responseValue %f, point UUID: %s, response: %+v", responseValue, pnt.UUID, response))
 				} else {
 					writeSuccess = true //successful because there is no value to write.  Otherwise the point will short cycle.
-					modbusDebugMsg("modbus write point error: no value in priority array to write")
+					inst.modbusDebugMsg("modbus write point error: no value in priority array to write")
 				}
 			}
 
 			readSuccess := false
 			if boolean.IsTrue(pnt.ReadPollRequired) { //DO READ IF REQUIRED
-				response, responseValue, err = networkRead(mbClient, pnt)
+				response, responseValue, err = inst.networkRead(mbClient, pnt)
 				if err != nil {
 					_, err = inst.pointUpdateErr(pnt, err)
 					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
@@ -236,7 +236,7 @@ func (inst *Instance) ModbusPolling() error {
 					}
 				}
 				readSuccess = true
-				modbusDebugMsg(fmt.Sprintf("modbus-read response: responseValue %f, point UUID: %s, response: %+v ", responseValue, pnt.UUID, response))
+				inst.modbusDebugMsg(fmt.Sprintf("modbus-read response: responseValue %f, point UUID: %s, response: %+v ", responseValue, pnt.UUID, response))
 			}
 
 			//update point in DB if required

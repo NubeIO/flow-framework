@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/NubeIO/flow-framework/eventbus"
+	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/pollqueue"
 	"github.com/NubeIO/flow-framework/plugin/pluginapi"
 	"github.com/NubeIO/flow-framework/src/cachestore"
@@ -27,7 +28,7 @@ const transportType = "ip" //serial, ip
 
 // Instance is plugin instance
 type Instance struct {
-	config              *Config
+	config              *config.Config
 	enabled             bool
 	basePath            string
 	db                  dbhandler.Handler

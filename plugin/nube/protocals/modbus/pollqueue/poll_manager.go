@@ -4,9 +4,12 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
+	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/NubeIO/flow-framework/utils/boolean"
+	"github.com/NubeIO/flow-framework/utils/nstring"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -15,6 +18,7 @@ import (
 //  - Worker Queue tutorial: https://www.opsdash.com/blog/job-queues-in-go.html
 
 type NetworkPollManager struct {
+	config       *config.Config
 	DBHandlerRef *dbhandler.Handler
 
 	Enable                 bool
@@ -113,7 +117,7 @@ func (pm *NetworkPollManager) ReAddDevicePoints(devUUID string) { //This is trig
 	arg.WithPoints = true
 	dev, err := pm.DBHandlerRef.GetDevice(devUUID, arg)
 	if dev == nil || err != nil {
-		pollQueueErrorMsg("ReAddDevicePoints(): cannot find device ", devUUID)
+		pm.pollQueueErrorMsg("ReAddDevicePoints(): cannot find device ", devUUID)
 		return
 	}
 	pm.PollQueue.RemovePollingPointByDeviceUUID(devUUID)
@@ -126,7 +130,7 @@ func (pm *NetworkPollManager) ReAddDevicePoints(devUUID string) { //This is trig
 	}
 }
 
-func NewPollManager(dbHandler *dbhandler.Handler, ffNetworkUUID, ffPluginUUID string) *NetworkPollManager {
+func NewPollManager(conf *config.Config, dbHandler *dbhandler.Handler, ffNetworkUUID, ffPluginUUID string) *NetworkPollManager {
 	// Make the main priority polling queue
 	queue := make([]*PollingPoint, 0)
 	pq := &PriorityPollQueue{queue}
@@ -136,13 +140,14 @@ func NewPollManager(dbHandler *dbhandler.Handler, ffNetworkUUID, ffPluginUUID st
 	heap.Init(rq) //Init needs to be called on the main PriorityQueue so that it is maintained by PollingPriority.
 	adl := make([]string, 0)
 	pqu := &QueueUnloader{nil, nil, nil}
-	npq := &NetworkPriorityPollQueue{pq, rq, pqu, ffPluginUUID, ffNetworkUUID, adl}
+	npq := &NetworkPriorityPollQueue{conf, pq, rq, pqu, ffPluginUUID, ffNetworkUUID, adl}
 	pm := new(NetworkPollManager)
+	pm.config = conf
 	pm.PollQueue = npq
 	pm.PluginQueueUnloader = pqu
 	pm.DBHandlerRef = dbHandler
-	maxpollrate := 1000 * time.Millisecond
-	pm.MaxPollRate = maxpollrate //TODO: MaxPollRate should come from a network property,but I can't find it. Also kinda implemented in StartQueueUnloader().
+	maxPollRate := 1000 * time.Millisecond
+	pm.MaxPollRate = maxPollRate //TODO: MaxPollRate should come from a network property,but I can't find it. Also kinda implemented in StartQueueUnloader().
 	pm.FFNetworkUUID = ffNetworkUUID
 	pm.FFPluginUUID = ffPluginUUID
 	pm.ASAPPriorityMaxCycleTime, _ = time.ParseDuration("2m")
@@ -153,18 +158,18 @@ func NewPollManager(dbHandler *dbhandler.Handler, ffNetworkUUID, ffPluginUUID st
 }
 
 func (pm *NetworkPollManager) GetPollRateDuration(rate model.PollRate, deviceUUID string) time.Duration {
-	pollQueueDebugMsg("GetPollRateDuration(): ", rate)
+	pm.pollQueueDebugMsg("GetPollRateDuration(): ", rate)
 	var arg api.Args
 	device, err := pm.DBHandlerRef.GetDevice(deviceUUID, arg)
 	if err != nil {
-		pollQueueDebugMsg(fmt.Sprintf("NetworkPollManager.GetPollRateDuration(): couldn't find device %s/n", deviceUUID))
+		pm.pollQueueDebugMsg(fmt.Sprintf("NetworkPollManager.GetPollRateDuration(): couldn't find device %s/n", deviceUUID))
 	}
-	pollQueueDebugMsg("GetPollRateDuration() device poll times: ", device.FastPollRate, device.NormalPollRate, device.SlowPollRate)
+	pm.pollQueueDebugMsg("GetPollRateDuration() device poll times: ", device.FastPollRate, device.NormalPollRate, device.SlowPollRate)
 
 	var duration time.Duration
 	switch rate {
 	case model.RATE_FAST:
-		pollQueueDebugMsg("GetPollRateDuration(): FAST")
+		pm.pollQueueDebugMsg("GetPollRateDuration(): FAST")
 		fastRateDuration, _ := time.ParseDuration(fmt.Sprintf("%fs", *device.FastPollRate))
 		if fastRateDuration <= 100*time.Millisecond {
 			duration = 10 * time.Second
@@ -173,7 +178,7 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate model.PollRate, deviceUUI
 		}
 
 	case model.RATE_NORMAL:
-		pollQueueDebugMsg("GetPollRateDuration(): NORMAL")
+		pm.pollQueueDebugMsg("GetPollRateDuration(): NORMAL")
 		normalRateDuration, _ := time.ParseDuration(fmt.Sprintf("%fs", *device.NormalPollRate))
 		if normalRateDuration <= 500*time.Millisecond {
 			duration = 30 * time.Second
@@ -182,7 +187,7 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate model.PollRate, deviceUUI
 		}
 
 	case model.RATE_SLOW:
-		pollQueueDebugMsg("GetPollRateDuration(): SLOW")
+		pm.pollQueueDebugMsg("GetPollRateDuration(): SLOW")
 		slowRateDuration, _ := time.ParseDuration(fmt.Sprintf("%fs", *device.SlowPollRate))
 		if slowRateDuration <= 1*time.Second {
 			duration = 120 * time.Second
@@ -191,7 +196,7 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate model.PollRate, deviceUUI
 		}
 
 	default:
-		pollQueueDebugMsg("GetPollRateDuration(): UNKNOWN")
+		pm.pollQueueDebugMsg("GetPollRateDuration(): UNKNOWN")
 		normalRateDuration, _ := time.ParseDuration(fmt.Sprintf("%fs", *device.NormalPollRate))
 		if normalRateDuration <= 500*time.Millisecond {
 			duration = 30 * time.Second
@@ -202,7 +207,7 @@ func (pm *NetworkPollManager) GetPollRateDuration(rate model.PollRate, deviceUUI
 
 	if duration.Milliseconds() <= 100 {
 		duration = 30 * time.Second
-		pollQueueErrorMsg("NetworkPollManager.GetPollRateDuration: invalid PollRate duration. Set to 30 seconds/n")
+		pm.pollQueueErrorMsg("NetworkPollManager.GetPollRateDuration: invalid PollRate duration. Set to 30 seconds/n")
 	}
 	return duration
 }
@@ -212,4 +217,16 @@ func (pm *NetworkPollManager) PollingFinished(pp *PollingPoint, pollStartTime ti
 	pollDuration := pollEndTime.Sub(pollStartTime)
 	pollTimeSecs := pollDuration.Seconds()
 	callback(pp, writeSuccess, readSuccess, pollTimeSecs, false) //(pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint, writeSuccess, readSuccess bool)
+}
+
+func (pm *NetworkPollManager) pollQueueDebugMsg(args ...interface{}) {
+	if nstring.InEqualIgnoreCase(pm.config.LogLevel, "DEBUG") {
+		prefix := "Modbus Poll Queue: "
+		log.Info(prefix, args)
+	}
+}
+
+func (pm *NetworkPollManager) pollQueueErrorMsg(args ...interface{}) {
+	prefix := "Modbus Poll Queue: "
+	log.Error(prefix, args)
 }

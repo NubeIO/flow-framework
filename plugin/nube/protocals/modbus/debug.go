@@ -2,28 +2,24 @@ package main
 
 import (
 	"fmt"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/pollqueue"
+	"github.com/NubeIO/flow-framework/utils/nstring"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	log "github.com/sirupsen/logrus"
 )
 
-func modbusDebugMsg(args ...interface{}) {
-	debugMsgEnable := true
-	if debugMsgEnable {
+func (inst *Instance) modbusDebugMsg(args ...interface{}) {
+	if nstring.InEqualIgnoreCase(inst.config.LogLevel, "DEBUG") {
 		prefix := "Modbus: "
 		log.Info(prefix, args)
 	}
 }
 
-func modbusErrorMsg(args ...interface{}) {
-	debugMsgEnable := true
-	if debugMsgEnable {
-		prefix := "Modbus: "
-		log.Error(prefix, args)
-	}
+func (inst *Instance) modbusErrorMsg(args ...interface{}) {
+	prefix := "Modbus: "
+	log.Error(prefix, args)
 }
 
-func printPointDebugInfo(pnt *model.Point) {
+func (inst *Instance) printPointDebugInfo(pnt *model.Point) {
 	printString := "\n\n"
 	if pnt != nil {
 		printString += fmt.Sprint("Point: ", pnt.UUID, " ", pnt.Name, "\n")
@@ -104,14 +100,9 @@ func printPointDebugInfo(pnt *model.Point) {
 				printString += fmt.Sprint("_16: ", *pnt.Priority.P16, "\n")
 			}
 		}
-		modbusDebugMsg(printString)
+		inst.modbusDebugMsg(printString)
 		return
 	}
-	modbusDebugMsg("ERROR: INVALID POINT")
-}
+	inst.modbusDebugMsg("ERROR: INVALID POINT")
 
-func printPollingPointDebugInfo(pp *pollqueue.PollingPoint) {
-	if pp != nil {
-		modbusDebugMsg(fmt.Sprintf("ModbusPolling() pp %+v", pp))
-	}
 }

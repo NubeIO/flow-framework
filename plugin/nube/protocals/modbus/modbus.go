@@ -53,7 +53,7 @@ func (inst *Instance) setClient(network *model.Network, device *model.Device, ca
 		err := handler.Connect()
 		defer handler.Close()
 		if err != nil {
-			modbusErrorMsg(fmt.Sprintf("setClient:  %v. port:%s", err, serialPort))
+			inst.modbusErrorMsg(fmt.Sprintf("setClient:  %v. port:%s", err, serialPort))
 			return smod.ModbusClient{PortUnavailable: true}, err
 		}
 		mc := modbus.NewClient(handler)
@@ -64,14 +64,14 @@ func (inst *Instance) setClient(network *model.Network, device *model.Device, ca
 	} else {
 		url, err := uurl.JoinIpPort(device.Host, device.Port)
 		if err != nil {
-			modbusErrorMsg(fmt.Sprintf("modbus: failed to validate device IP %s\n", url))
+			inst.modbusErrorMsg(fmt.Sprintf("modbus: failed to validate device IP %s\n", url))
 			return smod.ModbusClient{}, err
 		}
 		handler := modbus.NewTCPClientHandler(url)
 		err = handler.Connect()
 		defer handler.Close()
 		if err != nil {
-			modbusErrorMsg(fmt.Sprintf("setClient:  %v. port:%s", err, url))
+			inst.modbusErrorMsg(fmt.Sprintf("setClient:  %v. port:%s", err, url))
 			return smod.ModbusClient{PortUnavailable: true}, err
 		}
 		mc := modbus.NewClient(handler)

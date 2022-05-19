@@ -74,7 +74,7 @@ func supportedObjects() *array.Array {
 // RegisterWebhook implements plugin.Webhooker
 func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 	inst.basePath = basePath
-	modbusDebugMsg(fmt.Sprintf("RegisterWebhook(): %+v\n", inst))
+	inst.modbusDebugMsg(fmt.Sprintf("RegisterWebhook(): %+v\n", inst))
 	mux.POST(plugin.NetworksURL, func(ctx *gin.Context) {
 		body, _ := plugin.GetBODYNetwork(ctx)
 		network, err := inst.addNetwork(body)
@@ -142,7 +142,7 @@ func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 		netType := body.Network.TransportType
 		mbClient, err := inst.setClient(body.Network, body.Device, false)
 		if err != nil {
-			modbusErrorMsg(err, "ERROR ON set modbus client")
+			inst.modbusErrorMsg(err, "ERROR ON set modbus client")
 			ctx.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
@@ -153,19 +153,19 @@ func (inst *Instance) RegisterWebhook(basePath string, mux *gin.RouterGroup) {
 		} else if netType == model.TransType.IP {
 			url, err := uurl.JoinIpPort(body.Device.Host, body.Device.Port)
 			if err != nil {
-				modbusErrorMsg(fmt.Sprintf("failed to validate device IP %s\n", url))
+				inst.modbusErrorMsg(fmt.Sprintf("failed to validate device IP %s\n", url))
 				ctx.JSON(http.StatusBadRequest, err.Error())
 				return
 			}
 			mbClient.TCPClientHandler.Address = url
 			mbClient.TCPClientHandler.SlaveID = byte(body.Device.AddressId)
 		}
-		_, responseValue, err := networkRequest(mbClient, body.Point, false)
+		_, responseValue, err := inst.networkRequest(mbClient, body.Point, false)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		modbusDebugMsg("responseValue", responseValue)
+		inst.modbusDebugMsg("responseValue", responseValue)
 		ctx.JSON(http.StatusOK, responseValue)
 		return
 	})

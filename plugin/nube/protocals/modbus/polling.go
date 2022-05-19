@@ -110,7 +110,7 @@ func (inst *Instance) ModbusPolling() error {
 				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 				continue
 			}
-			//netPollMan.PrintPollQueuePointUUIDs()
+			netPollMan.PrintPollQueuePointUUIDs()
 			//printPollingPointDebugInfo(pp)
 
 			var devArg api.Args

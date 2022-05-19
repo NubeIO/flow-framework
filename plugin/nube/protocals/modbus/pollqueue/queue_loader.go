@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/flow-framework/utils/boolean"
+	"github.com/NubeIO/flow-framework/utils/nstring"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	"time"
 )
@@ -54,24 +55,27 @@ func (pm *NetworkPollManager) RebuildPollingQueue() error {
 }
 
 func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
-	fmt.Println("")
-	hasNextPollPoint := 0
-	if pm.PluginQueueUnloader.NextPollPoint != nil {
-		hasNextPollPoint = 1
+	if nstring.InEqualIgnoreCase(pm.config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
+		printString := "\n\n"
+		hasNextPollPoint := 0
+		if pm.PluginQueueUnloader.NextPollPoint != nil {
+			hasNextPollPoint = 1
+		}
+		printString += fmt.Sprint("PrintPollQueuePointUUIDs: (NOTE: THE CURRENT PollPoint HAS ALREADY BEEN REMOVED FROM THE QUEUES AT THIS POINT!!\nTOTAL COUNT = ", hasNextPollPoint+pm.PollQueue.PriorityQueue.Len()+pm.PollQueue.StandbyPollingPoints.Len(), "\n")
+		printString += fmt.Sprint("NextPollPoint: ", "\n")
+		printString += fmt.Sprintf("%+v\n", pm.PluginQueueUnloader.NextPollPoint)
+		printString += fmt.Sprint("PollQueue: COUNT = ", pm.PollQueue.PriorityQueue.Len(), ": ", "\n")
+		for _, pp := range pm.PollQueue.PriorityQueue.PriorityQueue {
+			printString += fmt.Sprint(pp.FFPointUUID, " - ", pp.PollPriority, "; ")
+		}
+		printString += fmt.Sprint("", "\n")
+		printString += fmt.Sprint("StandbyPollingPoints COUNT = ", pm.PollQueue.StandbyPollingPoints.Len(), ": ", "\n")
+		for _, pp := range pm.PollQueue.StandbyPollingPoints.PriorityQueue {
+			printString += fmt.Sprint(pp.FFPointUUID, " - ", pp.PollPriority, ", repoll timer:", pp.RepollTimer != nil, "; ")
+		}
+		printString += fmt.Sprint("\n")
+		pm.pollQueueDebugMsg(printString)
 	}
-	fmt.Println("PrintPollQueuePointUUIDs TOTAL COUNT = ", hasNextPollPoint+pm.PollQueue.PriorityQueue.Len()+pm.PollQueue.StandbyPollingPoints.Len())
-	fmt.Print("NextPollPoint: ")
-	fmt.Printf("%+v\n", pm.PluginQueueUnloader.NextPollPoint)
-	fmt.Print("PollQueue: COUNT = ", pm.PollQueue.PriorityQueue.Len(), ": ")
-	for _, pp := range pm.PollQueue.PriorityQueue.PriorityQueue {
-		fmt.Print(pp.FFPointUUID, " - ", pp.PollPriority, "; ")
-	}
-	fmt.Println("")
-	fmt.Print("StandbyPollingPoints COUNT = ", pm.PollQueue.StandbyPollingPoints.Len(), ": ")
-	for _, pp := range pm.PollQueue.StandbyPollingPoints.PriorityQueue {
-		fmt.Print(pp.FFPointUUID, " - ", pp.PollPriority, ", repoll timer:", pp.RepollTimer != nil, "; ")
-	}
-	fmt.Println("\n \n")
 }
 
 func (pm *NetworkPollManager) printPointDebugInfo(pnt *model.Point) {
@@ -168,7 +172,7 @@ func (pm *NetworkPollManager) printPollingPointDebugInfo(pp *PollingPoint) {
 }
 
 func (pm *NetworkPollManager) PollCompleteStatsUpdate(pp *PollingPoint, pollTimeSecs float64) {
-	pm.pollQueueDebugMsg("PollCompleteStatsUpdate()")
+	//pm.pollQueueDebugMsg("PollCompleteStatsUpdate()")
 
 	pm.AveragePollExecuteTimeSecs = ((pm.AveragePollExecuteTimeSecs * float64(pm.TotalPollCount)) + pollTimeSecs) / (float64(pm.TotalPollCount) + 1)
 	pm.TotalPollCount++
@@ -232,7 +236,7 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 	//Reset poll priority to set value (in cases where pp has been escalated to ASAP).
 	pp.PollPriority = point.PollPriority
 
-	pm.pollQueueDebugMsg(fmt.Sprintf("PollingPointCompleteNotification: point %+v", point))
+	//pm.pollQueueDebugMsg(fmt.Sprintf("PollingPointCompleteNotification: point %+v", point))
 	//point.PrintPointValues()
 
 	//If the device was deleted while this point was being polled, discard the PollingPoint
@@ -264,7 +268,7 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 		if readSuccess {
 			point.ReadPollRequired = boolean.NewFalse()
 			duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
-			pm.pollQueueDebugMsg("duration: ", duration)
+			//pm.pollQueueDebugMsg("duration: ", duration)
 			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
 			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp, point.WriteMode))
 			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
@@ -338,7 +342,7 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 		point.WritePollRequired = boolean.NewTrue()
 		if writeSuccess {
 			duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
-			pm.pollQueueDebugMsg("duration: ", duration)
+			//pm.pollQueueDebugMsg("duration: ", duration)
 			// This line sets a timer to re-add the point to the poll queue after the PollRate time.
 			pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp, point.WriteMode))
 			addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
@@ -388,10 +392,10 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 
 	case model.WriteAndMaintain: //WriteAndMaintain    If write_successful: Re-add with ReadPollRequired true, WritePollRequired false.  Need to check that write value matches present value after each read poll.
 		point.ReadPollRequired = boolean.NewTrue()
-		pm.pollQueueDebugMsg(fmt.Sprintf("WriteAndMaintain point %+v\n", point))
+		//pm.pollQueueDebugMsg(fmt.Sprintf("WriteAndMaintain point %+v\n", point))
 		writeValuePointer := point.Priority.GetHighestPriorityValue()
 		if writeValuePointer != nil {
-			pm.pollQueueDebugMsg(fmt.Sprintf("WriteAndMaintain writeValuePointer %+v\n", *writeValuePointer))
+			//pm.pollQueueDebugMsg(fmt.Sprintf("WriteAndMaintain writeValuePointer %+v\n", *writeValuePointer))
 			writeValue := *writeValuePointer
 			noPV := true
 			var presentValue float64
@@ -410,7 +414,7 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 			} else {
 				point.WritePollRequired = boolean.NewFalse()
 				duration := pm.GetPollRateDuration(point.PollRate, pp.FFDeviceUUID)
-				pm.pollQueueDebugMsg("duration: ", duration)
+				//pm.pollQueueDebugMsg("duration: ", duration)
 				// This line sets a timer to re-add the point to the poll queue after the PollRate time.
 				pp.RepollTimer = time.AfterFunc(duration, pm.MakePollingPointRepollCallback(pp, point.WriteMode))
 				addSuccess := pm.PollQueue.StandbyPollingPoints.AddPollingPoint(pp)
@@ -421,7 +425,7 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 		}
 	}
 
-	pm.pollQueueDebugMsg(fmt.Sprintf("PollingPointCompleteNotification (ABOUT TO DB UPDATE): point  %+v", point))
+	//pm.pollQueueDebugMsg(fmt.Sprintf("PollingPointCompleteNotification (ABOUT TO DB UPDATE): point  %+v", point))
 	//point.PrintPointValues()
 	//TODO: WOULD BE GOOD IF THIS COULD BE MOVED TO app.go
 	point, err = pm.DBHandlerRef.UpdatePoint(point.UUID, point, true)
@@ -432,7 +436,7 @@ func (pm *NetworkPollManager) PollingPointCompleteNotification(pp *PollingPoint,
 func (pm *NetworkPollManager) MakePollingPointRepollCallback(pp *PollingPoint, writeMode model.WriteMode) func() {
 	//log.Info("MakePollingPointRepollCallback()")
 	f := func() {
-		pm.pollQueueDebugMsg(fmt.Sprintf("CALL PollingPointRepollCallback func() pp: %+v", pp))
+		//pm.pollQueueDebugMsg(fmt.Sprintf("CALL PollingPointRepollCallback func() pp: %+v", pp))
 		pp.RepollTimer = nil
 		_, removeSuccess := pm.PollQueue.StandbyPollingPoints.RemovePollingPointByPointUUID(pp.FFPointUUID)
 		if !removeSuccess {
@@ -477,13 +481,13 @@ func (pm *NetworkPollManager) MakePollingPointRepollCallback(pp *PollingPoint, w
 		pm.PollQueue.AddPollingPoint(pp)
 
 		//TODO: WOULD BE GOOD IF THIS COULD BE MOVED TO app.go
-		pm.pollQueueDebugMsg(fmt.Sprintf("pm.DBHandlerRef: %+v", pm.DBHandlerRef))
+		//pm.pollQueueDebugMsg(fmt.Sprintf("pm.DBHandlerRef: %+v", pm.DBHandlerRef))
 		point, err = pm.DBHandlerRef.UpdatePoint(point.UUID, point, true)
 		if err != nil || point == nil {
 			pm.pollQueueErrorMsg(fmt.Sprintf("point DB UPDATE FAILED Err: %+v", err))
 			return
 		}
-		pm.pollQueueDebugMsg(fmt.Sprintf("point after DB UPDATE: %+v", point))
+		//pm.pollQueueDebugMsg(fmt.Sprintf("point after DB UPDATE: %+v", point))
 		//printPointDebugInfo(point)
 	}
 	return f

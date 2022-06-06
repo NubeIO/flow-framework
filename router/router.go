@@ -125,7 +125,7 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 	engine.GET("/api/system/ping", healthHandler.Health)
 	engine.Static("/image", conf.GetAbsUploadedImagesDir())
 	engine.Use(func(ctx *gin.Context) {
-		//ctx.Header("Content-Type", "application/json") //THIS WILL NOT WORK on the FLOW-ENG// if you comment it out it will detected as text on proxy-handlers
+		//ctx.Header("Content-Type", "application/json") // THIS WILL NOT WORK on the FLOW-ENG// if you comment it out it will detected as text on proxy-handlers
 		for header, value := range conf.Server.ResponseHeaders {
 			ctx.Header(header, value)
 		}

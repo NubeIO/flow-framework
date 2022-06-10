@@ -3,7 +3,7 @@ package schedule
 import (
 	"errors"
 	"fmt"
-	"github.com/NubeIO/lib-date/datelib"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/times/utilstime"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"strings"

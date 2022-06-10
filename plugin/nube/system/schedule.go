@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/NubeIO/flow-framework/src/schedule"
 	"github.com/NubeIO/flow-framework/utils/boolean"
-	"github.com/NubeIO/lib-date/datelib"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/times/utilstime"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	log "github.com/sirupsen/logrus"
 	"strings"

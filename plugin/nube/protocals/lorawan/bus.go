@@ -4,171 +4,48 @@ import (
 	"context"
 	"fmt"
 	"github.com/NubeIO/flow-framework/eventbus"
-	"github.com/NubeIO/flow-framework/mqttclient"
 	"github.com/NubeIO/flow-framework/utils/nuuid"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/mustafaturan/bus/v3"
-	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
+// decodeMQTT get devID from topic "application/1/device/a81758fffe05932d/event/up"
+func decodeMQTT(topic string) string {
+	s := strings.SplitAfter(topic, "/")
+	var matchDevice bool
+	var matchEvent bool
+	var matchUp bool
+	var deviceID string
+	for i, t := range s {
+		t = strings.ReplaceAll(t, "/", "")
+		if t == "device" {
+			matchDevice = true
+		}
+		if t == "event" {
+			matchEvent = true
+			deviceID = s[i-1]
+			deviceID = strings.ReplaceAll(deviceID, "/", "")
+		}
+		if t == "up" {
+			matchUp = true
+		}
+	}
+	if matchDevice && matchEvent && matchUp {
+		return deviceID
+
+	}
+	return ""
+}
+
 func (inst *Instance) BusServ() {
-	handlerCreated := bus.Handler{
-		Handle: func(ctx context.Context, e bus.Event) {
-			go func() {
-				// try and match is network
-				net, err := eventbus.IsNetwork(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if net != nil {
-					log.Info("BACNET BUS PluginsCreated isNetwork", " ", net.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-				// try and match is device
-				dev, err := eventbus.IsDevice(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if dev != nil {
-					log.Info("BACNET BUS PluginsCreated IsDevice", " ", dev.UUID)
-					// _, err = inst.addPoints(dev)
-					if err != nil {
-						return
-					}
-					return
-				}
-				// try and match is point
-				pnt, err := eventbus.IsPoint(e.Topic, e)
-				fmt.Println("ADD POINT ON BUS")
-				if err != nil {
-					return
-				}
-				// _, err = inst.addPoint(pnt)
-				if err != nil {
-					return
-				}
-				if pnt != nil {
-					log.Info("BACNET BUS PluginsCreated IsPoint", " ", pnt.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-			}()
-		},
-		Matcher: eventbus.PluginsCreated,
-	}
-	u, _ := nuuid.MakeUUID()
-	key := fmt.Sprintf("key_%s", u)
-	eventbus.GetBus().RegisterHandler(key, handlerCreated)
-	handlerUpdated := bus.Handler{
-		Handle: func(ctx context.Context, e bus.Event) {
-			go func() {
-				// try and match is network
-				net, err := eventbus.IsNetwork(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if net != nil {
-					log.Info("BACNET BUS PluginsUpdated isNetwork", " ", net.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-				// try and match is device
-				dev, err := eventbus.IsDevice(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if dev != nil {
-					// _, err = inst.addPoints(dev)
-					log.Info("BACNET BUS PluginsUpdated IsDevice", " ", dev.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-				// try and match is point
-				pnt, err := eventbus.IsPoint(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if pnt != nil {
-					// _, err = inst.pointPatch(pnt)
-					log.Info("BACNET BUS PluginsUpdated IsPoint", " ", pnt.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-			}()
-		},
-		Matcher: eventbus.PluginsUpdated,
-	}
-	u, _ = nuuid.MakeUUID()
-	key = fmt.Sprintf("key_%s", u)
-	eventbus.GetBus().RegisterHandler(key, handlerUpdated)
-	handlerDeleted := bus.Handler{
-		Handle: func(ctx context.Context, e bus.Event) {
-			go func() {
-				log.Info("BACNET BUS DELETED NEW MSG", " ", e.Topic)
-				// try and match is network
-				net, err := eventbus.IsNetwork(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if net != nil {
-					log.Info("BACNET BUS DELETED isNetwork", " ", net.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-				// try and match is device
-				dev, err := eventbus.IsDevice(e.Topic, e)
-				if err != nil {
-					return
-				}
-				if dev != nil {
-					// _, err = inst.addPoints(dev)
-					log.Info("BACNET BUS DELETED IsDevice", " ", dev.UUID)
-					if err != nil {
-						return
-					}
-					return
-				}
-				// try and match is point
-				pnt, err := eventbus.IsPoint(e.Topic, e)
-				if err != nil {
-					return
-				}
-				log.Info("BACNET BUS DELETED IsPoint", " ")
-				if pnt != nil {
-					// p, err := inst.deletePoint(pnt)
-					log.Info("BACNET BUS DELETED IsPoint", " ", pnt.UUID, "WAS DELETED", " ", "p")
-					if err != nil {
-						return
-					}
-					return
-				}
-			}()
-		},
-		Matcher: eventbus.PluginsDeleted,
-	}
-	u, _ = nuuid.MakeUUID()
-	key = fmt.Sprintf("key_%s", u)
-	eventbus.GetBus().RegisterHandler(key, handlerDeleted)
 	handlerMQTT := bus.Handler{
 		Handle: func(ctx context.Context, e bus.Event) {
 			go func() {
 				p, _ := e.Data.(mqtt.Message)
-				devEUI, appID, valid := decodeMQTT(p.Topic())
-				if valid {
-					_, err := inst.mqttUpdate(p, devEUI, appID)
+				devEUI := decodeMQTT(p.Topic())
+				if devEUI != "" {
+					_, err := inst.handleMQTT(p, devEUI)
 					if err != nil {
 						return
 					}
@@ -178,34 +55,7 @@ func (inst *Instance) BusServ() {
 		},
 		Matcher: eventbus.MQTTUpdated,
 	}
-	u, _ = nuuid.MakeUUID()
-	key = fmt.Sprintf("key_%s", u)
+	u, _ := nuuid.MakeUUID()
+	key := fmt.Sprintf("key_%s", u)
 	eventbus.GetBus().RegisterHandler(key, handlerMQTT)
-}
-
-func decodeMQTT(topic string) (devEUI, appID string, valid bool) {
-	t, _ := mqttclient.TopicParts(topic)
-
-	// is from topic application
-	application := t.Get(0)
-	isApplication := application.(string)
-
-	// get EUI id
-	eui := t.Get(1)
-	isEUI := eui.(string)
-
-	// get app id
-	id := t.Get(1)
-	isID := id.(string)
-
-	// is from topic rx
-	rx := t.Get(4)
-	isRX := rx.(string)
-
-	if isApplication != "" && isRX != "" {
-		fmt.Println(t, "IS A VALID LORAWAN TOPIC")
-		return isEUI, isID, true
-	}
-	return "", "", false
-
 }

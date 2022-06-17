@@ -16,8 +16,14 @@ type Token struct {
 	JWT string `json:"jwt"`
 }
 
+type user struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 // NewChirp returns a new instance of NewChirp.
 func NewChirp(name string, password string, address string, port string) *RestClient {
+	log.Infof("lorawan: try and connect to chirpstack on user:%s password:*** ip:%s, port:%s", name, address, port)
 	client := resty.New()
 	client.SetDebug(false)
 	url := fmt.Sprintf("http://%s:%s", address, port)
@@ -28,7 +34,7 @@ func NewChirp(name string, password string, address string, port string) *RestCl
 	resp, err := client.R().
 		SetResult(&t).
 		SetHeader("Content-Type", "application/json").
-		SetBody(`{"email":"admin", "password":"admin"}`).
+		SetBody(user{Email: name, Password: password}).
 		Post("/api/internal/login")
 	if err != nil {
 		log.Println("getToken err:", err, resp.Status())

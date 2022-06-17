@@ -61,7 +61,7 @@ func main() {
 	}
 	auth.CreateInternalTokenIfDoesNotExist()
 	connection := path.Join(conf.GetAbsDataDir(), conf.Database.Connection)
-	localBroker := "tcp://0.0.0.0:1883" // TODO add to config, this is meant to be an unsecure broker
+	localBroker := "tcp://192.168.15.189:1883" // TODO add to config, this is meant to be an unsecure broker
 	connected, err := mqttclient.InternalMQTT(localBroker)
 	if err != nil {
 		log.Errorln(err)
@@ -75,7 +75,7 @@ func main() {
 	intHandler(db)
 	defer db.Close()
 	engine := router.Create(db, conf)
-	eventbus.RegisterMQTTBus()
+	eventbus.RegisterMQTTBus(false)
 	initHistory(db, conf)
 	runner.Run(engine, conf)
 }

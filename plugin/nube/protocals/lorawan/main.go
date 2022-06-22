@@ -21,7 +21,7 @@ const isNetwork = true
 const maxAllowedNetworks = 1
 const networkType = "lorawan"
 const transportType = "ip" // serial, ip
-const ip = "192.168.15.189"
+const ip = "0.0.0.0"
 const port = "8080"
 
 // Instance is plugin instance

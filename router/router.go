@@ -139,9 +139,7 @@ func Create(db *database.GormDatabase, conf *config.Configuration) *gin.Engine {
 	engine.OPTIONS("/*any")
 
 	handleAuth := func(c *gin.Context) { c.Next() }
-	useAuth := *conf.Auth
-	useAuth = false
-	if useAuth {
+	if *conf.Auth {
 		handleAuth = authHandler.HandleAuth()
 	}
 	apiRoutes := engine.Group("/api", handleAuth)

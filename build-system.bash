@@ -94,71 +94,61 @@ echo -e "${GREEN}Creating a plugin directory if does not exist at: ${pluginDir}$
 rm -rf $pluginDir/* || true
 mkdir -p $pluginDir
 
+ERROR='false'
+
+function buildPlugin {
+  go build -buildmode=plugin -o system.so $2/*.go && cp system.so $pluginDir
+  if [ $? -eq 0 ]; then
+    echo -e "${GREEN}BUILD $1"
+  else
+    echo -e "${RED}ERROR BUILD $1"
+    ERROR='true'
+  fi
+}
+
+pushd $dir > /dev/null
+
 if [ ${SYSTEM} == true ]; then
-  cd $dir/plugin/nube/system/
-  go build -buildmode=plugin -o system.so *.go && cp system.so $pluginDir
-  echo -e "${GREEN}BUILD SYSTEM"
+  buildPlugin "SYSTEM" plugin/nube/system
 fi
 if [ ${EDGE28} == true ]; then
-  cd $dir/plugin/nube/protocals/edge28
-  go build -buildmode=plugin -o edge28.so *.go && cp edge28.so $pluginDir
-  echo -e "${GREEN}BUILD EDGE28"
+  buildPlugin "EDGE28" plugin/nube/protocals/edge28
 fi
 if [ ${MODBUS} == true ]; then
-  cd $dir/plugin/nube/protocals/modbus
-  go build -buildmode=plugin -o modbus.so *.go && cp modbus.so $pluginDir
-  echo -e "${GREEN}BUILD MODBUS"
+  buildPlugin "MODBUS" plugin/nube/protocals/modbus
 fi
 if [ ${LORA} == true ]; then
-  cd $dir/plugin/nube/protocals/lora
-  go build -buildmode=plugin -o lora.so *.go && cp lora.so $pluginDir
-  echo -e "${GREEN}BUILD LORA"
+  buildPlugin "LORA" plugin/nube/protocals/lora
 fi
 if [ ${BACNET} == true ]; then
-  cd $dir/plugin/nube/protocals/bacnetserver
-  go build -buildmode=plugin -o bacnetserver.so *.go && cp bacnetserver.so $pluginDir
-  echo -e "${GREEN}BUILD BACNET"
+  buildPlugin "BACNET" plugin/nube/protocals/bacnetserver
 fi
 if [ ${LORAWAN} == true ]; then
-  cd $dir/plugin/nube/protocals/lorawan
-  go build -buildmode=plugin -o lorawan.so *.go && cp lorawan.so $pluginDir
-  echo -e "${GREEN}BUILD LORAWAN"
+  buildPlugin "LORAWAN" plugin/nube/protocals/lorawan
 fi
 if [ ${BACNET_MASTER} == true ]; then
-  cd $dir/plugin/nube/protocals/bacnetmaster
-  go build -buildmode=plugin -o bacnetmaster.so *.go && cp bacnetmaster.so $pluginDir
-  echo -e "${GREEN}BUILD BACNET_MASTER"
+  buildPlugin "BACNET_MASTER" plugin/nube/protocals/bacnetmaster
 fi
 if [ ${HISTORY} == true ]; then
-  cd $dir/plugin/nube/database/history
-  go build -buildmode=plugin -o history.so *.go && cp history.so $pluginDir
-  echo -e "${GREEN}BUILD HISTORY"
+  buildPlugin "HISTORY" plugin/nube/database/history
 fi
 if [ ${INFLUX} == true ]; then
-  cd $dir/plugin/nube/database/influx
-  go build -buildmode=plugin -o influx.so *.go && cp influx.so $pluginDir
-  echo -e "${GREEN}BUILD INFLUX"
+  buildPlugin "INFLUX" plugin/nube/database/influx
 fi
 if [ ${RUBIXIO} == true ]; then
-  cd $dir/plugin/nube/protocals/rubixio
-  go build -buildmode=plugin -o rubixio.so *.go && cp rubixio.so $pluginDir
-  echo -e "${GREEN}BUILD RUBIXIO"
+  buildPlugin "RUBIXIO" plugin/nube/protocals/rubixio
 fi
 if [ ${MODBUSSERVER} == true ]; then
-  cd $dir/plugin/nube/protocals/modbusserver
-  go build -buildmode=plugin -o modbusserver.so *.go && cp modbusserver.so $pluginDir
-  echo -e "${GREEN}BUILD MODBUS-SERVER"
+  buildPlugin "MODBUSSERVER" plugin/nube/protocals/modbusserver
 fi
 if [ ${POSTGRES} == true ]; then
-  cd $dir/plugin/nube/database/postgres
-  go build -buildmode=plugin -o postgres.so *.go && cp postgres.so $pluginDir
-  echo -e "${GREEN}BUILD POSTGRES"
+  buildPlugin "POSTGRES" plugin/nube/database/postgres
 fi
 
-cd $dir
+popd > /dev/null
 
-if [ ${PRODUCTION} == true ]; then
-  go run app.go -g /data/flow-framework -d data --prod
-else
-  go run app.go
-fi
+# if [ ${PRODUCTION} == true ]; then
+#   go run app.go -g /data/flow-framework -d data --prod
+# else
+#   go run app.go
+# fi

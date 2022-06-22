@@ -13,10 +13,9 @@ func InternalMQTT(ip string) (bool, error) {
 		Servers: []string{ip},
 	})
 	if err != nil {
-		log.Println(err, "CONNECT to broker")
+		log.Println("MQTT connection error:", err)
 		return false, err
 	}
-	log.Println(err, "CONNECT to broker")
 	m = c
 	err = c.Connect()
 	if err != nil {

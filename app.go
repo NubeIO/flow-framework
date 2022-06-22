@@ -1,6 +1,11 @@
 package main
 
 import (
+	"os"
+	"path"
+	"strconv"
+	"time"
+
 	"github.com/NubeIO/flow-framework/auth"
 	"github.com/NubeIO/flow-framework/config"
 	"github.com/NubeIO/flow-framework/database"
@@ -15,9 +20,6 @@ import (
 	"github.com/NubeIO/flow-framework/src/jobs"
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"path"
-	"time"
 )
 
 func intHandler(db *database.GormDatabase) {
@@ -61,12 +63,11 @@ func main() {
 	}
 	auth.CreateInternalTokenIfDoesNotExist()
 	connection := path.Join(conf.GetAbsDataDir(), conf.Database.Connection)
-	localBroker := "tcp://192.168.15.189:1883" // TODO add to config, this is meant to be an unsecure broker
-	connected, err := mqttclient.InternalMQTT(localBroker)
+	mqttBroker := "tcp://" + conf.MQTT.Address + ":" + strconv.Itoa(conf.MQTT.Port)
+	_, err := mqttclient.InternalMQTT(mqttBroker)
 	if err != nil {
 		log.Errorln(err)
 	}
-	log.Infoln("INIT INTERNAL MQTT CONNECTED", connected, "ERROR:", err)
 	eventbus.Init()
 	db, err := database.New(conf.Database.Dialect, connection, conf.Database.LogLevel)
 	if err != nil {

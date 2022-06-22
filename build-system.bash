@@ -6,6 +6,7 @@ GREEN="\033[32m"
 RED="\033[31m"
 
 PRODUCTION=false
+BUILD_ONLY=false
 SYSTEM=false
 EDGE28=false
 MODBUS=false
@@ -21,7 +22,8 @@ POSTGRES=false
 
 help() {
   echo "Service commands:"
-  echo -e "   ${GREEN}--prod | --production: add these suffix to start production"
+  echo -e "   --prod | --production: add these suffix to start production"
+  echo -e "   --build-only : don't run program"
 }
 
 parseCommand() {
@@ -33,6 +35,9 @@ parseCommand() {
       ;;
     --prod | --production)
       PRODUCTION=true
+      ;;
+    --build-only)
+      BUILD_ONLY=true
       ;;
     --system)
       SYSTEM=true
@@ -94,7 +99,7 @@ echo -e "${GREEN}Creating a plugin directory if does not exist at: ${pluginDir}$
 rm -rf $pluginDir/* || true
 mkdir -p $pluginDir
 
-ERROR='false'
+BUILD_ERROR=false
 
 function buildPlugin {
   go build -buildmode=plugin -o system.so $2/*.go && cp system.so $pluginDir
@@ -102,7 +107,7 @@ function buildPlugin {
     echo -e "${GREEN}BUILD $1"
   else
     echo -e "${RED}ERROR BUILD $1"
-    ERROR='true'
+    BUILD_ERROR=true
   fi
 }
 
@@ -145,10 +150,18 @@ if [ ${POSTGRES} == true ]; then
   buildPlugin "POSTGRES" plugin/nube/database/postgres
 fi
 
+if [ ${BUILD_ERROR} == true ]; then
+    exit -1
+fi
+
 popd > /dev/null
 
-# if [ ${PRODUCTION} == true ]; then
-#   go run app.go -g /data/flow-framework -d data --prod
-# else
-#   go run app.go
-# fi
+if [ ${BUILD_ONLY} == true ]; then
+    exit 0
+fi
+
+if [ ${PRODUCTION} == true ]; then
+  go run app.go -g /data/flow-framework -d data --prod
+else
+  go run app.go
+fi

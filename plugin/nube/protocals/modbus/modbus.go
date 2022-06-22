@@ -28,6 +28,7 @@ func (inst *Instance) setClient(network *model.Network, device *model.Device, ca
 		stopBits := 1
 		dataBits := 8
 		parity := "N"
+		timeout := 2 * time.Second
 		if network.SerialPort != nil && *network.SerialPort != "" {
 			serialPort = nils.StringIsNil(network.SerialPort)
 		}
@@ -43,12 +44,18 @@ func (inst *Instance) setClient(network *model.Network, device *model.Device, ca
 		if network.SerialParity != nil {
 			parity = nils.StringIsNil(network.SerialParity)
 		}
+		if network.SerialTimeout != nil {
+			timeoutSecs := int64(nils.IntIsNil(network.SerialTimeout))
+			if timeoutSecs > 0 {
+				timeout = time.Duration(timeoutSecs) * time.Second
+			}
+		}
 		handler := modbus.NewRTUClientHandler(serialPort)
 		handler.BaudRate = baudRate
 		handler.DataBits = dataBits
 		handler.Parity = setParity(parity)
 		handler.StopBits = stopBits
-		handler.Timeout = 5 * time.Second
+		handler.Timeout = timeout
 
 		err := handler.Connect()
 		defer handler.Close()

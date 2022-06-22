@@ -16,7 +16,7 @@ import (
 )
 
 // THE FOLLOWING GROUP OF FUNCTIONS ARE THE PLUGIN RESPONSES TO API CALLS FOR PLUGIN POINT, DEVICE, NETWORK (CRUD)
-// addDevice add network. Called via API call (or wizard)
+// addNetwork add network. Called via API call (or wizard)
 func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, err error) {
 	if body == nil {
 		inst.modbusErrorMsg("addNetwork(): nil network object")

@@ -6,6 +6,10 @@
 - reformat nil helpers
 - add in sync on flow-networks
 
+## [v0.5.6](https://github.com/NubeIO/flow-framework/tree/v0.5.6) (2022-06-17)
+
+- minor modbus updates
+
 ## [v0.5.5](https://github.com/NubeIO/flow-framework/tree/v0.5.5) (2022-06-10)
 
 - redo of bacnet-server plugin

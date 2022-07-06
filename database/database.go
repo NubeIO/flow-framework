@@ -41,6 +41,7 @@ func New(dialect, connection, logLevel string) (*GormDatabase, error) {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	// db.Exec("PRAGMA journal_mode=WAL;")
 
 	if err = migration.AutoMigrate(db); err != nil {
 		panic("failed to AutoMigrate")

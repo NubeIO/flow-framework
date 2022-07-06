@@ -116,7 +116,10 @@ func (d *GormDatabase) GetProducerHistoriesPointsForSync(id string, timeStamp st
 }
 
 func (d *GormDatabase) CreateProducerHistory(history *model.ProducerHistory) (*model.ProducerHistory, error) {
-	return d.appendProducerHistory(history)
+	if err := d.DB.Create(&history).Error; err != nil {
+		return nil, err
+	}
+	return history, nil
 }
 
 // DeleteProducerHistoriesByProducerUUID delete all history for given producer_uuid.
@@ -129,23 +132,24 @@ func (d *GormDatabase) DeleteProducerHistoriesByProducerUUID(pUuid string, args 
 }
 
 func (d *GormDatabase) appendProducerHistory(body *model.ProducerHistory) (*model.ProducerHistory, error) {
-	var limit = 100 // TODO add in the limit as a field in the producer
-	var count int64
-	ids := d.DB.Model(&model.ProducerHistory{}).
-		Select("id").
-		Where("producer_uuid = ?", body.ProducerUUID).
-		Order("timestamp desc").
-		Limit(limit - 1)
-	ids.Count(&count)
-	if count >= int64(limit) {
-		query := d.DB.
-			Where("producer_uuid = ?", body.ProducerUUID).
-			Where("id not in (?)", ids).
-			Delete(&model.ProducerHistory{})
-		if query.Error != nil {
-			return nil, query.Error
-		}
-	}
+	// It will be cleared out by cleaner
+	// var limit = 100 // TODO add in the limit as a field in the producer
+	// var count int64
+	// ids := d.DB.Model(&model.ProducerHistory{}).
+	// 	Select("id").
+	// 	Where("producer_uuid = ?", body.ProducerUUID).
+	// 	Order("timestamp desc").
+	// 	Limit(limit - 1)
+	// ids.Count(&count)
+	// if count >= int64(limit) {
+	// 	query := d.DB.
+	// 		Where("producer_uuid = ?", body.ProducerUUID).
+	// 		Where("id not in (?)", ids).
+	// 		Delete(&model.ProducerHistory{})
+	// 	if query.Error != nil {
+	// 		return nil, query.Error
+	// 	}
+	// }
 	if err := d.DB.Create(&body).Error; err != nil {
 		return nil, err
 	}

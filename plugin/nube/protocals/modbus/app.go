@@ -178,7 +178,8 @@ func (inst *Instance) updateDevice(body *model.Device) (device *model.Device, er
 			if boolean.IsTrue(pnt.Enable) {
 				pp := pollqueue.NewPollingPoint(pnt.UUID, pnt.DeviceUUID, dev.NetworkUUID, netPollMan.FFPluginUUID)
 				pp.PollPriority = pnt.PollPriority
-				netPollMan.PollQueue.AddPollingPoint(pp)
+				netPollMan.PollingPointCompleteNotification(pp, false, false, 0, true) // This will perform the queue re-add actions based on Point WriteMode. TODO: check function of pointUpdate argument.
+				//netPollMan.PollQueue.AddPollingPoint(pp)  //This is the original tested way, above is new so that on device update, it will re-poll write-once points
 			}
 		}
 
@@ -189,7 +190,8 @@ func (inst *Instance) updateDevice(body *model.Device) (device *model.Device, er
 			if boolean.IsTrue(pnt.Enable) {
 				pp := pollqueue.NewPollingPoint(pnt.UUID, pnt.DeviceUUID, dev.NetworkUUID, netPollMan.FFPluginUUID)
 				pp.PollPriority = pnt.PollPriority
-				netPollMan.PollQueue.AddPollingPoint(pp)
+				netPollMan.PollingPointCompleteNotification(pp, false, false, 0, true) // This will perform the queue re-add actions based on Point WriteMode. TODO: check function of pointUpdate argument.
+				//netPollMan.PollQueue.AddPollingPoint(pp)  //This is the original tested way, above is new so that on device update, it will re-poll write-once points
 			}
 		}
 	}
@@ -225,7 +227,7 @@ func (inst *Instance) updatePoint(body *model.Point) (point *model.Point, err er
 
 	point, err = inst.db.UpdatePoint(body.UUID, body, true)
 	if err != nil || point == nil {
-		inst.modbusDebugMsg("updatePoint(): bad response from UpdatePoint()")
+		inst.modbusDebugMsg("updatePoint(): bad response from UpdatePoint() err:", err)
 		return nil, err
 	}
 

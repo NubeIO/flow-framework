@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [v0.6.0](https://github.com/NubeIO/flow-framework/tree/v0.6.0) (2022-07-14)
+
+- Merge pull request #528 from NubeIO/redo-lorawan
+- added api for polling stats
+- Improvements: update history logs after histories gets stored
+- Fix: conflict issue on bulk create
+- Fix: writeValue and point.WriteValue discrepancy resulting infinite looping (#566)
+- fixed edge28 and point update functions
+
 ## [v0.5.9](https://github.com/NubeIO/flow-framework/tree/v0.5.9) (2022-07-12)
 
 - improvements to edge28 plugin stability

@@ -162,31 +162,31 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 	}
 
 	priorityMap := priorityarray.ConvertToMap(*pointModel.Priority)
-	pnt, err := d.UpdatePointValue(pointModel, &priorityMap, fromPlugin)
+	pnt, _, _, _, err := d.UpdatePointValue(pointModel, &priorityMap, fromPlugin)
 	if err != nil {
 		return nil, err
 	}
 	return pnt, nil
 }
 
-func (d *GormDatabase) PointWrite(uuid string, body *model.PointWriter, fromPlugin bool) (*model.Point, error) {
+func (d *GormDatabase) PointWrite(uuid string, body *model.PointWriter, fromPlugin bool) (returnPoint *model.Point, isPresentValueChange, isWriteValueChange, isPriorityChanged bool, err error) {
 	var pointModel *model.Point
 	query := d.DB.Where("uuid = ?", uuid).Preload("Priority").First(&pointModel)
 	if query.Error != nil {
-		return nil, query.Error
+		return nil, false, false, false, query.Error
 	}
 	if body.Priority == nil {
-		return nil, errors.New("no priority value is been sent")
+		return nil, false, false, false, errors.New("no priority value is been sent")
 	} else {
 		pointModel.ValueUpdatedFlag = boolean.NewTrue()
 	}
 	pointModel.InSync = boolean.NewFalse()
 	pointModel.WritePollRequired = boolean.NewTrue()
-	point, err := d.UpdatePointValue(pointModel, body.Priority, fromPlugin)
-	return point, err
+	point, isPresentValueChange, isWriteValueChange, isPriorityChanged, err := d.UpdatePointValue(pointModel, body.Priority, fromPlugin)
+	return point, isPresentValueChange, isWriteValueChange, isPriorityChanged, err
 }
 
-func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, priority *map[string]*float64, fromPlugin bool) (*model.Point, error) {
+func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, priority *map[string]*float64, fromPlugin bool) (returnPoint *model.Point, isPresentValueChange, isWriteValueChange, isPriorityChanged bool, err error) {
 	if pointModel.PointPriorityArrayMode == "" {
 		pointModel.PointPriorityArrayMode = model.PriorityArrayToPresentValue // sets default priority array mode
 	}
@@ -233,13 +233,13 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, priority *map[s
 		presentValue = &val
 	}
 
-	isPresentValueChange := !float.ComparePtrValues(pointModel.PresentValue, presentValue) // Use for createCOVHistory
+	isPresentValueChange = !float.ComparePtrValues(pointModel.PresentValue, presentValue) // Use for createCOVHistory
 	// isWriteValueChange
 	// in some cases we don't write presentValue directly to the model.
 	// Instead of writing that, we firstly write it on writeValue & and we read that writeValue to update presentValue.
 	// Examples are: modbus, edge28 plugins
 	// So for such cases, to trigger that value we do this comparison
-	isWriteValueChange := !float.ComparePtrValues(pointModel.WriteValue, writeValue)
+	isWriteValueChange = !float.ComparePtrValues(pointModel.WriteValue, writeValue)
 	isChange := isPresentValueChange || isWriteValueChange || isPriorityChanged || presentValueTransformFault
 	pointModel.WriteValue = writeValue
 	if writeValue == nil {
@@ -265,7 +265,7 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, priority *map[s
 		_ = d.DB.Model(&pointModel).Updates(&pointModel)
 		err = d.ProducersPointWrite(pointModel.UUID, priority, pointModel.PresentValue, isPresentValueChange)
 		if err != nil {
-			return nil, err
+			return nil, false, false, false, err
 		}
 		d.DB.Model(&model.Writer{}).
 			Where("writer_thing_uuid = ?", pointModel.UUID).
@@ -274,16 +274,16 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, priority *map[s
 	if !fromPlugin { // stop looping
 		plug, err := d.GetNetworkByDeviceUUID(pointModel.DeviceUUID, api.Args{})
 		if err != nil {
-			return nil, errors.New("ERROR failed to get plugin uuid")
+			return nil, false, false, false, errors.New("ERROR failed to get plugin uuid")
 		}
 		t := fmt.Sprintf("%s.%s.%s", eventbus.PluginsUpdated, plug.PluginConfId, pointModel.UUID)
 		d.Bus.RegisterTopic(t)
 		err = d.Bus.Emit(eventbus.CTX(), t, pointModel)
 		if err != nil {
-			return nil, errors.New("ERROR on device eventbus")
+			return nil, false, false, false, errors.New("ERROR on device eventbus")
 		}
 	}
-	return pointModel, nil
+	return pointModel, isPresentValueChange, isWriteValueChange, isPriorityChanged, nil
 }
 
 func (d *GormDatabase) DeletePoint(uuid string) (bool, error) {

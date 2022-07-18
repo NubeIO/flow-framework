@@ -136,7 +136,7 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 	if body == nil {
 		return
 	}
-	point, err = inst.db.WritePoint(pntUUID, body, true)
+	point, _, _, _, err = inst.db.WritePoint(pntUUID, body, true)
 	if err != nil || point == nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (inst *Instance) pointUpdateValue(uuid string, value float64) (*model.Point
 	point.CommonFault.LastOk = time.Now().UTC()
 	priority := map[string]*float64{"_16": &value}
 	point.InSync = boolean.NewTrue()
-	_, err := inst.db.UpdatePointValue(uuid, &point, &priority, true)
+	_, _, _, _, err := inst.db.UpdatePointValue(uuid, &point, &priority, true)
 	if err != nil {
 		log.Error("bacnet-server: pointUpdateValue()", err)
 		return nil, err

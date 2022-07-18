@@ -105,7 +105,7 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 	if body == nil {
 		return
 	}
-	point, err = inst.db.WritePoint(pntUUID, body, true)
+	point, _, _, _, err = inst.db.WritePoint(pntUUID, body, true)
 	if err != nil || point == nil {
 		return nil, err
 	}
@@ -334,7 +334,7 @@ func (inst *Instance) updatePointValue(body *model.Point, value float64) error {
 		}
 		priority["_16"] = float.New(decoder.MicroEdgePointType(pnt.IoType, *body.PresentValue))
 	}
-	_, err = inst.db.UpdatePointValue(pnt.UUID, body, &priority, true)
+	_, _, _, _, err = inst.db.UpdatePointValue(pnt.UUID, body, &priority, true)
 	if err != nil {
 		log.Error("lora: UpdatePointValue()", err)
 		return err

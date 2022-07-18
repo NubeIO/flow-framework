@@ -209,7 +209,7 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 
 	// body.WritePollRequired = utils.NewTrue() // TODO: commented out this section, seems like useless
 
-	point, err = inst.db.WritePoint(pnt.UUID, body, true)
+	point, _, _, _, err = inst.db.WritePoint(pntUUID, body, true)
 	if err != nil || point == nil {
 		inst.edge28DebugMsg("writePoint(): bad response from WritePoint(), ", err)
 		return nil, err

@@ -369,18 +369,43 @@ func (pm *NetworkPollManager) MakeLockupTimerFunc(priority model.PollPriority) *
 
 	f := func() {
 		pm.pollQueueDebugMsg("Polling Lockout Timer Expired! Polling Priority: %d,  Polling Network: %s", priority, pm.FFNetworkUUID)
+		plugin, err := pm.DBHandlerRef.DB.GetPlugin(pm.FFPluginUUID)
 		switch priority {
 		case model.PRIORITY_ASAP:
 			pm.ASAPPriorityLockupAlert = true
+			if plugin != nil && err == nil {
+				pm.pollQueueErrorMsg(fmt.Sprintf("%s Plugin: ASAP Priority Poll Queue LOCKUP", plugin.Name))
+			} else {
+				pm.pollQueueErrorMsg("Unknown Plugin: ASAP Priority Poll Queue LOCKUP")
+			}
+			//TODO: update network error to show queue lockup
 
 		case model.PRIORITY_HIGH:
 			pm.HighPriorityLockupAlert = true
+			if plugin != nil && err == nil {
+				pm.pollQueueErrorMsg(fmt.Sprintf("%s Plugin: HIGH Priority Poll Queue LOCKUP", plugin.Name))
+			} else {
+				pm.pollQueueErrorMsg("Unknown Plugin: HIGH Priority Poll Queue LOCKUP")
+			}
+			//TODO: update network error to show queue lockup
 
 		case model.PRIORITY_NORMAL:
 			pm.NormalPriorityLockupAlert = true
+			if plugin != nil && err == nil {
+				pm.pollQueueErrorMsg(fmt.Sprintf("%s Plugin: NORMAL Priority Poll Queue LOCKUP", plugin.Name))
+			} else {
+				pm.pollQueueErrorMsg("Unknown Plugin: NORMAL Priority Poll Queue LOCKUP")
+			}
+			//TODO: update network error to show queue lockup
 
 		case model.PRIORITY_LOW:
 			pm.LowPriorityLockupAlert = true
+			if plugin != nil && err == nil {
+				pm.pollQueueErrorMsg(fmt.Sprintf("%s Plugin: LOW Priority Poll Queue LOCKUP", plugin.Name))
+			} else {
+				pm.pollQueueErrorMsg("Unknown Plugin: LOW Priority Poll Queue LOCKUP")
+			}
+			//TODO: update network error to show queue lockup
 
 		}
 	}

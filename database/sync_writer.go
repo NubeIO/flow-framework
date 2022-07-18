@@ -50,7 +50,7 @@ func (d *GormDatabase) SyncCOV(writerUUID string, body *model.SyncCOV) error {
 		pointModel := model.PointWriter{
 			Priority: body.Priority,
 		}
-		_, err = d.PointWrite(uuid, &pointModel, false)
+		_, _, _, _, err = d.PointWrite(uuid, &pointModel, false)
 		return err
 	} else {
 		return d.ScheduleWrite(writer.WriterThingUUID, body.Schedule)
@@ -72,7 +72,7 @@ func (d *GormDatabase) SyncWriterWriteAction(sourceUUID string, body *model.Sync
 		pointWriter := model.PointWriter{Priority: body.Priority}
 		// TODO: change this section by below commented section
 		producer, _ := d.GetProducer(writerClone.ProducerUUID, api.Args{})
-		_, err = d.PointWrite(producer.ProducerThingUUID, &pointWriter, false)
+		_, _, _, _, err = d.PointWrite(producer.ProducerThingUUID, &pointWriter, false)
 		// Currently, writerClone.WriterThingUUID has not valid `WriterThingUUID` on old deployments
 		// _, err = d.PointWrite(writerClone.WriterThingUUID, &point, true)
 		return err

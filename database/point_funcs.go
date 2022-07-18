@@ -48,7 +48,7 @@ func (d *GormDatabase) PointWriteByName(networkName, deviceName, pointName strin
 	if err != nil {
 		return nil, err
 	}
-	write, err := d.PointWrite(point.UUID, body, fromPlugin)
+	write, _, _, _, err := d.PointWrite(point.UUID, body, fromPlugin)
 	if err != nil {
 		return nil, err
 	}

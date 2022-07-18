@@ -50,3 +50,5 @@ func (d *GormDatabase) deviceNameExistsInNetwork(deviceName, networkUUID string)
 
 	return nil, false
 }
+
+//TODO: add function to set/clear an error on all points in a device

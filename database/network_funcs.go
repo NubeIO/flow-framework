@@ -104,3 +104,5 @@ func (d *GormDatabase) GetNetworkByDeviceUUID(devUUID string, args api.Args) (ne
 	}
 	return
 }
+
+//TODO: add function to set/clear an error on all devices/points in a network

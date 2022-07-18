@@ -114,7 +114,7 @@ func (inst *Instance) pointUpdateValue(uuid string, value float64) (*model.Point
 	point.CommonFault.LastOk = time.Now().UTC()
 	point.InSync = boolean.NewTrue()
 	priority := map[string]*float64{"_16": &value}
-	_, err := inst.db.UpdatePointValue(uuid, &point, &priority, true)
+	_, _, _, _, err := inst.db.UpdatePointValue(uuid, &point, &priority, true)
 	if err != nil {
 		log.Error("lorawan: pointUpdateValue ", err)
 		return nil, err

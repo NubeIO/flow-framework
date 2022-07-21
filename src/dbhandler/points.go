@@ -66,6 +66,15 @@ func (h *Handler) UpdatePointValue(uuid string, body *model.Point, priority *map
 	return p, isPresentValueChange, isWriteValueChange, isPriorityChanged, nil
 }
 
+// UpdatePointErrors will only update the error properties of the point, all other properties will not be updated.
+func (h *Handler) UpdatePointErrors(uuid string, body *model.Point) error {
+	err := getDb().UpdatePointErrors(uuid, body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (h *Handler) GetOnePointByArgs(args api.Args) (*model.Point, error) {
 	return getDb().GetOnePointByArgs(args)
 }

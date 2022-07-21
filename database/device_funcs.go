@@ -3,6 +3,8 @@ package database
 import (
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
+	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 // GetDeviceByPoint get a device by point object
@@ -51,4 +53,44 @@ func (d *GormDatabase) deviceNameExistsInNetwork(deviceName, networkUUID string)
 	return nil, false
 }
 
-//TODO: add function to set/clear an error on all points in a device
+// SetErrorsForAllPointsOnDevice sets the fault/error properties of all points for a specific device
+// messageLevel = model.MessageLevel
+// messageCode = model.CommonFaultCode
+func (d *GormDatabase) SetErrorsForAllPointsOnDevice(deviceUUID string, message string, messageLevel string, messageCode string) error {
+	device, err := d.GetDevice(deviceUUID, api.Args{WithPoints: true})
+	if device != nil && err != nil {
+		return err
+	}
+	for _, point := range device.Points {
+		point.CommonFault.InFault = true
+		point.CommonFault.MessageLevel = messageLevel
+		point.CommonFault.MessageCode = messageCode
+		point.CommonFault.Message = message
+		point.CommonFault.LastFail = time.Now().UTC()
+		err = d.UpdatePointErrors(point.UUID, point)
+		if err != nil {
+			log.Infof("setErrorsForAllPointsOnDevice() Error: %s\n", err.Error())
+		}
+	}
+	return nil
+}
+
+// ClearErrorsForAllPointsOnDevice clears the fault/error properties of all points for a specific device
+func (d *GormDatabase) ClearErrorsForAllPointsOnDevice(deviceUUID string) error {
+	device, err := d.GetDevice(deviceUUID, api.Args{WithPoints: true})
+	if device != nil && err != nil {
+		return err
+	}
+	for _, point := range device.Points {
+		point.CommonFault.InFault = false
+		point.CommonFault.MessageLevel = model.MessageLevel.Normal
+		point.CommonFault.MessageCode = model.CommonFaultCode.Ok
+		point.CommonFault.Message = ""
+		point.CommonFault.LastOk = time.Now().UTC()
+		err = d.UpdatePointErrors(point.UUID, point)
+		if err != nil {
+			log.Infof("clearErrorsForAllPointsOnDevice() Error: %s\n", err.Error())
+		}
+	}
+	return nil
+}

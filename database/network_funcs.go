@@ -3,6 +3,8 @@ package database
 import (
 	"github.com/NubeIO/flow-framework/api"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
+	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 // GetNetworkByPluginName returns the network for the given id or nil.
@@ -105,4 +107,50 @@ func (d *GormDatabase) GetNetworkByDeviceUUID(devUUID string, args api.Args) (ne
 	return
 }
 
-//TODO: add function to set/clear an error on all devices/points in a network
+// SetErrorsForAllDevicesOnNetwork sets the fault/error properties of all devices for a specific network. Optional to set the points of each device also.
+// messageLevel = model.MessageLevel
+// messageCode = model.CommonFaultCode
+func (d *GormDatabase) SetErrorsForAllDevicesOnNetwork(networkUUID string, message string, messageLevel string, messageCode string, doPoints bool) error {
+	network, err := d.GetNetwork(networkUUID, api.Args{WithDevices: true, WithPoints: doPoints})
+	if network != nil && err != nil {
+		return err
+	}
+	for _, device := range network.Devices {
+		device.CommonFault.InFault = true
+		device.CommonFault.MessageLevel = messageLevel
+		device.CommonFault.MessageCode = messageCode
+		device.CommonFault.Message = message
+		device.CommonFault.LastFail = time.Now().UTC()
+		err = d.UpdateDeviceErrors(device.UUID, device)
+		if err != nil {
+			log.Infof("setErrorsForAllDevicesOnNetwork() Error: %s\n", err.Error())
+		}
+		if doPoints {
+			err = d.SetErrorsForAllPointsOnDevice(device.UUID, message, messageLevel, messageCode)
+		}
+	}
+	return nil
+}
+
+// ClearErrorsForAllDevicesOnNetwork clears the fault/error properties of all devices for a specific network. Optional to clear the points of each device also.
+func (d *GormDatabase) ClearErrorsForAllDevicesOnNetwork(networkUUID string, doPoints bool) error {
+	network, err := d.GetNetwork(networkUUID, api.Args{WithDevices: true, WithPoints: doPoints})
+	if network != nil && err != nil {
+		return err
+	}
+	for _, device := range network.Devices {
+		device.CommonFault.InFault = false
+		device.CommonFault.MessageLevel = model.MessageLevel.Normal
+		device.CommonFault.MessageCode = model.CommonFaultCode.Ok
+		device.CommonFault.Message = ""
+		device.CommonFault.LastOk = time.Now().UTC()
+		err = d.UpdateDeviceErrors(device.UUID, device)
+		if err != nil {
+			log.Infof("clearErrorsForAllDevicesOnNetwork() Error: %s\n", err.Error())
+		}
+		if doPoints {
+			err = d.ClearErrorsForAllPointsOnDevice(device.UUID)
+		}
+	}
+	return nil
+}

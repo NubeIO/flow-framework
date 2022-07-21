@@ -197,7 +197,7 @@ func (inst *Instance) pointUpdateValue(uuid string, value float64) (*model.Point
 }
 
 // pointUpdate update point present value
-func (inst *Instance) pointUpdateErr(uuid string, err error) (*model.Point, error) {
+func (inst *Instance) pointUpdateErr(uuid string, err error) error {
 	var point model.Point
 	point.CommonFault.InFault = true
 	point.CommonFault.MessageLevel = model.MessageLevel.Fail
@@ -205,10 +205,10 @@ func (inst *Instance) pointUpdateErr(uuid string, err error) (*model.Point, erro
 	point.CommonFault.Message = fmt.Sprintf("error-time: %s msg:%s", utilstime.TimeStamp(), err.Error())
 	point.CommonFault.LastFail = time.Now().UTC()
 	point.InSync = boolean.NewFalse()
-	_, err = inst.db.UpdatePoint(uuid, &point, true)
+	err = inst.db.UpdatePointErrors(uuid, &point)
 	if err != nil {
 		log.Error("bacnet-server: pointUpdateErr()", err)
-		return nil, err
+		return err
 	}
-	return nil, nil
+	return nil
 }

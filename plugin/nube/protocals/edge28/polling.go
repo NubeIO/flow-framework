@@ -225,7 +225,7 @@ func (inst *Instance) processWrite(pnt *model.Point, value float64, rest *edgere
 		}
 		if err != nil {
 			inst.edge28ErrorMsg(fmt.Sprintf("processWrite() failed to write IO %s:  value:%f error:%v\n", pnt.IoNumber, value, err))
-			_, err := inst.pointUpdateErr(pnt, err)
+			err := inst.pointUpdateErr(pnt, err)
 			return 0, err
 		} else {
 			// log.Infof("edge28-polling: wrote IO %s: %v\n", pnt.IoNumber, value)
@@ -245,7 +245,7 @@ func (inst *Instance) processRead(pnt *model.Point, readValue float64, pollCount
 		_, err = inst.pointUpdate(pnt, readValue, true, true, true)
 		if err != nil {
 			inst.edge28DebugMsg(fmt.Sprintf("READ UPDATE POINT %s: %v\n", pnt.IoNumber, readValue))
-			_, err := inst.pointUpdateErr(pnt, err)
+			err := inst.pointUpdateErr(pnt, err)
 			return readValue, err
 		}
 		if boolean.IsTrue(pnt.InSync) {
@@ -257,7 +257,7 @@ func (inst *Instance) processRead(pnt *model.Point, readValue float64, pollCount
 		_, err = inst.pointUpdate(pnt, readValue, true, true, true)
 		if err != nil {
 			inst.edge28ErrorMsg(fmt.Sprintf("READ UPDATE POINT %s: %v\n", pnt.IoNumber, readValue))
-			_, err := inst.pointUpdateErr(pnt, err)
+			err := inst.pointUpdateErr(pnt, err)
 			return readValue, err
 		} else {
 			inst.edge28ErrorMsg(fmt.Sprintf("READ ON START %s: %v\n", pnt.IoNumber, readValue))

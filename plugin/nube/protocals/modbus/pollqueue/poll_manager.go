@@ -256,21 +256,21 @@ func (pm *NetworkPollManager) PollQueueErrorChecking() {
 		}
 	}
 	for _, dev := range net.Devices {
+		deviceExistsInQueue := pm.PollQueue.CheckIfActiveDevicesListIncludes(dev.UUID)
+		if boolean.IsFalse(net.Enable) || boolean.IsFalse(dev.Enable) {
+			if deviceExistsInQueue {
+				pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Device UUID exist in Poll Queues for a disabled device./n")
+				pm.PollQueue.RemovePollingPointByDeviceUUID(dev.UUID)
+				continue
+			}
+		}
+		if boolean.IsTrue(net.Enable) && boolean.IsTrue(dev.Enable) && !deviceExistsInQueue {
+			pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Device UUID doesn't exist in active devices list./n")
+		}
 		if dev.Points != nil {
-			deviceExistsInQueue := pm.PollQueue.CheckIfActiveDevicesListIncludes(dev.UUID)
-			if boolean.IsFalse(dev.Enable) {
-				if deviceExistsInQueue {
-					pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Device UUID exist in Poll Queues for a disabled device./n")
-					pm.PollQueue.RemovePollingPointByDeviceUUID(dev.UUID)
-					continue
-				}
-			}
-			if boolean.IsTrue(dev.Enable) && !deviceExistsInQueue {
-				pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Device UUID doesn't exist in active devices list./n")
-			}
 			for _, pnt := range dev.Points {
 				if pnt != nil {
-					if boolean.IsFalse(pnt.Enable) {
+					if boolean.IsFalse(net.Enable) || boolean.IsFalse(dev.Enable) || boolean.IsFalse(pnt.Enable) {
 						pp, _ := pm.PollQueue.GetPollingPointByPointUUID(pnt.UUID)
 						if pp != nil {
 							pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Found disabled point in poll queue./n")
@@ -278,7 +278,7 @@ func (pm *NetworkPollManager) PollQueueErrorChecking() {
 						}
 						continue
 					}
-					if boolean.IsTrue(pnt.Enable) {
+					if boolean.IsTrue(net.Enable) && boolean.IsTrue(dev.Enable) && boolean.IsTrue(pnt.Enable) {
 						pp, err := pm.PollQueue.GetPollingPointByPointUUID(pnt.UUID)
 						if pp == nil || err != nil {
 							pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Polling point doesn't exist for point ", pnt.Name, "/n")

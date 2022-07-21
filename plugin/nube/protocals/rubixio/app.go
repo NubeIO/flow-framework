@@ -178,19 +178,19 @@ func (inst *Instance) pointUpdateValue(uuid string, value float64) (*model.Point
 }
 
 // pointUpdate update point present value
-func (inst *Instance) pointUpdateErr(uuid string, err error) (*model.Point, error) {
+func (inst *Instance) pointUpdateErr(uuid string, err error) error {
 	var point model.Point
 	point.CommonFault.InFault = true
 	point.CommonFault.MessageLevel = model.MessageLevel.Fail
 	point.CommonFault.MessageCode = model.CommonFaultCode.PointError
 	point.CommonFault.Message = err.Error()
 	point.CommonFault.LastFail = time.Now().UTC()
-	_, err = inst.db.UpdatePoint(uuid, &point, true)
+	err = inst.db.UpdatePointErrors(uuid, &point)
 	if err != nil {
 		log.Error("edge28-app: pointUpdateErr()", err)
-		return nil, err
+		return err
 	}
-	return nil, nil
+	return nil
 }
 
 func selectObjectType(selectedPlugin string) (objectType string, isOutput, isTypeBool bool) {

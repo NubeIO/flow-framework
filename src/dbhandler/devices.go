@@ -46,6 +46,15 @@ func (h *Handler) CreateDevice(body *model.Device) (*model.Device, error) {
 	return q, nil
 }
 
+// UpdateDeviceErrors will only update the error properties of the device, all other properties will not be updated.
+func (h *Handler) UpdateDeviceErrors(uuid string, body *model.Device) error {
+	err := getDb().UpdateDeviceErrors(uuid, body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (h *Handler) UpdateDevice(uuid string, body *model.Device, fromPlugin bool) (*model.Device, error) {
 	q, err := getDb().UpdateDevice(uuid, body, fromPlugin)
 	if err != nil {
@@ -60,4 +69,20 @@ func (h *Handler) DeleteDevice(uuid string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (h *Handler) SetErrorsForAllPointsOnDevice(networkUUID string, message string, messageLevel string, messageCode string) error {
+	err := getDb().SetErrorsForAllPointsOnDevice(networkUUID, message, messageLevel, messageCode)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *Handler) ClearErrorsForAllPointsOnDevice(networkUUID string) error {
+	err := getDb().ClearErrorsForAllPointsOnDevice(networkUUID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

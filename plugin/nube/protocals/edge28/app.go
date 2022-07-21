@@ -286,7 +286,7 @@ func (inst *Instance) pointUpdate(point *model.Point, value float64, writeSucces
 }
 
 // pointUpdateErr update point with errors. Called from within plugin.
-func (inst *Instance) pointUpdateErr(point *model.Point, err error) (*model.Point, error) {
+func (inst *Instance) pointUpdateErr(point *model.Point, err error) error {
 	point.CommonFault.InFault = true
 	point.CommonFault.MessageLevel = model.MessageLevel.Fail
 	point.CommonFault.MessageCode = model.CommonFaultCode.PointError
@@ -295,7 +295,7 @@ func (inst *Instance) pointUpdateErr(point *model.Point, err error) (*model.Poin
 	_, err = inst.db.UpdatePoint(point.UUID, point, true)
 	if err != nil {
 		inst.edge28DebugMsg(" pointUpdateErr()", err)
-		return nil, err
+		return err
 	}
-	return nil, nil
+	return nil
 }

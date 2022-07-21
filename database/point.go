@@ -114,6 +114,27 @@ func (d *GormDatabase) CreatePoint(body *model.Point, fromPlugin bool) (*model.P
 	return body, err
 }
 
+// UpdatePointErrors will only update the CommonFault properties of the point, all other properties will not be updated. Does not update `LastOk`.
+func (d *GormDatabase) UpdatePointErrors(uuid string, body *model.Point) error {
+	/* I THINK THE FIRST DB CALL HERE IS NOT REQUIRED
+	var pointModel *model.Point
+	query := d.DB.Where("uuid = ?", uuid).First(&pointModel)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+	query = d.DB.Model(&pointModel).Select("InFault", "MessageLevel", "MessageCode", "Message", "LastFail").Updates(&body)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+
+	*/
+	query := d.DB.Model(&body).Where("uuid = ?", uuid).Select("InFault", "MessageLevel", "MessageCode", "Message", "LastFail").Updates(&body)
+	if query.Error != nil {
+		return query.Error
+	}
+	return nil
+}
+
 func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bool) (*model.Point, error) {
 	var pointModel *model.Point
 	query := d.DB.Where("uuid = ?", uuid).Preload("Priority").First(&pointModel)
@@ -152,7 +173,7 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 		// nil is ignored on GORM, so we are pushing forcefully because fallback is nullable field
 		d.DB.Model(&pointModel).Update("fallback", nil)
 	}
-	query = d.DB.Model(&pointModel).Updates(&body)
+	query = d.DB.Model(&pointModel).Select("*").Updates(&body)
 
 	//TODO: we need to decide if a read only point needs to have a priority array or if it should just be nil.
 	if body.Priority == nil {
@@ -168,6 +189,9 @@ func (d *GormDatabase) UpdatePoint(uuid string, body *model.Point, fromPlugin bo
 	}
 	return pnt, nil
 }
+
+// TODO: (Marc) I think the 2 functions below do roughly the same thing.  PointWrite() sets `WritePollRequired` and `InSync' but this is probably unneccesary as this should be
+//       done by the plugins.  Could be combined.
 
 func (d *GormDatabase) PointWrite(uuid string, body *model.PointWriter, fromPlugin bool) (returnPoint *model.Point, isPresentValueChange, isWriteValueChange, isPriorityChanged bool, err error) {
 	var pointModel *model.Point
@@ -262,7 +286,7 @@ func (d *GormDatabase) UpdatePointValue(pointModel *model.Point, priority *map[s
 	}
 
 	if isChange {
-		_ = d.DB.Model(&pointModel).Updates(&pointModel)
+		_ = d.DB.Model(&pointModel).Select("*").Updates(&pointModel)
 		err = d.ProducersPointWrite(pointModel.UUID, priority, pointModel.PresentValue, isPresentValueChange)
 		if err != nil {
 			return nil, false, false, false, err

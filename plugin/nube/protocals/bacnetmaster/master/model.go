@@ -43,16 +43,34 @@ type EnableStruct struct {
 	Required bool   `json:"required" default:"true"`
 }
 
+type TransportTypeStruct struct {
+	Type     string   `json:"type" default:"array"`
+	Required bool     `json:"required" default:"true"`
+	Options  []string `json:"options" default:"[\"rs485\",\"ip\"]"`
+	Default  string   `json:"default" default:"rs485"`
+}
+
 type Network struct {
-	Enable      EnableStruct      `json:"enable"`
-	Name        NameNet           `json:"name"`
+	Enable struct {
+		Type     string `json:"type" default:"bool"`
+		Required bool   `json:"required" default:"true"`
+		Options  bool   `json:"options" default:"false"`
+		Default  *bool  `json:"default" default:"true"`
+	} `json:"enable"`
+	Name struct {
+		Type        string `json:"type" default:"string"`
+		Required    bool   `json:"required" default:"true"`
+		Default     string `json:"default" default:"bac_net"`
+		DisplayName string `json:"display_name" default:"Network Name"`
+	} `json:"name"`
 	Description DescriptionStruct `json:"description"`
 	PluginName  struct {
 		Type     string `json:"type" default:"string"`
 		Required bool   `json:"required" default:"true"`
 		Default  string `json:"default" default:"bacnetmaster"`
 	} `json:"plugin_name"`
-	Port struct {
+	TransportType TransportTypeStruct `json:"transport_type"`
+	Port          struct {
 		Type     string `json:"type" default:"int"`
 		Required bool   `json:"required" default:"true"`
 		Default  int    `json:"default" default:"47808"`
@@ -63,6 +81,13 @@ type Network struct {
 		Options  []string `json:"options" default:"[]"`
 		Default  string   `json:"default" default:""`
 	} `json:"network_interface"`
+	MaxPollRate struct {
+		Type        string   `json:"type" default:"float"`
+		Required    bool     `json:"required" default:"true"`
+		Options     int      `json:"options" default:"1"`
+		DisplayName string   `json:"display_name" default:"Max Poll Rate (seconds)"`
+		Default     *float64 `json:"default" default:"0.1"`
+	} `json:"max_poll_rate"`
 	AutoMappingNetworksSelection struct {
 		Type     string   `json:"type" default:"array"`
 		Required bool     `json:"required" default:"false"`
@@ -92,8 +117,18 @@ type Network struct {
 }
 
 type Device struct {
-	Enable      EnableStruct      `json:"enable"`
-	Name        NameDev           `json:"name"`
+	Enable struct {
+		Type     string `json:"type" default:"bool"`
+		Required bool   `json:"required" default:"true"`
+		Options  bool   `json:"options" default:"false"`
+		Default  *bool  `json:"default" default:"true"`
+	} `json:"enable"`
+	Name struct {
+		Type        string `json:"type" default:"string"`
+		Required    bool   `json:"required" default:"true"`
+		Default     string `json:"default" default:"bac_dev"`
+		DisplayName string `json:"display_name" default:"Device Name"`
+	} `json:"name"`
 	Description DescriptionStruct `json:"description"`
 	Host        struct {
 		Type     string `json:"type" default:"string"`
@@ -136,11 +171,42 @@ type Device struct {
 		Options  []string `json:"options" default:"[\"segmentation_both\",\"no_segmentation\",\"segmentation_transmit\",\"segmentation_receive\"]"`
 		Default  string   `json:"default" default:"no_segmentation"`
 	} `json:"segmentation"`
+	FastPollRate struct {
+		Type        string   `json:"type" default:"float"`
+		Required    bool     `json:"required" default:"true"`
+		Options     int      `json:"options" default:"1"`
+		DisplayName string   `json:"display_name" default:"Fast Poll Rate (seconds)"`
+		Default     *float64 `json:"default" default:"5"`
+	} `json:"fast_poll_rate"`
+	NormalPollRate struct {
+		Type        string   `json:"type" default:"float"`
+		Required    bool     `json:"required" default:"true"`
+		Options     int      `json:"options" default:"1"`
+		DisplayName string   `json:"display_name" default:"Normal Poll Rate (seconds)"`
+		Default     *float64 `json:"default" default:"30"`
+	} `json:"normal_poll_rate"`
+	SlowPollRate struct {
+		Type        string   `json:"type" default:"float"`
+		Required    bool     `json:"required" default:"true"`
+		Options     int      `json:"options" default:"1"`
+		DisplayName string   `json:"display_name" default:"Slow Poll Rate (seconds)"`
+		Default     *float64 `json:"default" default:"120"`
+	} `json:"slow_poll_rate"`
 }
 
 type Point struct {
-	Enable      EnableStruct      `json:"enable"`
-	Name        NamePnt           `json:"name"`
+	Enable struct {
+		Type     string `json:"type" default:"bool"`
+		Required bool   `json:"required" default:"true"`
+		Options  bool   `json:"options" default:"true"`
+		Default  *bool  `json:"default" default:"true"`
+	} `json:"enable"`
+	Name struct {
+		Type        string `json:"type" default:"string"`
+		Required    bool   `json:"required" default:"true"`
+		Default     string `json:"default" default:"bac_pnt"`
+		DisplayName string `json:"display_name" default:"Point Name"`
+	} `json:"name"`
 	Description DescriptionStruct `json:"description"`
 	ObjectType  struct {
 		Type     string   `json:"type" default:"array"`
@@ -165,6 +231,25 @@ type Point struct {
 		Options  []int  `json:"options" default:"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]"`
 		Default  int    `json:"default" default:"16"`
 	} `json:"write_priority"`
+	PollPriority struct {
+		Type     string   `json:"type" default:"array"`
+		Required bool     `json:"required" default:"true"`
+		Options  []string `json:"options" default:"[\"high\",\"normal\",\"low\"]"`
+		Default  string   `json:"default" default:"normal"`
+	} `json:"poll_priority"`
+	PollRate struct {
+		Type     string   `json:"type" default:"array"`
+		Required bool     `json:"required" default:"true"`
+		Options  []string `json:"options" default:"[\"fast\",\"normal\",\"slow\"]"`
+		Default  string   `json:"default" default:"normal"`
+	} `json:"poll_rate"`
+	Fallback struct {
+		Type        string   `json:"type" default:"float"`
+		Required    bool     `json:"required" default:"false"`
+		Default     *float64 `json:"default" default:""`
+		DisplayName string   `json:"display_name" default:"Fallback Value"`
+		Nullable    bool     `json:"nullable" default:"true"`
+	} `json:"fallback"`
 }
 
 var nets = networking.New()

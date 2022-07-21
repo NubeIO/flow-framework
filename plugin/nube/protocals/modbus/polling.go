@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/pollqueue"
 	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/smod"
+	"github.com/NubeIO/flow-framework/services/pollqueue"
 	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils/boolean"
 	"github.com/NubeIO/flow-framework/utils/float"
 	"github.com/NubeIO/flow-framework/utils/nurl"
+	"github.com/NubeIO/flow-framework/utils/writemode"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	"strconv"
 	"time"
@@ -23,21 +24,6 @@ type polling struct {
 	delayDevices  time.Duration
 	delayPoints   time.Duration
 	isRunning     bool
-}
-
-type devCheck struct {
-	devUUID string
-	client  Client
-}
-
-func delays(networkType string) (deviceDelay, pointDelay time.Duration) {
-	deviceDelay = 250 * time.Millisecond
-	pointDelay = 500 * time.Millisecond
-	if networkType == model.TransType.LoRa {
-		deviceDelay = 80 * time.Millisecond
-		pointDelay = 6000 * time.Millisecond
-	}
-	return
 }
 
 func (inst *Instance) getNetworkPollManagerByUUID(netUUID string) (*pollqueue.NetworkPollManager, error) {
@@ -76,7 +62,7 @@ func (inst *Instance) ModbusPolling() error {
 		for _, netPollMan := range inst.NetworkPollManagers { // LOOP THROUGH AND POLL NEXT POINTS IN EACH NETWORK QUEUE
 			// inst.modbusDebugMsg("ModbusPolling: netPollMan ", netPollMan.FFNetworkUUID)
 			if netPollMan.PortUnavailableTimeout != nil {
-				inst.modbusDebugMsg("ModbusPolling: modbus port unavailable. polling paused.")
+				inst.modbusDebugMsg("modbus port unavailable. polling paused.")
 				continue
 			}
 			pollStartTime := time.Now()
@@ -102,7 +88,7 @@ func (inst *Instance) ModbusPolling() error {
 			pp, callback := netPollMan.GetNextPollingPoint() // callback function is called once polling is completed.
 			// pp, _ := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
 			if pp == nil {
-				//inst.modbusDebugMsg("No PollingPoint available in Network ", net.UUID)
+				// inst.modbusDebugMsg("No PollingPoint available in Network ", net.UUID)
 				continue
 			}
 
@@ -160,7 +146,7 @@ func (inst *Instance) ModbusPolling() error {
 				continue
 			}
 
-			SetPriorityArrayModeBasedOnWriteMode(pnt) // ensures the point PointPriorityArrayMode is set correctly
+			writemode.SetPriorityArrayModeBasedOnWriteMode(pnt) // ensures the point PointPriorityArrayMode is set correctly
 
 			// SETUP MODBUS CLIENT CONNECTION
 			var mbClient smod.ModbusClient
@@ -201,7 +187,7 @@ func (inst *Instance) ModbusPolling() error {
 			var responseValue float64
 			var response interface{}
 			writeSuccess := false
-			if isWriteable(pnt.WriteMode) && boolean.IsTrue(pnt.WritePollRequired) { // DO WRITE IF REQUIRED
+			if writemode.IsWriteable(pnt.WriteMode) && boolean.IsTrue(pnt.WritePollRequired) { // DO WRITE IF REQUIRED
 				inst.modbusDebugMsg(fmt.Sprintf("modbus write point: %+v", pnt))
 				// pnt.PrintPointValues()
 				if pnt.WriteValue != nil {

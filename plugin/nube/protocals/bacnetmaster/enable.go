@@ -2,56 +2,65 @@ package main
 
 import (
 	"github.com/NubeIO/flow-framework/api"
-	"github.com/labstack/gommon/log"
+	"github.com/NubeIO/flow-framework/services/pollqueue"
+	"github.com/NubeIO/flow-framework/utils/float"
 )
 
 // Enable implements plugin.Plugin
 func (inst *Instance) Enable() error {
-
+	inst.bacnetDebugMsg("MODBUS Enable()")
 	inst.enabled = true
 	inst.setUUID()
 
-	q, err := inst.db.GetNetworkByPlugin(inst.pluginUUID, api.Args{})
-	if q != nil {
-		inst.networkUUID = q.UUID
+	nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, api.Args{})
+	if nets != nil {
+		inst.networks = nets
+	} else if err != nil {
+		inst.networks = nil
 	}
 	inst.initBacStore()
 
-	var arg polling
-	inst.pollingEnabled = true
-	arg.enable = true
-	go func() error {
-		err := inst.polling(arg)
-		if err != nil {
-			log.Errorf("rubix-io.enable: POLLING ERROR on routine: %v\n", err)
-		}
-		return nil
-	}()
-	if err != nil {
-		log.Errorf("rubix-io.enable: POLLING ERROR: %v\n", err)
-	}
+	if inst.config.EnablePolling {
+		if !inst.pollingEnabled {
+			var arg polling
+			inst.pollingEnabled = true
+			arg.enable = true
+			inst.NetworkPollManagers = make([]*pollqueue.NetworkPollManager, 0) // This will delete any existing NetworkPollManagers (if enable is called multiple times, it will rebuild the queues).
+			for _, net := range nets {                                          // Create a new Poll Manager for each network in the plugin.
+				conf := inst.GetConfig().(*Config)
+				pollQueueConfig := pollqueue.Config{EnablePolling: conf.EnablePolling, LogLevel: conf.LogLevel}
+				pollManager := NewPollManager(&pollQueueConfig, &inst.db, net.UUID, inst.pluginUUID, float.NonNil(net.MaxPollRate))
+				// inst.modbusDebugMsg("net")
+				// inst.modbusDebugMsg("%+v\n", net)
+				// inst.modbusDebugMsg("pollManager")
+				// inst.modbusDebugMsg("%+v\n", pollManager)
+				pollManager.StartPolling()
+				inst.NetworkPollManagers = append(inst.NetworkPollManagers, pollManager)
+			}
 
+			// TODO: VERIFY POLLING WITHOUT GO ROUTINE WRAPPER
+			err := inst.BACnetPolling()
+			if err != nil {
+				inst.bacnetErrorMsg("POLLING ERROR on routine: %v\n", err)
+			}
+		}
+	}
 	return nil
 }
 
 // Disable implements plugin.Disable
 func (inst *Instance) Disable() error {
+	inst.bacnetDebugMsg("MODBUS Disable()")
 	inst.enabled = false
-	inst.setUUID()
-	q, _ := inst.db.GetNetworkByPlugin(inst.pluginUUID, api.Args{})
-	if q != nil {
-		// if there is a network then close it
-		inst.closeBacnetStoreNetwork(q.UUID)
-	}
 	if inst.pollingEnabled {
-		var arg polling
 		inst.pollingEnabled = false
-		arg.enable = false
-		go func() {
-			err := inst.polling(arg)
-			if err != nil {
-			}
-		}()
+		inst.pollingCancel()
+		inst.pollingCancel = nil
+		for _, pollMan := range inst.NetworkPollManagers {
+			pollMan.StopPolling()
+			inst.closeBacnetStoreNetwork(pollMan.FFNetworkUUID)
+		}
+		inst.NetworkPollManagers = make([]*pollqueue.NetworkPollManager, 0)
 	}
 	return nil
 }

@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/pollqueue"
+	"github.com/NubeIO/flow-framework/services/pollqueue"
 	"github.com/NubeIO/flow-framework/utils/array"
 	"github.com/NubeIO/flow-framework/utils/boolean"
 	"github.com/NubeIO/flow-framework/utils/float"
+	"github.com/NubeIO/flow-framework/utils/writemode"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/times/utilstime"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
@@ -30,9 +30,10 @@ func (inst *Instance) addNetwork(body *model.Network) (network *model.Network, e
 		return nil, errors.New("failed to create modbus network")
 	}
 
-	if boolean.IsTrue(body.Enable) {
-		conf := inst.GetConfig().(*config.Config)
-		pollManager := pollqueue.NewPollManager(conf, &inst.db, network.UUID, inst.pluginUUID)
+	if boolean.IsTrue(network.Enable) {
+		conf := inst.GetConfig().(*Config)
+		pollQueueConfig := pollqueue.Config{EnablePolling: conf.EnablePolling, LogLevel: conf.LogLevel}
+		pollManager := NewPollManager(&pollQueueConfig, &inst.db, network.UUID, inst.pluginUUID, float.NonNil(network.MaxPollRate))
 		pollManager.StartPolling()
 		inst.NetworkPollManagers = append(inst.NetworkPollManagers, pollManager)
 	}
@@ -65,7 +66,7 @@ func (inst *Instance) addPoint(body *model.Point) (point *model.Point, err error
 	}
 	inst.modbusDebugMsg("addPoint(): ", body.Name)
 
-	if isWriteable(body.WriteMode) {
+	if writemode.IsWriteable(body.WriteMode) {
 		body.WritePollRequired = boolean.NewTrue()
 	} else {
 		body.WritePollRequired = boolean.NewFalse()
@@ -339,7 +340,7 @@ func (inst *Instance) writePoint(pntUUID string, body *model.PointWriter) (point
 			pp, _ := netPollMan.PollQueue.RemovePollingPointByPointUUID(point.UUID)
 			if pp == nil {
 				if netPollMan.PollQueue.OutstandingPollingPoints.GetPollingPointIndexByPointUUID(point.UUID) > -1 {
-					if isWriteable(point.WriteMode) {
+					if writemode.IsWriteable(point.WriteMode) {
 						netPollMan.PollQueue.PointsUpdatedWhilePolling[point.UUID] = true // this triggers a write post at ASAP priority (for writeable points).
 						point.WritePollRequired = boolean.NewTrue()
 						if point.WriteMode != model.WriteAlways && point.WriteMode != model.WriteOnce {
@@ -407,7 +408,7 @@ func (inst *Instance) deleteNetwork(body *model.Network) (ok bool, err error) {
 	return ok, nil
 }
 
-// deleteNetwork delete device. Called via API call.
+// deleteDevice delete device. Called via API call.
 func (inst *Instance) deleteDevice(body *model.Device) (ok bool, err error) {
 	inst.modbusDebugMsg("deleteDevice(): ", body.UUID)
 	if body == nil {
@@ -480,7 +481,7 @@ func (inst *Instance) pointUpdate(point *model.Point, value float64, writeSucces
 	}
 	point.InSync = boolean.NewTrue() // TODO: MAY NOT BE NEEDED.
 
-	_, err = inst.db.UpdatePoint(point.UUID, point, true)
+	_, err := inst.db.UpdatePoint(point.UUID, point, true)
 	if err != nil {
 		inst.modbusDebugMsg("MODBUS UPDATE POINT UpdatePointPresentValue() error: ", err)
 		return nil, err

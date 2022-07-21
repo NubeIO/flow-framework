@@ -1,9 +1,12 @@
 package main
 
-import "github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
+type Config struct {
+	EnablePolling bool   `yaml:"enable_polling"`
+	LogLevel      string `yaml:"log_level"`
+}
 
 func (inst *Instance) DefaultConfig() interface{} {
-	return &config.Config{
+	return &Config{
 		EnablePolling: true,
 		LogLevel:      "ERROR", // DEBUG or ERROR
 	}
@@ -14,7 +17,7 @@ func (inst *Instance) GetConfig() interface{} {
 }
 
 func (inst *Instance) ValidateAndSetConfig(c interface{}) error {
-	newConfig := c.(*config.Config)
+	newConfig := c.(*Config)
 	inst.config = newConfig
 	return nil
 }

@@ -54,7 +54,7 @@ func (pm *NetworkPollManager) StartQueueUnloader() {
 			case <-done:
 				return
 			case <-ticker.C:
-				//pm.pollQueueDebugMsg("RELOAD QUEUE TICKER")
+				// pm.pollQueueDebugMsg("RELOAD QUEUE TICKER")
 				pm.postNextPointCallback()
 			}
 		}
@@ -71,14 +71,14 @@ func (pm *NetworkPollManager) StopQueueUnloader() {
 		pm.pollQueueDebugMsg("StopQueueUnloader() NextUnloadTimer stopped and CancelChannel closed")
 	}
 	pm.PluginQueueUnloader = nil
-	//Also stop the Queue Checker
+	// Also stop the Queue Checker
 	pm.pollQueueDebugMsg("StopQueueUnloader() pm.QueueCheckerTimer: ", pm.QueueCheckerTimer)
 	pm.pollQueueDebugMsg("StopQueueUnloader() pm.QueueCheckerCancelChannel: ", pm.QueueCheckerCancelChannel)
 }
 
 // This function should be called from the Polling service.
 func (pm *NetworkPollManager) GetNextPollingPoint() (pp *PollingPoint, callback func(pp *PollingPoint, writeSuccess, readSuccess bool, pollTimeSecs float64, pointUpdate bool)) {
-	//pm.pollQueueDebugMsg("GetNextPollingPoint()")
+	// pm.pollQueueDebugMsg("GetNextPollingPoint()")
 	if pm.PluginQueueUnloader != nil && pm.PluginQueueUnloader.NextPollPoint != nil {
 		pp := pm.PluginQueueUnloader.NextPollPoint
 		pm.PluginQueueUnloader.NextPollPoint = nil
@@ -86,13 +86,13 @@ func (pm *NetworkPollManager) GetNextPollingPoint() (pp *PollingPoint, callback 
 		// pm.PluginQueueUnloader.NextUnloadTimer = time.AfterFunc(pm.MaxPollRate, pm.postNextPointCallback)
 		return pp, pm.PollingPointCompleteNotification
 	}
-	//pm.pollQueueDebugMsg("GetNextPollingPoint(): No pollingPoint available")
+	// pm.pollQueueDebugMsg("GetNextPollingPoint(): No pollingPoint available")
 	return nil, nil
 }
 
 // This is the callback function that is called by the reoccurring timer (seperate go routine) made in StartQueueUnloader().
 func (pm *NetworkPollManager) postNextPointCallback() {
-	//pm.pollQueueDebugMsg("postNextPointCallback()")
+	// pm.pollQueueDebugMsg("postNextPointCallback()")
 	if pm.PluginQueueUnloader != nil && pm.PluginQueueUnloader.NextPollPoint == nil {
 		pp, err := pm.PollQueue.GetNextPollingPoint()
 		if pp != nil && err == nil {

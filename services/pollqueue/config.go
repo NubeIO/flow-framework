@@ -1,4 +1,4 @@
-package config
+package pollqueue
 
 type Config struct {
 	EnablePolling bool   `yaml:"enable_polling"`

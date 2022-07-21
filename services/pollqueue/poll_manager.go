@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/NubeIO/flow-framework/api"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
 	"github.com/NubeIO/flow-framework/src/dbhandler"
 	"github.com/NubeIO/flow-framework/utils/boolean"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
@@ -17,7 +16,7 @@ import (
 //  - Worker Queue tutorial: https://www.opsdash.com/blog/job-queues-in-go.html
 
 type NetworkPollManager struct {
-	config       *config.Config
+	Config       *Config
 	DBHandlerRef *dbhandler.Handler
 
 	Enable                    bool
@@ -79,7 +78,7 @@ func (pm *NetworkPollManager) StartPolling() {
 	} else if pm.PluginQueueUnloader == nil {
 		pm.StartQueueUnloader()
 	}
-	//Also start the Queue Checker
+	// Also start the Queue Checker
 	pm.StartQueueCheckerAndStats()
 	pm.StartPollingStatistics()
 }
@@ -142,7 +141,7 @@ func (pm *NetworkPollManager) ReAddDevicePoints(devUUID string) { // This is tri
 	}
 }
 
-func NewPollManager(conf *config.Config, dbHandler *dbhandler.Handler, ffNetworkUUID, ffPluginUUID string) *NetworkPollManager {
+func NewPollManager(conf *Config, dbHandler *dbhandler.Handler, ffNetworkUUID, ffPluginUUID string, maxPollRate float64) *NetworkPollManager {
 	// Make the main priority polling queue
 	queue := make([]*PollingPoint, 0)
 	pq := &PriorityPollQueue{queue}
@@ -158,12 +157,11 @@ func NewPollManager(conf *config.Config, dbHandler *dbhandler.Handler, ffNetwork
 	puwp := make(map[string]bool)
 	npq := &NetworkPriorityPollQueue{conf, pq, rq, opq, puwp, pqu, ffPluginUUID, ffNetworkUUID, adl}
 	pm := new(NetworkPollManager)
-	pm.config = conf
+	pm.Config = conf
 	pm.PollQueue = npq
 	pm.PluginQueueUnloader = pqu
 	pm.DBHandlerRef = dbHandler
-	maxPollRate := 1000 * time.Millisecond
-	pm.MaxPollRate = maxPollRate // TODO: MaxPollRate should come from a network property,but I can't find it. Also kinda implemented in StartQueueUnloader().
+	pm.MaxPollRate = time.Duration(maxPollRate) * time.Second
 	pm.FFNetworkUUID = ffNetworkUUID
 	pm.FFPluginUUID = ffPluginUUID
 	pm.ASAPPriorityMaxCycleTime, _ = time.ParseDuration("2m")
@@ -241,7 +239,7 @@ func (pm *NetworkPollManager) PollQueueErrorChecking() {
 	if net == nil || err != nil {
 		pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Network Not Found/n")
 	}
-	if boolean.IsFalse(net.Enable) { //If network isn't enabled, there should be no points in the polling queues
+	if boolean.IsFalse(net.Enable) { // If network isn't enabled, there should be no points in the polling queues
 		if pm.PollQueue.PriorityQueue.Len() > 0 {
 			pm.PollQueue.PriorityQueue.EmptyQueue()
 			pm.pollQueueErrorMsg("NetworkPollManager.PollQueueErrorChecking: Found PollingPoints in PriorityQueue of a disabled network/n")
@@ -315,7 +313,7 @@ func (pm *NetworkPollManager) StartQueueCheckerAndStats() {
 			case <-done:
 				return
 			case <-ticker.C:
-				//pm.pollQueueDebugMsg("RELOAD QUEUE TICKER")
+				// pm.pollQueueDebugMsg("RELOAD QUEUE TICKER")
 				pm.PollQueueErrorChecking()
 				pm.PrintPollQueueStatistics()
 			}

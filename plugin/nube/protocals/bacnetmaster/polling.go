@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/NubeIO/flow-framework/api"
+	"github.com/NubeIO/flow-framework/services/pollqueue"
 	"github.com/NubeIO/flow-framework/src/poller"
 	"github.com/NubeIO/flow-framework/utils/boolean"
 	"github.com/NubeIO/flow-framework/utils/float"
+	"github.com/NubeIO/flow-framework/utils/writemode"
 	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -30,104 +33,237 @@ func delays(networkType string) (deviceDelay, pointDelay time.Duration) {
 	return
 }
 
+func (inst *Instance) getNetworkPollManagerByUUID(netUUID string) (*pollqueue.NetworkPollManager, error) {
+	for _, netPollMan := range inst.NetworkPollManagers {
+		if netPollMan.FFNetworkUUID == netUUID {
+			return netPollMan, nil
+		}
+	}
+	return nil, errors.New("bacnet getNetworkPollManagerByUUID(): couldn't find NetworkPollManager")
+}
+
 var poll poller.Poller
 
-func (inst *Instance) polling(p polling) error {
-	if p.enable {
-		poll = poller.New()
-	}
-	var counter int
-	var arg api.Args
-	arg.WithDevices = true
-	arg.WithPoints = true
-	log.Infoln("init bacnet server network")
+// BACnetPolling TODO: currently Polling loops through each network, grabs one point, and polls it.  Could be improved by having a seperate client/go routine for each of the networks.
+func (inst *Instance) BACnetPolling() error {
+	poll = poller.New()
+	var counter = 0
 	f := func() (bool, error) {
-		nets, _ := inst.db.GetNetworksByPlugin(inst.pluginUUID, arg)
-		if len(nets) == 0 {
-			time.Sleep(2 * time.Second)
-			log.Info("bacnet-server: NO NETWORKS FOUND")
-		}
-		for _, net := range nets { // NETWORKS
-			if !inst.pollingEnabled {
-				// break
+		counter++
+		// fmt.Println("\n \n")
+		inst.bacnetDebugMsg("LOOP COUNT: ", counter)
+		var netArg api.Args
+		/*
+			nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, netArg)
+			if err != nil {
+				return false, err
 			}
-			if net.UUID != "" && net.PluginConfId == inst.pluginUUID {
-				timeStart := time.Now()
-				devDelay, pointDelay := delays(net.TransportType)
-				counter++
-				if boolean.IsFalse(net.Enable) {
-					log.Infof("bacnet-server: LOOP NETWORK DISABLED: COUNT %v NAME: %s\n", counter, net.Name)
+		*/
+
+		if len(inst.NetworkPollManagers) == 0 {
+			inst.bacnetDebugMsg("NO BACNET NETWORKS FOUND")
+			time.Sleep(15000 * time.Millisecond)
+		}
+		// inst.bacnetDebugMsg("inst.NetworkPollManagers")
+		// inst.bacnetDebugMsg("%+v\n", inst.NetworkPollManagers)
+		for _, netPollMan := range inst.NetworkPollManagers { // LOOP THROUGH AND POLL NEXT POINTS IN EACH NETWORK QUEUE
+			// inst.bacnetDebugMsg("BACnetPolling: netPollMan ", netPollMan.FFNetworkUUID)
+			if netPollMan.PortUnavailableTimeout != nil {
+				inst.bacnetDebugMsg("bacnet port unavailable. polling paused.")
+				continue
+			}
+			pollStartTime := time.Now()
+			// Check that network exists
+			// inst.bacnetDebugMsg("netPollMan")
+			// inst.bacnetDebugMsg("%+v\n", netPollMan)
+			net, err := inst.db.GetNetwork(netPollMan.FFNetworkUUID, netArg)
+			// inst.bacnetDebugMsg("net")
+			// inst.bacnetDebugMsg("%+v\n", net)
+			// inst.bacnetDebugMsg("err")
+			// inst.bacnetDebugMsg("%+v\n", err)
+			if err != nil || net == nil || net.PluginConfId != inst.pluginUUID {
+				inst.bacnetDebugMsg("BACNET NETWORK NOT FOUND")
+				continue
+			}
+			// inst.bacnetDebugMsg(fmt.Sprintf("bacnet-poll: POLL START: NAME: %s\n", net.Name))
+
+			if !boolean.IsTrue(net.Enable) {
+				inst.bacnetDebugMsg(fmt.Sprintf("NETWORK DISABLED: NAME: %s", net.Name))
+				continue
+			}
+
+			pp, callback := netPollMan.GetNextPollingPoint() // callback function is called once polling is completed.
+			// pp, _ := netPollMan.GetNextPollingPoint() //TODO: once polling completes, callback should be called
+			if pp == nil {
+				//inst.bacnetDebugMsg("No PollingPoint available in Network ", net.UUID)
+				continue
+			}
+
+			if pp.FFNetworkUUID != net.UUID {
+				inst.bacnetErrorMsg("PollingPoint FFNetworkUUID does not match the Network UUID")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+			netPollMan.PrintPollQueuePointUUIDs()
+			netPollMan.PrintPollingPointDebugInfo(pp)
+
+			var devArg api.Args
+			dev, err := inst.db.GetDevice(pp.FFDeviceUUID, devArg)
+			if dev == nil || err != nil {
+				inst.bacnetErrorMsg("could not find deviceID:", pp.FFDeviceUUID)
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+			if !boolean.IsTrue(dev.Enable) {
+				inst.bacnetErrorMsg("device is disabled.")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+			if dev.AddressId <= 0 || dev.AddressId >= 4194303 {
+				inst.bacnetErrorMsg("address is not valid.  bacnet addresses must be between 1 and 4194303")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+
+			pnt, err := inst.db.GetPoint(pp.FFPointUUID, api.Args{WithPriority: true})
+			if pnt == nil || err != nil {
+				inst.bacnetErrorMsg("could not find pointID: ", pp.FFPointUUID)
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+
+			inst.printPointDebugInfo(pnt)
+
+			if pnt.Priority == nil {
+				inst.bacnetErrorMsg("BACnetPolling: HAD TO ADD PRIORITY ARRAY")
+				pnt.Priority = &model.Priority{}
+			}
+
+			if !boolean.IsTrue(pnt.Enable) {
+				inst.bacnetErrorMsg("point is disabled.")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+
+			inst.bacnetDebugMsg(fmt.Sprintf("BACNET POLL! : Priority: %s, Network: %s Device: %s Point: %s Device-Add: %d Point-Add: %d Point Type: %s, WriteRequired: %t, ReadRequired: %t", pp.PollPriority, net.UUID, dev.UUID, pnt.UUID, dev.AddressId, *pnt.AddressID, pnt.ObjectType, boolean.IsTrue(pnt.WritePollRequired), boolean.IsTrue(pnt.ReadPollRequired)))
+
+			if !boolean.IsTrue(pnt.WritePollRequired) && !boolean.IsTrue(pnt.ReadPollRequired) {
+				inst.bacnetDebugMsg("polling not required on this point")
+				netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+				continue
+			}
+
+			writemode.SetPriorityArrayModeBasedOnWriteMode(pnt) // ensures the point PointPriorityArrayMode is set correctly
+
+			// SETUP BACNET CLIENT CONNECTION
+			// This section doesn't look to be used for BACnet, should probably be implemented later
+			/*
+				var mbClient smod.BACnetClient
+				// var dCheck devCheck
+				// dCheck.devUUID = dev.UUID
+				mbClient, err = inst.setClient(net, dev, true)
+				if err != nil {
+					inst.bacnetErrorMsg(fmt.Sprintf("failed to set client error: %v. network name:%s", err, net.Name))
+					if mbClient.PortUnavailable {
+						netPollMan.PortUnavailable()
+						unpauseFunc := func() {
+							netPollMan.PortAvailable()
+						}
+						netPollMan.PortUnavailableTimeout = time.AfterFunc(10*time.Second, unpauseFunc)
+					}
+					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 					continue
 				}
-				for _, dev := range net.Devices { // DEVICES
-					if boolean.IsFalse(net.Enable) {
-						log.Infof("bacnet-server-device: DEVICE DISABLED: NAME: %s\n", dev.Name)
+				if net.TransportType == model.TransType.Serial || net.TransportType == model.TransType.LoRa {
+					if dev.AddressId >= 1 {
+						mbClient.RTUClientHandler.SlaveID = byte(dev.AddressId)
+					}
+				} else if dev.TransportType == model.TransType.IP {
+					url, err := nurl.JoinIPPort(nurl.Parts{Host: dev.Host, Port: strconv.Itoa(dev.Port)})
+					if err != nil {
+						inst.bacnetErrorMsg("failed to validate device IP", url)
+						netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
 						continue
 					}
-					for _, pnt := range dev.Points { // POINTS
-						if boolean.IsFalse(net.Enable) {
-							continue
-						}
-						time.Sleep(devDelay) // DELAY between points
-						if pnt.WriteMode == "read_only" || pnt.WriteMode == "" {
-							readFloat, err := inst.doReadValue(pnt, net.UUID, dev.UUID)
-							if err != nil {
-								_, err = inst.pointUpdateErr(pnt.UUID, err)
-								continue
-							} else {
-								_, err := inst.pointUpdateValue(pnt.UUID, readFloat)
-								if err != nil {
-									continue
-								}
-							}
-						} else if pnt.WriteMode == "write_only" || pnt.WriteMode == "write_once_then_read" {
-							// if poll count = 0 or InSync = false then write
-							// if write value == nil then don't write
-							var doWrite bool
-							rsyncWrite := counter % 10
-							if counter <= 1 || boolean.IsFalse(pnt.InSync) || rsyncWrite == 0 {
-								doWrite = true
-								if rsyncWrite == 0 {
-									log.Infoln("bacnet-server-WRITE-SYNC-ON-POLL-COUNT on device:", dev.Name, " point:", pnt.Name)
-								} else {
-									log.Infoln("bacnet-server-WRITE-SYNC on device:", dev.Name, " point:", pnt.Name, " rsyncWrite:", rsyncWrite)
-								}
-							}
-							if float.IsNil(pnt.WriteValue) {
-								doWrite = false
-								log.Infoln("bacnet-server-WRITE-SYNC-SKIP as writeValue is nil on device:", dev.Name, " point:", pnt.Name, " rsyncWrite:", rsyncWrite)
-							}
-							if doWrite {
-								err := inst.doWrite(pnt, net.UUID, dev.UUID)
-								if err != nil {
-									_, err = inst.pointUpdateErr(pnt.UUID, err)
-									continue
-								}
-								// val := float.NonNil(pnt.WriteValue) //TODO not sure is this should then update the PV of the point
-								_, err = inst.pointUpdate(pnt.UUID)
-								if err != nil {
-									continue
-								}
-							}
-						}
-						time.Sleep(pointDelay) // DELAY between points
+					mbClient.TCPClientHandler.Address = url
+					mbClient.TCPClientHandler.SlaveID = byte(dev.AddressId)
+				} else {
+					inst.bacnetDebugMsg(fmt.Sprintf("failed to validate device and network %v %s", err, dev.Name))
+					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+					continue
+				}
+			*/
+
+			var responseValue float64
+			writeSuccess := false
+			if writemode.IsWriteable(pnt.WriteMode) && boolean.IsTrue(pnt.WritePollRequired) { // DO WRITE IF REQUIRED
+				inst.bacnetDebugMsg(fmt.Sprintf("bacnet write point: %+v", pnt))
+				// pnt.PrintPointValues()
+				if pnt.WriteValue != nil {
+					err = inst.doWrite(pnt, net.UUID, dev.UUID)
+					if err != nil {
+						_, err = inst.pointUpdateErr(pnt, err)
+						netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+						continue
 					}
-					timeEnd := time.Now()
-					diff := timeEnd.Sub(timeStart)
-					out := time.Time{}.Add(diff)
-					log.Infof("bacnet-server-poll-loop: NETWORK-NAME:%s POLL-DURATION: %s  POLL-COUNT: %d\n", net.Name, out.Format("15:04:05.000"), counter)
+					responseValue = float.NonNil(pnt.WriteValue)
+					writeSuccess = true
+					inst.bacnetDebugMsg(fmt.Sprintf("bacnet-write response: responseValue %f, point UUID: %s", responseValue, pnt.UUID))
+				} else {
+					writeSuccess = true // successful because there is no value to write.  Otherwise the point will short cycle.
+					inst.bacnetDebugMsg("bacnet write point error: no value in priority array to write")
 				}
 			}
+
+			readSuccess := false
+			if boolean.IsTrue(pnt.ReadPollRequired) { // DO READ IF REQUIRED
+				responseValue, err := inst.doReadValue(pnt, net.UUID, dev.UUID)
+				if err != nil {
+					_, err = inst.pointUpdateErr(pnt, err)
+					netPollMan.PollingFinished(pp, pollStartTime, false, false, callback)
+					continue
+				}
+				isChange := !float.ComparePtrValues(pnt.PresentValue, &responseValue)
+				if isChange {
+					if err != nil {
+						netPollMan.PollingFinished(pp, pollStartTime, writeSuccess, readSuccess, callback)
+						continue
+					}
+				}
+				readSuccess = true
+				inst.bacnetDebugMsg(fmt.Sprintf("bacnet-read response: responseValue %f, point UUID: %s", responseValue, pnt.UUID))
+			}
+
+			// update point in DB if required
+			// For write_once and write_always type, write value should become present value
+			writeValueToPresentVal := (pnt.WriteMode == model.WriteOnce || pnt.WriteMode == model.WriteAlways) && writeSuccess && pnt.WriteValue != nil
+
+			if readSuccess || writeValueToPresentVal {
+				if writeValueToPresentVal {
+					responseValue = *pnt.WriteValue
+					// fmt.Println("BACnetPolling: writeOnceWriteValueToPresentVal responseValue: ", responseValue)
+					readSuccess = true
+				}
+				_, err = inst.pointUpdate(pnt, responseValue, writeSuccess, readSuccess, true)
+			}
+
+			/*
+				//JUST FOR TESTING
+				pnt, err = inst.db.GetPoint(pp.FFPointUUID)
+				if pnt == nil || err != nil {
+					log.Errorf("bacnet: AFTER... could not find pointID : %s\n", pp.FFPointUUID)
+				}
+			*/
+
+			// This callback function triggers the PollManager to evaluate whether the point should be re-added to the PollQueue (Never, Immediately, or after the Poll Rate Delay)
+			netPollMan.PollingFinished(pp, pollStartTime, writeSuccess, readSuccess, callback)
+
 		}
-		if !p.enable { // TODO the disable of the polling isn't working
-			return true, nil
-		} else {
-			return false, nil
-		}
+		return false, nil
 	}
-	err := poll.Poll(context.Background(), f)
-	if err != nil {
-		return nil
-	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	inst.pollingCancel = cancel
+	go poll.GoPoll(ctx, f)
 	return nil
 }

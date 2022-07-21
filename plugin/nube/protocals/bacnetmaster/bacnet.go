@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/NubeDev/bacnet"
 	"github.com/NubeDev/bacnet/btypes"
@@ -80,7 +81,7 @@ func (inst *Instance) getBacnetStoreDevice(deviceUUID string) (*network.Device, 
 
 // bacnetDevice add or update an instance of a created bacnet device that is cached in bacnet lib
 func (inst *Instance) bacnetStoreDevice(dev *model.Device) error {
-	max := intToUnit32(integer.NonNil(dev.MaxADPU))
+	max := intToUint32(integer.NonNil(dev.MaxADPU))
 	seg := uint32(setSegmentation(dev.Segmentation))
 	d := &network.Device{
 		Ip:            dev.CommonIP.Host,
@@ -136,15 +137,18 @@ func (inst *Instance) doReadValue(pnt *model.Point, networkUUID, deviceUUID stri
 		}
 		outValue = float32ToFloat64(readFloat32)
 	}
-	log.Infoln("bacnet-master-POINT-READ:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", outValue)
+	inst.bacnetDebugMsg("bacnet-master-POINT-READ:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", outValue)
 	return outValue, nil
 }
 
 func (inst *Instance) doWrite(pnt *model.Point, networkUUID, deviceUUID string) error {
+	if pnt.WriteValue == nil {
+		return errors.New("bacnet-write: point has no WriteValue")
+	}
 	val := float.NonNil(pnt.WriteValue)
 	object, isWrite, isBool, _ := setObjectType(pnt.ObjectType)
 	writePriority := integer.NonNil(pnt.WritePriority)
-	if writePriority == 0 {
+	if writePriority <= 0 || writePriority < 16 {
 		writePriority = 16
 	}
 	bp := &network.Point{
@@ -162,27 +166,26 @@ func (inst *Instance) doWrite(pnt *model.Point, networkUUID, deviceUUID string) 
 	go net.NetworkRun()
 	dev, err := inst.getBacnetStoreDevice(deviceUUID)
 	if err != nil {
-		return err
+		return errors.New("bacnet-write: error getting BACnet device details")
 	}
 
 	if isWrite {
 		if isBool {
-			err = dev.PointWriteBool(bp, float64ToUnit32(val))
+			err = dev.PointWriteBool(bp, float64ToUint32(val))
 			if err != nil {
-				log.Errorln("bacnet-master-write-bool:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", val, " writePriority", writePriority, " error:", err)
+				inst.bacnetErrorMsg("bacnet-master-write-bool:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", val, " writePriority", writePriority, " error:", err)
 				return err
 			}
 		} else {
 			err = dev.PointWriteAnalogue(bp, float64ToFloat32(val))
 			if err != nil {
-				log.Errorln("bacnet-master-write-analogue:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", val, " writePriority", writePriority, " error:", err)
+				inst.bacnetErrorMsg("bacnet-master-write-analogue:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", val, " writePriority", writePriority, " error:", err)
 				return err
 			}
 		}
 	}
 	log.Infoln("bacnet-master-POINT-WRITE:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", val, " writePriority", writePriority)
 	return nil
-
 }
 
 func setObjectType(object string) (obj btypes.ObjectType, isWritable, isBool bool, asString string) {
@@ -381,7 +384,7 @@ func (inst *Instance) devicePoints(deviceUUID string, addPoints, writeablePoints
 	return pointsList, nil
 }
 
-func intToUnit32(value int) uint32 {
+func intToUint32(value int) uint32 {
 	var y = uint32(value)
 	return y
 }
@@ -395,7 +398,7 @@ func float32ToFloat64(value float32) float64 {
 	return y
 }
 
-func float64ToUnit32(value float64) uint32 {
+func float64ToUint32(value float64) uint32 {
 	var y = uint32(value)
 	return y
 }

@@ -75,7 +75,7 @@ func (inst *Instance) getBacnetDevice(deviceUUID string) (*network.Device, error
 
 // bacnetDevice add or update an instance of a created bacnet device that is cached in bacnet lib
 func (inst *Instance) bacnetDevice(dev *model.Device) error {
-	max := intToUnit32(integer.NonNil(dev.MaxADPU))
+	max := intToUint32(integer.NonNil(dev.MaxADPU))
 	seg := uint32(setSegmentation(dev.Segmentation))
 	d := &network.Device{
 		Ip:            dev.CommonIP.Host,
@@ -161,7 +161,7 @@ func (inst *Instance) doWrite(pnt *model.Point, networkUUID, deviceUUID string) 
 	}
 	if isWrite {
 		if isBool {
-			err = dev.PointWriteBool(bp, float64ToUnit32(val))
+			err = dev.PointWriteBool(bp, float64ToUint32(val))
 			if err != nil {
 				log.Errorln("bacnet-server-write-bool:", "type:", pnt.ObjectType, "id", integer.NonNil(pnt.ObjectId), " value:", val, " writePriority", writePriority, " error:", err)
 				return err
@@ -283,7 +283,7 @@ func (inst *Instance) devicePoints(deviceUUID string) (resp []*network.PointDeta
 
 }
 
-func intToUnit32(value int) uint32 {
+func intToUint32(value int) uint32 {
 	var y = uint32(value)
 	return y
 }
@@ -297,7 +297,7 @@ func float32ToFloat64(value float32) float64 {
 	return y
 }
 
-func float64ToUnit32(value float64) uint32 {
+func float64ToUint32(value float64) uint32 {
 	var y = uint32(value)
 	return y
 }

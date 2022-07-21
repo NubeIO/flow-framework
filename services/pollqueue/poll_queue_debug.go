@@ -8,7 +8,7 @@ import (
 )
 
 func (pm *NetworkPollManager) pollQueueDebugMsg(args ...interface{}) {
-	if nstring.InEqualIgnoreCase(pm.config.LogLevel, "DEBUG") {
+	if nstring.InEqualIgnoreCase(pm.Config.LogLevel, "DEBUG") {
 		prefix := "Modbus Poll Queue: "
 		log.Info(prefix, args)
 	}
@@ -20,7 +20,7 @@ func (pm *NetworkPollManager) pollQueueErrorMsg(args ...interface{}) {
 }
 
 func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
-	if nstring.InEqualIgnoreCase(pm.config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
+	if nstring.InEqualIgnoreCase(pm.Config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
 		printString := "\n\n"
 		printString += fmt.Sprint("PrintPollQueuePointUUIDs: (NOTE: THE CURRENT PollPoint HAS ALREADY BEEN REMOVED FROM THE QUEUES AT THIS POINT!!\nTOTAL COUNT = ", pm.PollQueue.PriorityQueue.Len()+pm.PollQueue.StandbyPollingPoints.Len()+pm.PollQueue.OutstandingPollingPoints.Len(), "\n")
 		printString += fmt.Sprint("NextPollPoint: ")
@@ -47,7 +47,7 @@ func (pm *NetworkPollManager) PrintPollQueuePointUUIDs() {
 }
 
 func (pm *NetworkPollManager) PrintPointDebugInfo(pnt *model.Point) {
-	if nstring.InEqualIgnoreCase(pm.config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
+	if nstring.InEqualIgnoreCase(pm.Config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
 		printString := "\n\n"
 		if pnt != nil {
 			printString += fmt.Sprint("Point: ", pnt.UUID, " ", pnt.Name, "\n")
@@ -142,7 +142,7 @@ func (pm *NetworkPollManager) PrintPollingPointDebugInfo(pp *PollingPoint) {
 }
 
 func (pm *NetworkPollManager) PrintPollQueueStatistics() {
-	if nstring.InEqualIgnoreCase(pm.config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
+	if nstring.InEqualIgnoreCase(pm.Config.LogLevel, "DEBUG") { //Added here to disable debug processes when not using logging
 
 		pm.PrintPollQueuePointUUIDs()
 

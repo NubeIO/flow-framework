@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/NubeIO/flow-framework/api"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/config"
-	"github.com/NubeIO/flow-framework/plugin/nube/protocals/modbus/pollqueue"
+	"github.com/NubeIO/flow-framework/services/pollqueue"
+	"github.com/NubeIO/flow-framework/utils/float"
 )
 
 // Enable implements plugin.Plugin
@@ -11,7 +11,7 @@ func (inst *Instance) Enable() error {
 	inst.modbusDebugMsg("MODBUS Enable()")
 	inst.enabled = true
 	inst.setUUID()
-	inst.BusServ()
+
 	nets, err := inst.db.GetNetworksByPlugin(inst.pluginUUID, api.Args{})
 	if nets != nil {
 		inst.networks = nets
@@ -25,8 +25,9 @@ func (inst *Instance) Enable() error {
 			arg.enable = true
 			inst.NetworkPollManagers = make([]*pollqueue.NetworkPollManager, 0) // This will delete any existing NetworkPollManagers (if enable is called multiple times, it will rebuild the queues).
 			for _, net := range nets {                                          // Create a new Poll Manager for each network in the plugin.
-				conf := inst.GetConfig().(*config.Config)
-				pollManager := pollqueue.NewPollManager(conf, &inst.db, net.UUID, inst.pluginUUID)
+				conf := inst.GetConfig().(*Config)
+				pollQueueConfig := pollqueue.Config{EnablePolling: conf.EnablePolling, LogLevel: conf.LogLevel}
+				pollManager := NewPollManager(&pollQueueConfig, &inst.db, net.UUID, inst.pluginUUID, float.NonNil(net.MaxPollRate))
 				// inst.modbusDebugMsg("net")
 				// inst.modbusDebugMsg("%+v\n", net)
 				// inst.modbusDebugMsg("pollManager")
@@ -50,9 +51,7 @@ func (inst *Instance) Disable() error {
 	inst.modbusDebugMsg("MODBUS Disable()")
 	inst.enabled = false
 	if inst.pollingEnabled {
-		var arg polling
 		inst.pollingEnabled = false
-		arg.enable = false
 		inst.pollingCancel()
 		inst.pollingCancel = nil
 		for _, pollMan := range inst.NetworkPollManagers {
